@@ -1,5 +1,7 @@
 package com.popIt.pop_it.domain.pass.entity;
 
+import com.popIt.pop_it.domain.pass.entity.enums.Gender;
+import com.popIt.pop_it.domain.pass.entity.enums.Telecom;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

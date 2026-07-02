@@ -1,5 +1,7 @@
 package com.popIt.pop_it.domain.user.entity;
 
+import com.popIt.pop_it.domain.user.entity.enums.Bank;
+import com.popIt.pop_it.domain.user.entity.enums.TaxationType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

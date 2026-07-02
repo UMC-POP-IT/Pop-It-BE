@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.user_activity.entity;
 
+import com.popIt.pop_it.domain.user_activity.entity.enums.ActivityType;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

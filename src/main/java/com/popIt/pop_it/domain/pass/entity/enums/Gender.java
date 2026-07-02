@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.pass.entity;
+package com.popIt.pop_it.domain.pass.entity.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

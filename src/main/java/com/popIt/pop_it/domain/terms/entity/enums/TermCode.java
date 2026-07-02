@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.terms.entity;
+package com.popIt.pop_it.domain.terms.entity.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

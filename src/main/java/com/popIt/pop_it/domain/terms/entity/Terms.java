@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.terms.entity;
 
+import com.popIt.pop_it.domain.terms.entity.enums.TermCode;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
