@@ -1,11 +1,11 @@
-package com.popIt.pop_it.domain.contact.enums;
+package com.popIt.pop_it.domain.contract.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum ContactStatus {
+public enum ContractStatus {
 
     PENDING_SIGNATURE("서명대기"),
     COMPLETED("완료")

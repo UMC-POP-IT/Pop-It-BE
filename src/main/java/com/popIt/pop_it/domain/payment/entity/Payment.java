@@ -1,8 +1,8 @@
 package com.popIt.pop_it.domain.payment.entity;
 
+import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
-import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -45,5 +45,5 @@ public class Payment {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
-    private Reservation reservation; // 대상 예약
+    private Contract contract; // 대상 예약
 }

@@ -1,6 +1,6 @@
-package com.popIt.pop_it.domain.contact.entity;
+package com.popIt.pop_it.domain.contract.entity;
 
-import com.popIt.pop_it.domain.contact.enums.ContactStatus;
+import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -15,8 +15,8 @@ import org.hibernate.annotations.CreationTimestamp;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "contact")
-public class Contact {
+@Table(name = "contract")
+public class Contract {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +25,7 @@ public class Contact {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ContactStatus status = ContactStatus.PENDING_SIGNATURE; // 계약 상태 (기본값: 서명대기)
+    private ContractStatus status = ContractStatus.PENDING_SIGNATURE; // 계약 상태 (기본값: 서명대기)
 
     private String hostSignatureUrl; // 호스트 서명 URL
 
