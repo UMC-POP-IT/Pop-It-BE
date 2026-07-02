@@ -22,7 +22,7 @@ public class Escrow {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 에스크로 식별자
 
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String escrowTransactionId; // 에스크로사 발급 거래 ID
 
     @Column(nullable = false)
@@ -42,5 +42,5 @@ public class Escrow {
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
-    private Reservation reservation; // 대상 예약
+    private Reservation reservation; // 대상 계약
 }

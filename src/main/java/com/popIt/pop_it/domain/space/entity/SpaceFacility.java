@@ -19,8 +19,9 @@ public class SpaceFacility {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long spaceId; // 공간 식별자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
+    private Space space; // 공간
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
