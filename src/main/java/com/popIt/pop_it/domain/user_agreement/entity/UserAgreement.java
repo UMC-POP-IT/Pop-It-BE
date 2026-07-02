@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.wishlist.entity;
+package com.popIt.pop_it.domain.user_agreement.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -6,7 +6,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Getter
@@ -14,24 +13,26 @@ import org.hibernate.annotations.CreationTimestamp;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(
-    name = "wishlist",
+    name = "user_agreement",
     uniqueConstraints = @UniqueConstraint(
-        name = "uk_user_space",
-        columnNames = {"user_id", "space_id"})
+        name = "uk_user_term",
+        columnNames = {"user_id", "term_id"})
 )
-public class Wishlist {
+public class UserAgreement {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
+    @Column(nullable = false)
+    private boolean isAgreed;
+
+    @Column(nullable = false)
+    private LocalDateTime agreedAt;
 
     @Column(name = "user_id", nullable = false, updatable = false)
     private Long userId;
 
-    @Column(name = "space_id", nullable = false, updatable = false)
-    private Long spaceId;
+    @Column(name = "term_id", nullable = false, updatable = false)
+    private Long termId;
 }
