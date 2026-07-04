@@ -8,7 +8,7 @@
 ## 🛠 Tech Stack
 
 ![Java](https://img.shields.io/badge/Java_17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.3-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_4.1-6DB33F?style=for-the-badge&logo=springboot&logoColor=white)
 ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white)
 ![MySQL](https://img.shields.io/badge/MySQL-4479A1?style=for-the-badge&logo=mysql&logoColor=white)
 ![AWS](https://img.shields.io/badge/AWS_EC2-FF9900?style=for-the-badge&logo=amazonaws&logoColor=white)
@@ -20,12 +20,18 @@
 ```
 com.popIt
 ├── domain
-│   ├── 
-│   ├── 
-│   ├── 
-│   ├── 
-│   ├── 
-│   └── 
+│   ├── contract
+│   ├── escrow
+│   ├── facility
+│   ├── pass
+│   ├── payment
+│   ├── reservation
+│   ├── space
+│   ├── terms
+│   ├── user
+│   ├── user_activity
+│   ├── user_agreement
+│   └── wishlist
 └── global
     ├── config
     ├── exception
@@ -205,10 +211,10 @@ assignees: ''
 
 ## 👥 Contributors
 
-| 이름 | 역할 | GitHub |
-|------|------|--------|
-| 최서연 | Backend | |
-| 김유진 | Backend | |
-| 김하림 | Backend | |
-| 송시찬 | Backend | |
-| 이권형 | Backend | |
+| 이름 | 역할                | GitHub |
+|------|-------------------|--------|
+| 최서연 | 결제, 활동기록(AI추천)    | |
+| 김유진 | 계약, 본인인증          | |
+| 김하림 | 공간                | |
+| 송시찬 | 예약, 에스크로          | |
+| 이권형 | 사용자(로그인/회원가입), 약관 | |

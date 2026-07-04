@@ -5,6 +5,11 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+
+### 민감정보 ###
+.env
+application-local.yml
+
 ### STS ###
 .apt_generated
 .classpath
