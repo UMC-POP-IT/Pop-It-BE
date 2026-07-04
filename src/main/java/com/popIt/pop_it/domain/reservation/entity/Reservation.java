@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.reservation.entity;
 
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.space.entity.Space;
+import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -57,7 +58,7 @@ public class Reservation {
     @JoinColumn(nullable = false)
     private Space space; // 예약 대상 공간
 
-    // @TODO: User 엔티티가 만들어지면 @ManyToOne 관계로 변경 필요
-    @Column(nullable = false)
-    private Long userId; // 게스트 ID
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(nullable = false)
+    private User user; // 게스트
 }
