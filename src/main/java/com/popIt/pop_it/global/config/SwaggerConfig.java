@@ -19,7 +19,7 @@ public class SwaggerConfig {
         Info info = new Info().title("Pop It").description("단기 상업 공간 대관 플랫폼, 팝잇").version("0.0.1");
 
         // JWT 토큰 헤더 방식
-        String securityScheme = "JWT TOKEN";
+        String securityScheme = "bearerAuth";
         SecurityRequirement securityRequirement = new SecurityRequirement().addList(securityScheme);
 
         Components components = new Components()
