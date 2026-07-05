@@ -6,6 +6,7 @@ import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -61,13 +62,34 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
     ) {
         log.warn("Request exception: {}", ex.getMessage());
 
+        BaseErrorCode errorCode = resolveErrorCode(statusCode);
         ApiResponse<Object> response = new ApiResponse<>(
                 false,
-                String.valueOf(statusCode.value()),
-                ex.getMessage(),
+                errorCode.getCode(),
+                errorCode.getMessage(),
                 body
         );
         return ResponseEntity.status(statusCode).headers(headers).body(response);
+    }
+
+    // Spring이 전달하는 HttpStatusCode를 프로젝트 공통 에러 코드로 매핑
+    private BaseErrorCode resolveErrorCode(HttpStatusCode statusCode) {
+        if (statusCode.isSameCodeAs(HttpStatus.BAD_REQUEST)) {
+            return GeneralErrorCode.BAD_REQUEST;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.UNAUTHORIZED)) {
+            return GeneralErrorCode.UNAUTHORIZED;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.FORBIDDEN)) {
+            return GeneralErrorCode.FORBIDDEN;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.NOT_FOUND)) {
+            return GeneralErrorCode.NOT_FOUND;
+        }
+        if (statusCode.is5xxServerError()) {
+            return GeneralErrorCode.INTERNAL_SERVER_ERROR;
+        }
+        return GeneralErrorCode.BAD_REQUEST;
     }
 
     // 그 외의 정의되지 않은 모든 예외는 보안을 위해 500 에러로 처리, 서버 로그 남기기
