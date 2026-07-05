@@ -62,19 +62,19 @@ public class SecurityConfig {
                 // JWT 필터
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
                 // oauth
-                .oauth2Login(oauth -> oauth
-                        // 인증 엔트리 포인트
-                        .authorizationEndpoint(auth -> auth
-                                .baseUri("/oath/authorize"))
-                        // 콜백 주소
-                        .redirectionEndpoint(redirect -> redirect
-                                .baseUri("/oauth/callback/**"))
-                        // 인증 완료 후 정보 활용
-                        .userInfoEndpoint(userInfo -> userInfo
-                                .userService(customOAuthService))
-                        // 성공 시 JWT 토큰 발행할 핸들러
-                        .successHandler(oAuthSuccessHandler())
-                )
+//                .oauth2Login(oauth -> oauth
+//                        // 인증 엔트리 포인트
+//                        .authorizationEndpoint(auth -> auth
+//                                .baseUri("/oath/authorize"))
+//                        // 콜백 주소
+//                        .redirectionEndpoint(redirect -> redirect
+//                                .baseUri("/oauth/callback/**"))
+//                        // 인증 완료 후 정보 활용
+//                        .userInfoEndpoint(userInfo -> userInfo
+//                                .userService(customOAuthService))
+//                        // 성공 시 JWT 토큰 발행할 핸들러
+//                        .successHandler(oAuthSuccessHandler())
+//                )
                 // 로그아웃
                 .logout(logout -> logout
                         .logoutUrl("/logout")
