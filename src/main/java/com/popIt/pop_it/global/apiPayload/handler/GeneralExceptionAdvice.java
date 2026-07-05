@@ -86,6 +86,21 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         if (statusCode.isSameCodeAs(HttpStatus.NOT_FOUND)) {
             return GeneralErrorCode.NOT_FOUND;
         }
+        if (statusCode.isSameCodeAs(HttpStatus.METHOD_NOT_ALLOWED)) {
+            return GeneralErrorCode.METHOD_NOT_ALLOWED;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.NOT_ACCEPTABLE)) {
+            return GeneralErrorCode.NOT_ACCEPTABLE;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.CONFLICT)) {
+            return GeneralErrorCode.CONFLICT;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.UNSUPPORTED_MEDIA_TYPE)) {
+            return GeneralErrorCode.UNSUPPORTED_MEDIA_TYPE;
+        }
+        if (statusCode.isSameCodeAs(HttpStatus.TOO_MANY_REQUESTS)) {
+            return GeneralErrorCode.TOO_MANY_REQUESTS;
+        }
         if (statusCode.is5xxServerError()) {
             return GeneralErrorCode.INTERNAL_SERVER_ERROR;
         }
