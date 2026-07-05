@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.popIt.pop_it.domain.user.converter.UserConverter;
 import com.popIt.pop_it.domain.user.dto.UserResDTO;
 import com.popIt.pop_it.domain.user.exception.code.UserSuccessCode;
+import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import com.popIt.pop_it.global.apiPayload.code.BaseSuccessCode;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import com.popIt.pop_it.global.security.entity.OAuthUser;
 import com.popIt.pop_it.global.security.util.JwtUtil;

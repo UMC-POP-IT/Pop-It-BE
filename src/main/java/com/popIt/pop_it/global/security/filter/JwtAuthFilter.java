@@ -1,9 +1,11 @@
 package com.popIt.pop_it.global.security.filter;
 
 import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
+import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
+import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

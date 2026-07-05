@@ -1,6 +1,8 @@
 package com.popIt.pop_it.global.exception;
 
-import io.swagger.v3.oas.models.responses.ApiResponse;
+import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
+import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.access.AccessDeniedException;
