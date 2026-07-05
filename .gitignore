@@ -9,6 +9,8 @@ build/
 ### 민감정보 ###
 .env
 application-local.yml
+*.mv.db
+*.trace.db
 
 ### STS ###
 .apt_generated
