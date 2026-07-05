@@ -1,5 +1,6 @@
 package com.popIt.pop_it.global.security.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
@@ -17,7 +18,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.filter.OncePerRequestFilter;
-import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
 
@@ -33,19 +33,19 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain) throws ServletException, IOException {
 
+        // 토큰 가져오기
+        String token = request.getHeader("Authorization");
+
+        // token이 없거나 Bearer가 아니면 넘기기
+        if (token == null || !token.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // Bearer이면 추출
+        token = token.replace("Bearer ", "");
+
         try {
-            // 토큰 가져오기
-            String token = request.getHeader("Authorization");
-
-            // token이 없거나 Bearer가 아니면 넘기기
-            if (token == null || !token.startsWith("Bearer ")) {
-                filterChain.doFilter(request, response);
-                return;
-            }
-
-            // Bearer이면 추출
-            token = token.replace("Bearer ", "");
-
             // AccessToken 검증하기: 올바른 토큰이면
             if (jwtUtil.isValid(token)) {
                 // JWT 토큰에서 유저 정보 조: UID와 소셜 로그인 타입 가져오기
@@ -62,7 +62,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 // 인증 완료 후 SecurityContextHolder에 넣기
                 SecurityContextHolder.getContext().setAuthentication(auth);
             }
-            filterChain.doFilter(request, response);
 
         } catch (Exception e) {
             ObjectMapper mapper = new ObjectMapper();
@@ -74,7 +73,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             ApiResponse<Void> errorResponse = ApiResponse.onFailure(code,null);
 
             mapper.writeValue(response.getOutputStream(), errorResponse);
+            return;   // 여기서 메서드 종료
         }
+        filterChain.doFilter(request, response);
 
     }
 }
