@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -58,7 +59,8 @@ public class SecurityConfig {
                         .requestMatchers(publicAPI).permitAll()
                         .anyRequest().authenticated())
                 // 세션
-                .sessionManagement(AbstractHttpConfigurer::disable)
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // JWT 필터
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
                 // oauth // TODO: 로그인 구현 시 활성화 필요
@@ -75,11 +77,6 @@ public class SecurityConfig {
 //                        // 성공 시 JWT 토큰 발행할 핸들러
 //                        .successHandler(oAuthSuccessHandler())
 //                )
-                // 로그아웃
-                .logout(logout -> logout
-                        .logoutUrl("/logout")
-                        .logoutSuccessUrl("/login?logout")
-                        .permitAll())
                 // 예외 상황 핸들러
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler(customAccessDenied())
