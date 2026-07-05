@@ -61,7 +61,7 @@ public class SecurityConfig {
                 .sessionManagement(AbstractHttpConfigurer::disable)
                 // JWT 필터
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
-                // oauth
+                // oauth // TODO: 로그인 구현 시 활성화 필요
 //                .oauth2Login(oauth -> oauth
 //                        // 인증 엔트리 포인트
 //                        .authorizationEndpoint(auth -> auth
