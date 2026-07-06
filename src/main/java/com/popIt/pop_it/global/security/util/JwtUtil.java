@@ -21,10 +21,20 @@ public class JwtUtil {
     private final SecretKey secretKey;
     private final Duration accessExpiration;
 
+    private static final int MIN_SECRET_KEY_BYTES = 32;
 
     public JwtUtil(
             @Value("${jwt.token.secretKey}") String secret,
             @Value("${jwt.token.expiration.access}") Long accessExpiration) {
+
+        // JWT_SECRET_KEY 최소 길이 검증 로직
+        byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (secretBytes.length < MIN_SECRET_KEY_BYTES) {
+            throw new IllegalStateException(
+                    "JWT_SECRET_KEY는 최소 " + MIN_SECRET_KEY_BYTES + "바이트 이상이어야 합니다. "
+                            + "현재 길이: " + secretBytes.length + "바이트"
+            );
+        }
 
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessExpiration = Duration.ofMillis(accessExpiration);

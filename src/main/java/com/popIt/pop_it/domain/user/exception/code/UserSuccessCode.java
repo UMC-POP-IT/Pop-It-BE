@@ -9,7 +9,7 @@ import org.springframework.http.HttpStatus;
 @RequiredArgsConstructor
 public enum UserSuccessCode implements BaseSuccessCode {
 
-    USER_LOGIN(HttpStatus.OK, "MEMBER200_1", "성공적으로 로그인 했습니다. ");
+    USER_LOGIN(HttpStatus.OK, "USER200_1", "성공적으로 로그인 했습니다.");
 
     private final HttpStatus status;
     private final String code;
