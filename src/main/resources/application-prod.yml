@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate   # prod는 절대 create/update 금지
+    show-sql: false
+  h2:
+    console:
+      enabled: false       # prod는 H2 콘솔 자체 불필요
+
+springdoc:
+  swagger-ui:
+    enabled: false         # swagger 숨기기

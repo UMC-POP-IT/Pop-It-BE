@@ -67,7 +67,7 @@ public class SecurityConfig {
 //                .oauth2Login(oauth -> oauth
 //                        // 인증 엔트리 포인트
 //                        .authorizationEndpoint(auth -> auth
-//                                .baseUri("/oath/authorize"))
+//                                .baseUri("/oauth/authorize"))
 //                        // 콜백 주소
 //                        .redirectionEndpoint(redirect -> redirect
 //                                .baseUri("/oauth/callback/**"))
