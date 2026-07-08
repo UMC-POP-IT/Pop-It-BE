@@ -3,19 +3,22 @@ spring:
     url: ${DB_URL:jdbc:h2:~/popit;MODE=MySQL;AUTO_SERVER=TRUE}
     username: ${DB_USERNAME:sa}
     password: ${DB_PASSWORD:}
-
-
   jpa:
     hibernate:
-      ddl-auto: ${DDL_AUTO:create}
+      ddl-auto: ${DDL_AUTO:validate}
     properties:
       hibernate:
         format_sql: true
     show-sql: true
-
   h2:
     console:
       enabled: true
       path: "/h2-console"
       settings:
-        web-allow-others: true
+        web-allow-others: false
+
+jwt:
+  token:
+    secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
+    expiration:
+      access: 1800000 # 30분
