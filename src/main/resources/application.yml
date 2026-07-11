@@ -22,3 +22,12 @@ jwt:
     secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
     expiration:
       access: 1800000 # 30분
+
+cloud:
+  aws:
+    credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region: ${AWS_REGION}
+    s3:
+        bucket: ${AWS_S3_BUCKET}
