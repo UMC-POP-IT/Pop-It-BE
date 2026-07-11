@@ -44,6 +44,7 @@ public class SecurityConfig {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/auth/**",
+            "/h2-console/**"
     };
 
     private final String[] publicAPI = {
@@ -81,6 +82,9 @@ public class SecurityConfig {
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler(customAccessDenied())
                         .authenticationEntryPoint(customEntryPoint()));
+
+        http.headers(headers -> headers
+                .frameOptions(frame -> frame.sameOrigin()));
 
         return http.build();
     }
