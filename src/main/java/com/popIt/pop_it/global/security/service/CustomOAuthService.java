@@ -24,7 +24,6 @@ public class CustomOAuthService extends DefaultOAuth2UserService {
     private final UserRepository userRepository;
 
     @Override
-    @Transactional
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
         // Provider에서 내려준 사용자 원본 속성 조회
         OAuth2User oauth2User = fetchOAuth2User(userRequest);
