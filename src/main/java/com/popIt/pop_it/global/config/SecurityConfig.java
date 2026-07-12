@@ -44,6 +44,7 @@ public class SecurityConfig {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/auth/**",
+            "/users/me/verifications"
     };
 
     private final String[] publicAPI = {
