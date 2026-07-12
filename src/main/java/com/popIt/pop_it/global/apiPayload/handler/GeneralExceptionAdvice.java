@@ -32,7 +32,7 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         BaseErrorCode errorCode = e.getErrorCode();
         log.warn("ProjectException: {}", errorCode.getCode(), e);
         return ResponseEntity.status(errorCode.getStatus())
-                .body(ApiResponse.onFailure(errorCode, null));
+                .body(ApiResponse.onFailure(errorCode.getCode(), e.getMessage(), null));
     }
 
     // @Valid 어노테이션 검증 실패 시 필드별 실패 사유를 담아 응답
