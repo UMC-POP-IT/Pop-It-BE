@@ -8,8 +8,10 @@ import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -43,41 +45,70 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/v3/api-docs/**",
-            "/auth/**",
+            "/auth/**"
     };
 
     private final String[] publicAPI = {
             "/auth/**"
     };
 
+    // H2 콘솔 전용 체인 (로컬 개발용): permitAll과 sameOrigin을 이 범위에만 한정
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    @Order(1)
+    @ConditionalOnProperty(name = "spring.h2.console.enabled", havingValue = "true")
+    public SecurityFilterChain h2consoleSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/h2-console/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(requests -> requests
+                        .anyRequest().permitAll())
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin()));
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
+    public SecurityFilterChain oauthSecurityFilterChain(HttpSecurity http) throws Exception {
+        // OAuth 로그인 전용 체인: 인가 코드 플로우 동안만 세션 사용
         http.csrf(AbstractHttpConfigurer::disable)
-                // URI 허용 여부
+                .securityMatcher("/api/v1/auth/oauth/**", "/login/oauth2/**")
+                .authorizeHttpRequests(requests -> requests
+                        .anyRequest().permitAll())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .oauth2Login(oauth -> oauth
+                        // 로그인 시작: /api/v1/auth/oauth/{registrationId}
+                        .authorizationEndpoint(auth -> auth
+                                .baseUri("/api/v1/auth/oauth"))
+                        // 콜백: /api/v1/auth/oauth/callback/{registrationId}
+                        .redirectionEndpoint(redirect -> redirect
+                                .baseUri("/api/v1/auth/oauth/callback/*"))
+                        // Provider 사용자 정보 조회/가입 처리
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuthService))
+                        // 로그인 성공 시 JWT 발급 응답
+                        .successHandler(oAuthSuccessHandler())
+                )
+                .exceptionHandling(exception -> exception
+                        .accessDeniedHandler(customAccessDenied())
+                        .authenticationEntryPoint(customEntryPoint()));
+
+        return http.build();
+    }
+
+    @Bean
+    @Order(3)
+    public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
+        // 일반 API 체인: JWT 기반 stateless 인증
+        http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(allowUris).permitAll()
                         .requestMatchers(publicAPI).permitAll()
                         .anyRequest().authenticated())
-                // 세션
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // JWT 필터
                 .addFilterBefore(jwtAuthFilter(), UsernamePasswordAuthenticationFilter.class)
-                // oauth // TODO: 로그인 구현 시 활성화 필요
-//                .oauth2Login(oauth -> oauth
-//                        // 인증 엔트리 포인트
-//                        .authorizationEndpoint(auth -> auth
-//                                .baseUri("/oauth/authorize"))
-//                        // 콜백 주소
-//                        .redirectionEndpoint(redirect -> redirect
-//                                .baseUri("/oauth/callback/**"))
-//                        // 인증 완료 후 정보 활용
-//                        .userInfoEndpoint(userInfo -> userInfo
-//                                .userService(customOAuthService))
-//                        // 성공 시 JWT 토큰 발행할 핸들러
-//                        .successHandler(oAuthSuccessHandler())
-//                )
-                // 예외 상황 핸들러
                 .exceptionHandling(exception -> exception
                         .accessDeniedHandler(customAccessDenied())
                         .authenticationEntryPoint(customEntryPoint()));
