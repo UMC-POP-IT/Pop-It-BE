@@ -8,6 +8,7 @@ import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -54,6 +55,7 @@ public class SecurityConfig {
     // H2 콘솔 전용 체인 (로컬 개발용): permitAll과 sameOrigin을 이 범위에만 한정
     @Bean
     @Order(1)
+    @ConditionalOnProperty(name = "spring.h2.console.enabled", havingValue = "true")
     public SecurityFilterChain h2consoleSecurityFilterChain(HttpSecurity http) throws Exception {
         http
                 .securityMatcher("/h2-console/**")
