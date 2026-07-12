@@ -8,6 +8,7 @@ import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
@@ -51,8 +52,23 @@ public class SecurityConfig {
             "/auth/**"
     };
 
+    // H2 콘솔 전용 체인 (로컬 개발용): permitAll과 sameOrigin을 이 범위에만 한정
     @Bean
     @Order(1)
+    @ConditionalOnProperty(name = "spring.h2.console.enabled", havingValue = "true")
+    public SecurityFilterChain h2consoleSecurityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .securityMatcher("/h2-console/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(requests -> requests
+                        .anyRequest().permitAll())
+                .headers(headers -> headers
+                        .frameOptions(frame -> frame.sameOrigin()));
+        return http.build();
+    }
+
+    @Bean
+    @Order(2)
     public SecurityFilterChain oauthSecurityFilterChain(HttpSecurity http) throws Exception {
         // OAuth 로그인 전용 체인: 인가 코드 플로우 동안만 세션 사용
         http.csrf(AbstractHttpConfigurer::disable)
@@ -82,7 +98,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    @Order(2)
+    @Order(3)
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         // 일반 API 체인: JWT 기반 stateless 인증
         http.csrf(AbstractHttpConfigurer::disable)
