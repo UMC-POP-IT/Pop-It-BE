@@ -9,6 +9,7 @@ import com.popIt.pop_it.domain.identity_verification.exception.code.IdentityVeri
 import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import com.popIt.pop_it.global.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatusCode;
@@ -55,6 +56,7 @@ public class IdentityVerificationService {
 
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneIdentityVerification.VerifiedCustomer customer = response.verifiedCustomer();
+        String ciHash = HashUtil.sha256(customer.ci());
 
         // response 를 DB에 저장
         IdentityVerification identityVerification = IdentityVerification.builder()
@@ -65,7 +67,8 @@ public class IdentityVerificationService {
                 .phone(customer.phoneNumber())
                 .birthDate(customer.birthDate())
                 .ci(customer.ci())
-                .user(user) // TODO: 로그인 인증 정보로 연결시키기
+                .ciHash(ciHash)  // 검색/중복체크용 해시
+                .user(user)
                 .verifiedAt(LocalDateTime.ofInstant(response.verifiedAt(), ZoneId.of("Asia/Seoul")))
                 .build();
 

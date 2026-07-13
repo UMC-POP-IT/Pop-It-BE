@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.identity_verification.entity;
 
+import com.popIt.pop_it.domain.identity_verification.converter.CryptoConverter;
 import com.popIt.pop_it.domain.identity_verification.entity.enums.Gender;
 import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -39,12 +40,19 @@ public class IdentityVerification {
     private Gender gender;
 
     // 암호화
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String phone;
 
     // 암호화
+    // 실제 값은 암호화, 필요할 때만 키로 복호화
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String ci;
+
+    // ci값 SHA-256 해시(원본 값 → 해시값으로 단방향 변환), 조회/중복체크용
+    @Column(nullable = false, unique = true)
+    private String ciHash;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime verifiedAt;

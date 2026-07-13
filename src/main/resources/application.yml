@@ -14,6 +14,8 @@ spring:
               - profile
               - email
             redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+    crypto:
+      secret-key: ${CRYPTO_SECRET_KEY}
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:validate}
