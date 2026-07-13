@@ -11,7 +11,7 @@ import static org.mockito.Mockito.verify;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
-import com.popIt.pop_it.domain.payment.dto.PaymentPrepareResponseDTO;
+import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
@@ -85,7 +85,7 @@ class PaymentServiceTest {
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
         given(paymentIdempotentSaver.save(any(Payment.class), eq(IDEMPOTENCY_KEY))).willReturn(savedPayment);
 
-        PaymentPrepareResponseDTO result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(1L);
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
@@ -156,7 +156,7 @@ class PaymentServiceTest {
 
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.of(existingPayment));
 
-        PaymentPrepareResponseDTO result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(existingPayment.getId());
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");

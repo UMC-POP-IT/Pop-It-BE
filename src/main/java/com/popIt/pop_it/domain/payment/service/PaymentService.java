@@ -5,10 +5,9 @@ import com.popIt.pop_it.domain.contract.enums.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.domain.payment.converter.PaymentConverter;
-import com.popIt.pop_it.domain.payment.dto.PaymentPrepareResponseDTO;
+import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentErrorCode;
-import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 
@@ -28,7 +27,7 @@ public class PaymentService {
     private final PaymentIdempotentSaver paymentIdempotentSaver;
 
     @Transactional
-    public PaymentPrepareResponseDTO prepare(Long contractId, String idempotencyKey, Long userId) {
+    public PaymentResDTO.Prepare prepare(Long contractId, String idempotencyKey, Long userId) {
 
         // 멱등
         Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(idempotencyKey);
@@ -44,7 +43,7 @@ public class PaymentService {
                 case PAID -> throw new ProjectException(PaymentErrorCode.PAYMENT_ALREADY_PAID);
                 case FAILED, EXPIRED -> throw new ProjectException(PaymentErrorCode.PAYMENT_RETRYABLE); // 새 키로 재시도 필요
                 default -> {
-                    return PaymentPrepareResponseDTO.of(payment, payment.getContract());
+                    return PaymentResDTO.Prepare.of(payment, payment.getContract());
                 }
             }
         }
@@ -70,7 +69,7 @@ public class PaymentService {
         Payment payment = PaymentConverter.toPayment(contract, orderId, idempotencyKey);
         Payment savedPayment = paymentIdempotentSaver.save(payment, idempotencyKey);
 
-        return PaymentPrepareResponseDTO.of(savedPayment, contract);
+        return PaymentResDTO.Prepare.of(savedPayment, contract);
     }
 
     private String generateOrderId(Long contractId) {
