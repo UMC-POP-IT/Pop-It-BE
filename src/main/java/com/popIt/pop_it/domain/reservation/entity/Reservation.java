@@ -61,4 +61,16 @@ public class Reservation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private User user; // 게스트
+
+    //도메인 메서드
+
+    //예약 승인
+    public void approve() {
+        this.status = ReservationStatus.APPROVED;
+    }
+
+    //예약 거절
+    public void reject() {
+        this.status = ReservationStatus.CANCELLED;
+    }
 }

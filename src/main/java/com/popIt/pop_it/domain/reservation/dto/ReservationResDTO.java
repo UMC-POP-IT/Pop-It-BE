@@ -22,6 +22,7 @@ public class ReservationResDTO {
         private LocalDate endDate;
         private String usagePurpose; // 호스트 목록에 노출
         private Long totalPrice;
+        private Boolean isPhotoVerified; // true: 인증 완료, false: 인증 필요
         private SpaceSummary space;
         // 호스트 목록에서만 필요 (게스트 목록에선 null)
         private GuestSummary guest;
@@ -33,6 +34,7 @@ public class ReservationResDTO {
     public static class SpaceSummary {
         private Long spaceId;
         private String buildingName;
+        private String address;
         private String thumbnailUrl; // 대표 사진(sortOrder 최솟값)
     }
 
@@ -42,6 +44,28 @@ public class ReservationResDTO {
     public static class GuestSummary {
         private Long userId;
         private String nickname;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    public static class Create {
+        private Long reservationId;
+        private ReservationStatus status;
+        private String statusDescription;
+        private Long rentalFee;
+        private Long deposit;
+        private Long insuranceFee;
+        private Long totalPrice;
+    }
+
+    @Getter
+    @Builder
+    @AllArgsConstructor
+    public static class StatusChange {
+        private Long reservationId;
+        private ReservationStatus status;
+        private String statusDescription;
     }
 
 }

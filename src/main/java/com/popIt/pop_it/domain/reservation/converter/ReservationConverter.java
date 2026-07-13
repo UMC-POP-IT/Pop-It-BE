@@ -7,7 +7,7 @@ import com.popIt.pop_it.domain.user.entity.User;
 
 public class ReservationConverter {
     public static ReservationResDTO.Summary toSummary(
-            Reservation reservation, boolean includeGuest, String thumbnailUrl
+            Reservation reservation, boolean includeGuest, String thumbnailUrl, boolean isPhotoVerified
     ) {
         return ReservationResDTO.Summary.builder()
                 .reservationId(reservation.getId())
@@ -17,6 +17,7 @@ public class ReservationConverter {
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
                 .totalPrice(reservation.getTotalPrice())
+                .isPhotoVerified(isPhotoVerified)
                 .space(toSpaceSummary(reservation.getSpace(), thumbnailUrl))
                 .guest(includeGuest ? toGuestSummary(reservation.getUser()) : null)
                 .build();
@@ -26,6 +27,7 @@ public class ReservationConverter {
         return ReservationResDTO.SpaceSummary.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
+                .address(space.getRoadAddress())
                 .thumbnailUrl(thumbnailUrl)
                 .build();
     }
@@ -34,6 +36,26 @@ public class ReservationConverter {
         return ReservationResDTO.GuestSummary.builder()
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
+                .build();
+    }
+
+    public static ReservationResDTO.Create toCreateResult(Reservation reservation) {
+        return ReservationResDTO.Create.builder()
+                .reservationId(reservation.getId())
+                .status(reservation.getStatus())
+                .statusDescription(reservation.getStatus().getDescription())
+                .rentalFee(reservation.getRentalFee())
+                .deposit(reservation.getDeposit())
+                .insuranceFee(reservation.getInsuranceFee())
+                .totalPrice(reservation.getTotalPrice())
+                .build();
+    }
+
+    public static ReservationResDTO.StatusChange toStatusChange(Reservation reservation) {
+        return ReservationResDTO.StatusChange.builder()
+                .reservationId(reservation.getId())
+                .status(reservation.getStatus())
+                .statusDescription(reservation.getStatus().getDescription())
                 .build();
     }
 }
