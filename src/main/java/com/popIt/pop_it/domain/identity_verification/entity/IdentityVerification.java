@@ -50,7 +50,7 @@ public class IdentityVerification {
     @Column(nullable = false)
     private String ci;
 
-    // ci값 SHA-256 해시(원본 값 → 해시값으로 단방향 변환), 조회/중복체크용
+    // ci값 SHA-256 해시(원본 값 → 해시값으로 단방향 변환), 조회/중복체크용이므로 unique 필수
     @Column(nullable = false, unique = true)
     private String ciHash;
 
