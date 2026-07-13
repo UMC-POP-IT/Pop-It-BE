@@ -8,6 +8,13 @@ import java.util.Objects;
 public class IdentityVerificationConverter {
     public static IdentityVerificationResDTO.Verify toVerify(IdentityVerification verification) {
 
+        if (verification == null) { // 본인인증 한적 없는 경우
+            return IdentityVerificationResDTO.Verify.builder()
+                    .isVerified(false)
+                    .verifiedAt(null)
+                    .build();
+        }
+
         return IdentityVerificationResDTO.Verify.builder()
                 .isVerified(Objects.equals(verification.getStatus(), "VERIFIED"))
                 .verifiedAt(verification.getVerifiedAt())
