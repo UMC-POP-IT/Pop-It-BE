@@ -7,8 +7,11 @@ import com.popIt.pop_it.domain.identity_verification.exception.code.IdentityVeri
 import com.popIt.pop_it.domain.identity_verification.service.IdentityVerificationService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.apiPayload.code.BaseSuccessCode;
+import com.popIt.pop_it.global.security.entity.AuthUser;
+import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,9 +26,10 @@ public class IdentityVerificationController {
 
     @PostMapping
     public ApiResponse<IdentityVerificationResDTO.Verify> verify(
+            @AuthenticationPrincipal AuthUser authUser,
             @RequestBody @Valid IdentityVerificationReqDTO.Verify dto
             ) {
         BaseSuccessCode code = IdentityVerificationSuccessCode.VERIFIED;
-        return ApiResponse.onSuccess(code, identityVerificationService.verify(dto));
+        return ApiResponse.onSuccess(code, identityVerificationService.verify(authUser.getUser(), dto));
     }
 }

@@ -1,12 +1,14 @@
 package com.popIt.pop_it.domain.identity_verification.entity;
 
 import com.popIt.pop_it.domain.identity_verification.entity.enums.Gender;
+import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Fetch;
 
 @Entity
 @Getter
@@ -51,6 +53,7 @@ public class IdentityVerification {
     @Column(nullable = false)
     private String status;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
-    private Long userId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, updatable = false)
+    private User user;
 }
