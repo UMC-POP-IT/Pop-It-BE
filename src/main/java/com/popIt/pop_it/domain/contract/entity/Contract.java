@@ -41,6 +41,18 @@ public class Contract {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
 
+    @Column(nullable = false)
+    private Long rentalFee; // 임대료 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long deposit; // 보증금 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long insuranceFee; // 보험료 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long totalPrice; // 총 결제 금액 (계약 체결 시점 확정 금액)
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
