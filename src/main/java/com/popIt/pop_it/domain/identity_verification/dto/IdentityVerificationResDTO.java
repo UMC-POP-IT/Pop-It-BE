@@ -39,6 +39,4 @@ public class IdentityVerificationResDTO {
             String type,
             String message
     ) {}
-
-
 }

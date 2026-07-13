@@ -51,12 +51,19 @@ public class IdentityVerificationService {
             throw new ProjectException(IdentityVerificationErrorCode.NOT_VERIFIED);
         }
 
-        // 전체 response 로그 찍기
-        log.info("포트원 API 응답: {}", response);
-
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneIdentityVerification.VerifiedCustomer customer = response.verifiedCustomer();
         String ciHash = HashUtil.sha256(customer.ci());
+
+        // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우
+        if (identityVerificationRepository.existsByIdentityVerificationId(dto.identityVerificationId())) {
+            throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_PROCESSED);
+        }
+
+        // 예외 처리 - 본인인증 건이 이미 존재. 서로 다른 identityVerificationId지만, CI(연계정보)가 동일함
+        if (identityVerificationRepository.existsByCiHash(ciHash)) {
+            throw new IdentityVerificationException(IdentityVerificationErrorCode.DUPLICATE_IDENTITY);
+        }
 
         // response 를 DB에 저장
         IdentityVerification identityVerification = IdentityVerification.builder()
@@ -66,7 +73,7 @@ public class IdentityVerificationService {
                 .gender(customer.gender())
                 .phone(customer.phoneNumber())
                 .birthDate(customer.birthDate())
-                .ci(customer.ci())
+                .ci(customer.ci()) // 저장 시 @Convert가 자동으로 암호화 (매번 다른 암호문)
                 .ciHash(ciHash)  // 검색/중복체크용 해시
                 .user(user)
                 .verifiedAt(LocalDateTime.ofInstant(response.verifiedAt(), ZoneId.of("Asia/Seoul")))
@@ -78,5 +85,13 @@ public class IdentityVerificationService {
         // DTO 변환
         return IdentityVerificationConverter.toVerify(saved);
 
+    }
+
+    public IdentityVerificationResDTO.Verify isVerified(User user) {
+
+        // userId로 IdentityVerification 조회
+        IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user);
+
+        return IdentityVerificationConverter.toVerify(verifiedUser);
     }
 }
