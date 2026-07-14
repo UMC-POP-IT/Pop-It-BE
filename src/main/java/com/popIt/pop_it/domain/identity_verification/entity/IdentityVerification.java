@@ -24,14 +24,16 @@ public class IdentityVerification {
     private Long id;
 
     // 인증 시도 식별자
-    @Column(nullable = false)
+    @Column(nullable = false, unique = true)
     private String identityVerificationId;
 
     // 암호화
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String name;
 
     // 암호화
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String birthDate;
 
@@ -62,6 +64,6 @@ public class IdentityVerification {
     private String status;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, updatable = false)
+    @JoinColumn(name = "user_id", nullable = false, updatable = false, unique = true)
     private User user;
 }
