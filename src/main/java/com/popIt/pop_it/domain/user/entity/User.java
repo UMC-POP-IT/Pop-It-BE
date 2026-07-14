@@ -48,5 +48,16 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(length = 1024)
+    private String refreshToken;
+
     private LocalDateTime deletedAt;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
+    }
 }

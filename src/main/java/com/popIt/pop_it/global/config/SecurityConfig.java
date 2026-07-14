@@ -1,5 +1,6 @@
 package com.popIt.pop_it.global.config;
 
+import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.exception.CustomAccessDenied;
 import com.popIt.pop_it.global.exception.CustomEntryPoint;
 import com.popIt.pop_it.global.handler.OAuthSuccessHandler;
@@ -29,6 +30,7 @@ public class SecurityConfig {
     private final JwtUtil jwtUtil;
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomOAuthService customOAuthService;
+    private final UserRepository userRepository;
 
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
@@ -37,7 +39,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuthSuccessHandler oAuthSuccessHandler() {
-        return new OAuthSuccessHandler(jwtUtil);
+        return new OAuthSuccessHandler(jwtUtil, userRepository);
     }
 
     private final String[] allowUris = {
@@ -45,11 +47,11 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/v3/api-docs/**",
-            "/auth/**"
+            "/api/v1/auth/reissue"
     };
 
     private final String[] publicAPI = {
-            "/auth/**"
+            "/api/v1/auth/reissue"
     };
 
     // H2 콘솔 전용 체인 (로컬 개발용): permitAll과 sameOrigin을 이 범위에만 한정

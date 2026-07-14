@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: ${DB_URL:jdbc:h2:~/popit;MODE=MySQL;AUTO_SERVER=TRUE}
     username: ${DB_USERNAME:sa}
@@ -33,3 +35,4 @@ jwt:
     secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
     expiration:
       access: 1800000 # 30분
+      refresh: 1209600000 # 14일
