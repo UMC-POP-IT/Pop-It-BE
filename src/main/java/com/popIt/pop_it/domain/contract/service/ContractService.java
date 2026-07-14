@@ -2,7 +2,6 @@ package com.popIt.pop_it.domain.contract.service;
 
 import com.popIt.pop_it.domain.contract.dto.ContractReqDTO;
 import com.popIt.pop_it.domain.contract.dto.ContractResDTO;
-import com.popIt.pop_it.domain.contract.exception.ContractException;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
