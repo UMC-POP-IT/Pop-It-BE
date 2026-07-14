@@ -6,11 +6,7 @@ import lombok.RequiredArgsConstructor;
 @Getter
 @RequiredArgsConstructor
 public enum UploadType {
-    SPACE_IMAGE("space"),
-    BUSINESS_LICENSE("business-license"),
-    BANKBOOK("bankbook"),
-    SIGNATURE("signature"),
-    CHECKOUT("checkout");
+    SPACE_IMAGE("space");
 
     private final String path;
 }
