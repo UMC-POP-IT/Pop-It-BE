@@ -39,7 +39,19 @@ public class IdentityVerificationService {
 
                     log.error("포트원 API 에러 - status: {}, body: {}", res.getStatusCode(), body);
 
-                    IdentityVerificationResDTO.PortOneError portOneError = objectMapper.readValue(body, IdentityVerificationResDTO.PortOneError.class);
+                    // 포트원 서버 에러
+                    IdentityVerificationResDTO.PortOneError portOneError;
+                    try {
+                        portOneError = objectMapper.readValue(body, IdentityVerificationResDTO.PortOneError.class);
+                    } catch (Exception e) {
+                        log.error("포트원 에러 응답 파싱 실패, 원본 body: {}", body, e);
+                        throw new IdentityVerificationException(
+                                IdentityVerificationErrorCode.PORTONE_API_ERROR,
+                                "포트원 서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+                        );
+                    }
+
+                    // 인증 실패
                     throw new IdentityVerificationException(
                             IdentityVerificationErrorCode.PORTONE_API_ERROR,
                             String.format("포트원 인증 조회 실패 [%s]: %s", portOneError.type(), portOneError.message())
