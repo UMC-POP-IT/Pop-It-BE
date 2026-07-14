@@ -45,7 +45,6 @@ public class IdentityVerificationController {
      */
     @Operation(summary = "본인인증 여부 조회", description = "본인인증을 했던 적이 있는지 여부를 조회합니다. ")
     @GetMapping
-    @PostMapping
     public ApiResponse<IdentityVerificationResDTO.Verify> isVerified(
             @AuthenticationPrincipal AuthUser authUser
     ) {

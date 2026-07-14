@@ -46,6 +46,9 @@ dependencies {
 
 	// OAuth
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// RestClient
+	implementation 'org.springframework.boot:spring-boot-starter-restclient'
 }
 
 tasks.named('test') {
