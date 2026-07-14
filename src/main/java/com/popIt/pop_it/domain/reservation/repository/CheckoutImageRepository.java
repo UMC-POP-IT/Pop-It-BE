@@ -16,4 +16,6 @@ public interface CheckoutImageRepository extends JpaRepository<CheckoutImage, Lo
         """)
     List<Long> findVerifiedReservationIds(@Param("reservationIds") List<Long> reservationIds);
 
+    List<CheckoutImage> findAllByReservationIdOrderBySortOrder(Long reservationId);
+
 }

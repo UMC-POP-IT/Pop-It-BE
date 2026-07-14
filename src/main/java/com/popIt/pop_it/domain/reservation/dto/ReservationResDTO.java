@@ -49,7 +49,7 @@ public class ReservationResDTO {
     @Getter
     @Builder
     @AllArgsConstructor
-    public static class Create {
+    public static class CreateRes {
         private Long reservationId;
         private ReservationStatus status;
         private String statusDescription;

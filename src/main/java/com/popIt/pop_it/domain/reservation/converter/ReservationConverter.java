@@ -7,7 +7,7 @@ import com.popIt.pop_it.domain.user.entity.User;
 
 public class ReservationConverter {
     public static ReservationResDTO.Summary toSummary(
-            Reservation reservation, boolean includeGuest, String thumbnailUrl, boolean isPhotoVerified
+            Reservation reservation, boolean includeGuest, String thumbnailUrl
     ) {
         return ReservationResDTO.Summary.builder()
                 .reservationId(reservation.getId())
@@ -17,7 +17,7 @@ public class ReservationConverter {
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
                 .totalPrice(reservation.getTotalPrice())
-                .isPhotoVerified(isPhotoVerified)
+                .isPhotoVerified(reservation.getCheckoutSubmittedAt() != null)
                 .space(toSpaceSummary(reservation.getSpace(), thumbnailUrl))
                 .guest(includeGuest ? toGuestSummary(reservation.getUser()) : null)
                 .build();
@@ -39,8 +39,8 @@ public class ReservationConverter {
                 .build();
     }
 
-    public static ReservationResDTO.Create toCreateResult(Reservation reservation) {
-        return ReservationResDTO.Create.builder()
+    public static ReservationResDTO.CreateRes toCreateResult(Reservation reservation) {
+        return ReservationResDTO.CreateRes.builder()
                 .reservationId(reservation.getId())
                 .status(reservation.getStatus())
                 .statusDescription(reservation.getStatus().getDescription())

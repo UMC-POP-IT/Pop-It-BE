@@ -50,6 +50,9 @@ public class Reservation {
     @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액
 
+    @Column
+    private LocalDateTime checkoutSubmittedAt; // 퇴실 증빙 제출 시각 (자동승인 기준)
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
@@ -72,5 +75,25 @@ public class Reservation {
     //예약 거절
     public void reject() {
         this.status = ReservationStatus.CANCELLED;
+    }
+
+    //예약 취소(호출부에서 구분되도록 reject()와 분리)
+    public void cancel() {
+        this.status = ReservationStatus.CANCELLED;
+    }
+
+    //사용 중 -> 이용 완료
+    public void completeUsage() {
+        this.status = ReservationStatus.USAGE_COMPLETED;
+    }
+
+    //퇴실 증빙 제출 시간 기록
+    public void markCheckoutSubmitted() {
+        this.checkoutSubmittedAt = LocalDateTime.now();
+    }
+
+    //퇴실 완료
+    public void completeCheckout() {
+        this.status = ReservationStatus.CHECKOUT_COMPLETED;
     }
 }

@@ -3,9 +3,11 @@ package com.popIt.pop_it.domain.reservation.service;
 import com.popIt.pop_it.domain.reservation.converter.ReservationConverter;
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
 import com.popIt.pop_it.domain.reservation.dto.ReservationResDTO;
+import com.popIt.pop_it.domain.reservation.entity.CheckoutImage;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
+import com.popIt.pop_it.domain.reservation.repository.CheckoutImageRepository;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
@@ -23,6 +25,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.IntStream;
 
 @Service
 @RequiredArgsConstructor
@@ -32,11 +35,12 @@ public class ReservationCommandService {
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
 
     private final ReservationRepository reservationRepository;
+    private final CheckoutImageRepository checkoutImageRepository;
     private final SpaceRepository spaceRepository;
     private final UserRepository userRepository;
 
     //예약 요청
-    public ReservationResDTO.Create createReservation(Long userId, ReservationReqDTO.Create request) {
+    public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
         Space space = spaceRepository.findById(request.getSpaceId())
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
 
@@ -132,5 +136,74 @@ public class ReservationCommandService {
         if (reservation.getStatus() != ReservationStatus.PENDING_APPROVAL) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
         }
+    }
+
+
+    public ReservationResDTO.StatusChange cancelByGuest(Long reservationId, Long guestId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        validateGuest(reservation, guestId);
+        validateGuestCancelable(reservation);
+
+        reservation.cancel();
+        // 결제 전 상태(PENDING/APPROVED)에서만 오는 경로라 환불 로직은 없음
+
+        return ReservationConverter.toStatusChange(reservation);
+    }
+
+    private void validateGuest(Reservation reservation, Long guestId) {
+        if (!reservation.getUser().getUserId().equals(guestId)) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
+        }
+    }
+
+    private void validateGuestCancelable(Reservation reservation) {
+        ReservationStatus status = reservation.getStatus();
+        if (status != ReservationStatus.PENDING_APPROVAL && status != ReservationStatus.APPROVED) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CANCEL_NOT_ALLOWED);
+        }
+    }
+
+    public ReservationResDTO.StatusChange submitCheckout(
+            Long reservationId, Long guestId, ReservationReqDTO.Checkout request
+    ) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        validateGuest(reservation, guestId);
+        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+
+        if (request.getPhotoUrls() != null && !request.getPhotoUrls().isEmpty()) {
+            List<CheckoutImage> images = IntStream.range(0, request.getPhotoUrls().size())
+                    .mapToObj(i -> CheckoutImage.builder()
+                            .checkoutImageUrl(request.getPhotoUrls().get(i))
+                            .sortOrder(i)
+                            .reservation(reservation)
+                            .build())
+                    .toList();
+            checkoutImageRepository.saveAll(images);
+        }
+
+        reservation.markCheckoutSubmitted();
+
+        return ReservationConverter.toStatusChange(reservation);
+    }
+
+    public ReservationResDTO.StatusChange approveCheckout(Long reservationId, Long hostId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        validateHost(reservation, hostId);
+        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+
+        reservation.completeCheckout();
+        // TODO: Escrow - 호스트 지급 + 보증금 부분환불 동시 실행
+
+        return ReservationConverter.toStatusChange(reservation);
     }
 }

@@ -45,9 +45,9 @@ public class ReservationController {
 
     //예약 요청
     @PostMapping
-    public ApiResponse<ReservationResDTO.Create> createReservation(
+    public ApiResponse<ReservationResDTO.CreateRes> createReservation(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody ReservationReqDTO.Create request
+            @Valid @RequestBody ReservationReqDTO.CreateReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_REQUEST,
@@ -78,5 +78,43 @@ public class ReservationController {
                 reservationCommandService.rejectReservation(reservationId, hostId)
         );
     }
+
+    //예약 취소(게스트)
+    @PostMapping("/{reservationId}/cancel")
+    public ApiResponse<ReservationResDTO.StatusChange> cancelReservation(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal Long guestId
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_GUEST_CANCEL,
+                reservationCommandService.cancelByGuest(reservationId, guestId)
+        );
+    }
+
+    //게스트 퇴실 증빙 제출
+    @PostMapping("/{reservationId}/checkout")
+    public ApiResponse<ReservationResDTO.StatusChange> submitCheckout(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal Long guestId,
+            @RequestBody ReservationReqDTO.Checkout request
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTO,
+                reservationCommandService.submitCheckout(reservationId, guestId, request)
+        );
+    }
+
+    //호스트 퇴실 승인
+    @PostMapping("/{reservationId}/checkout/approve")
+    public ApiResponse<ReservationResDTO.StatusChange> approveCheckout(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal Long hostId
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_OK,
+                reservationCommandService.approveCheckout(reservationId, hostId)
+        );
+    }
+
 
 }

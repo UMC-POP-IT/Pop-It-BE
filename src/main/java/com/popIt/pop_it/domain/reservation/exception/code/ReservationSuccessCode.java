@@ -16,7 +16,7 @@ public enum ReservationSuccessCode implements BaseSuccessCode {
     RESERVATION_HOST_CANCEL(HttpStatus.OK, "RESERVATION200_5", "예약이 취소되었습니다."),
     RESERVATION_CHECKOUT_PHOTO(HttpStatus.OK, "RESERVATION200_6", "퇴실 증빙이 제출되었습니다."),
     RESERVATION_CHECKOUT_OK(HttpStatus.OK, "RESERVATION200_7", "퇴실이 승인되어 정산이 완료되었습니다."),
-    RESERVATION_REQUEST(HttpStatus.OK, "RESERVATION201_1", "예약 요청이 완료되었습니다.");
+    RESERVATION_REQUEST(HttpStatus.CREATED, "RESERVATION201_1", "예약 요청이 완료되었습니다.");
 
     private final HttpStatus status;
     private final String code;

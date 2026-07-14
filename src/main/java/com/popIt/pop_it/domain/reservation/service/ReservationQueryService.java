@@ -28,13 +28,12 @@ public class ReservationQueryService {
 
     //게스트 예약 목록 조회
     public List<ReservationResDTO.Summary> getMyReservations(Long userId) {
-        List<Reservation> reservations = reservationRepository.findAllByUserIdOrderByCreatedAtDesc(userId);
+        List<Reservation> reservations = reservationRepository.findAllByUser_UserIdOrderByCreatedAtDesc(userId);
         Map<Long, String> thumbnails = getThumbnailMap(reservations);
-        Set<Long> verifiedIds = getVerifiedReservationIds(reservations);
 
         return reservations.stream()
                 .map(r -> ReservationConverter.toSummary(
-                        r, false, thumbnails.get(r.getSpace().getId()), verifiedIds.contains(r.getId())
+                        r, false, thumbnails.get(r.getSpace().getId())
                 ))
                 .toList();
     }
@@ -43,11 +42,10 @@ public class ReservationQueryService {
     public List<ReservationResDTO.Summary> getHostReservations(Long hostId) {
         List<Reservation> reservations = reservationRepository.findAllByHostId(hostId);
         Map<Long, String> thumbnails = getThumbnailMap(reservations);
-        Set<Long> verifiedIds = getVerifiedReservationIds(reservations);
 
         return reservations.stream()
                 .map(r -> ReservationConverter.toSummary(
-                        r, true, thumbnails.get(r.getSpace().getId()), verifiedIds.contains(r.getId())
+                        r, true, thumbnails.get(r.getSpace().getId())
                 ))
                 .toList();
     }

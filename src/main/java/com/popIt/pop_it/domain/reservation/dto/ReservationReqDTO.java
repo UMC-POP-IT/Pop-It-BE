@@ -7,13 +7,14 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public class ReservationReqDTO {
 
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor
-    public static class Create {
+    public static class CreateReq {
         @NotNull
         private Long spaceId;
 
@@ -25,5 +26,12 @@ public class ReservationReqDTO {
 
         @NotBlank
         private String usagePurpose;
+    }
+
+    @Getter
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class Checkout {
+        private List<String> photoUrls; // 여러 장 업로드 가능, 스킵 시 빈 리스트/null
     }
 }
