@@ -58,11 +58,10 @@ public class ReservationCheckoutScheduler {
                 .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtBefore(ReservationStatus.USAGE_COMPLETED, cutoff);
 
         // 사진 스킵한 경우(거절된 적 없음) - USAGE_COMPLETED 전환 시점(endDate 다음날 00:00) 기준 24h
-        List<Reservation> skipCandidates = reservationRepository
-                .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNull(ReservationStatus.USAGE_COMPLETED);
-        List<Reservation> skipped = skipCandidates.stream()
-                .filter(r -> r.getEndDate().plusDays(2).atStartOfDay().isBefore(LocalDateTime.now()))
-                .toList();
+        // = endDate가 (오늘 - 2일) 이하인 예약
+        LocalDate cutoffDate = LocalDate.now().minusDays(2);
+        List<Reservation> skipped = reservationRepository
+                .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNullAndEndDateLessThanEqual(ReservationStatus.USAGE_COMPLETED, cutoffDate);
 
         submitted.forEach(r -> {
             r.completeCheckout();

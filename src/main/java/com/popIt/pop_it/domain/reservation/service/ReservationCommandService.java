@@ -42,23 +42,23 @@ public class ReservationCommandService {
 
     //예약 요청
     public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
-        Space space = spaceRepository.findById(request.getSpaceId())
+        Space space = spaceRepository.findById(request.spaceId())
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
 
         User guest = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
-        validateDateRange(space, request.getStartDate(), request.getEndDate());
+        validateDateRange(space, request.startDate(), request.endDate());
 
         boolean overlapping = reservationRepository.existsOverlappingReservation(
-                space.getId(), request.getStartDate(), request.getEndDate(),
+                space.getId(), request.startDate(), request.endDate(),
                 List.of(ReservationStatus.CANCELLED)
         );
         if (overlapping) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_ALREADY_TAKEN);
         }
 
-        long days = ChronoUnit.DAYS.between(request.getStartDate(), request.getEndDate()) + 1;
+        long days = ChronoUnit.DAYS.between(request.startDate(), request.endDate()) + 1;
         Long rentalFee = (long) space.getPricePerDay() * days;
         Long insuranceFee = BigDecimal.valueOf(rentalFee)
                 .multiply(INSURANCE_RATE)
@@ -69,9 +69,9 @@ public class ReservationCommandService {
 
         Reservation reservation = Reservation.builder()
                 .status(ReservationStatus.PENDING_APPROVAL)
-                .startDate(request.getStartDate())
-                .endDate(request.getEndDate())
-                .usagePurpose(request.getUsagePurpose())
+                .startDate(request.startDate())
+                .endDate(request.endDate())
+                .usagePurpose(request.usagePurpose())
                 .rentalFee(rentalFee)
                 .deposit(deposit)
                 .insuranceFee(insuranceFee)
@@ -187,13 +187,13 @@ public class ReservationCommandService {
         if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
         }
-        if (request.getPhotoUrls() == null || request.getPhotoUrls().isEmpty()) {
+        if (request.photoUrls() == null || request.photoUrls().isEmpty()) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
         }
 
-        List<CheckoutImage> images = IntStream.range(0, request.getPhotoUrls().size())
+        List<CheckoutImage> images = IntStream.range(0, request.photoUrls().size())
                 .mapToObj(i -> CheckoutImage.builder()
-                        .checkoutImageUrl(request.getPhotoUrls().get(i))
+                        .checkoutImageUrl(request.photoUrls().get(i))
                         .sortOrder(i)
                         .reservation(reservation)
                         .build())
@@ -215,6 +215,10 @@ public class ReservationCommandService {
             throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
         }
         if (reservation.getCheckoutRejected()) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        if (reservation.getCheckoutSubmittedAt() == null) {
+            // 증빙 미제출 상태에서는 수동 승인 불가 - 24시간 경과 시 스케줄러가 자동 처리
             throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
         }
 
