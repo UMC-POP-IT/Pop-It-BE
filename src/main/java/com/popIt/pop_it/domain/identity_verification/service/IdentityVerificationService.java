@@ -12,6 +12,7 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.util.HashUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
@@ -92,7 +93,19 @@ public class IdentityVerificationService {
                 .build();
 
 
-        IdentityVerification saved = identityVerificationRepository.save(identityVerification);
+        IdentityVerification saved;
+        try {
+            saved = identityVerificationRepository.save(identityVerification);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청이 들어와 유니크 제약을 위반한 경우, 어떤 제약을 위반했는지 판별
+            if (identityVerificationRepository.existsByIdentityVerificationId(dto.identityVerificationId())) {
+                throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_PROCESSED);
+            }
+            if (identityVerificationRepository.existsByCiHash(ciHash)) {
+                throw new IdentityVerificationException(IdentityVerificationErrorCode.DUPLICATE_IDENTITY);
+            }
+            throw e;
+        }
 
         // DTO 변환
         return IdentityVerificationConverter.toVerify(saved);
