@@ -17,7 +17,7 @@ public class ReservationReqDTO {
     }
 
     public record Checkout(
-            List<String> photoUrls // 여러 장 업로드 가능, 스킵 시 빈 리스트/null
+            List<String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
     ) {
     }
 }
