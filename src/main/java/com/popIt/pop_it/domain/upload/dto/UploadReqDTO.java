@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.upload.dto;
 
 import com.popIt.pop_it.domain.upload.enums.UploadType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
@@ -17,6 +18,8 @@ public class UploadReqDTO {
     ) {}
 
     public record FileInfo(
-            @NotBlank String contentType
+            @NotBlank
+            @Schema(description = "파일 MIME 타입", allowableValues = {"image/jpeg", "image/png", "application/pdf"})
+            String contentType
     ) {}
 }

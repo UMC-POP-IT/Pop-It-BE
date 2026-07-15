@@ -25,7 +25,6 @@ public class UploadService {
     private final AwsProperties awsProperties;
 
     private static final Duration EXPIRATION = Duration.ofMinutes(10);
-    private static final int MAX_FILE_COUNT = 10;
 
     private static final Map<String, String> ALLOWED_CONTENT_TYPES = Map.of(
             "image/jpeg", "jpg",
@@ -34,10 +33,6 @@ public class UploadService {
     );
 
     public UploadResDTO.PresignedUrlList issuePresignedUrls(UploadReqDTO.PresignedUrl request) {
-
-        if (request.files().size() > MAX_FILE_COUNT) {
-            throw new ProjectException(UploadErrorCode.TOO_MANY_FILES);
-        }
 
         List<UploadResDTO.PresignedUrlInfo> uploads = request.files().stream()
                 .map(file -> issueOne(request.uploadType(), file.contentType()))
@@ -49,7 +44,7 @@ public class UploadService {
     private UploadResDTO.PresignedUrlInfo issueOne(UploadType uploadType, String contentType) {
         String extension = ALLOWED_CONTENT_TYPES.get(contentType);
         if (extension == null) {
-            throw new ProjectException(UploadErrorCode.UNSUPPORTED_CONTENT_TYPE);
+            throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
         }
 
         String bucket = awsProperties.s3().bucket();
