@@ -15,8 +15,16 @@ import org.hibernate.annotations.CreationTimestamp;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "users")
+@Table(
+        name = "users",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uk_users_social_provider_social_uid",
+                columnNames = {"social_provider", "social_uid"}
+        )
+)
 public class User {
+
+    public static final int MAX_NICKNAME_LENGTH = 30;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -29,7 +37,7 @@ public class User {
     @Column(nullable = false, updatable = false)
     private String socialUid;
 
-    @Column(length = 30, nullable = false)
+    @Column(length = MAX_NICKNAME_LENGTH, nullable = false)
     private String nickname;
 
     @Enumerated(EnumType.STRING)
@@ -40,5 +48,16 @@ public class User {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
+    @Column(length = 1024)
+    private String refreshToken;
+
     private LocalDateTime deletedAt;
+
+    public void updateRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
+    }
+
+    public void clearRefreshToken() {
+        this.refreshToken = null;
+    }
 }
