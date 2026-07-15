@@ -33,6 +33,7 @@ import java.util.stream.IntStream;
 public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
+    private static final int MAX_RESERVATION_DAYS = 90;
 
     private final ReservationRepository reservationRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -95,6 +96,10 @@ public class ReservationCommandService {
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
+        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
+        if (days > MAX_RESERVATION_DAYS) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_PERIOD_EXCEEDED);
+        }
     }
 
     //예약 승인(호스트)
@@ -138,7 +143,7 @@ public class ReservationCommandService {
         }
     }
 
-
+    //예약 취소(게스트)
     public ReservationResDTO.StatusChange cancelByGuest(Long reservationId, Long guestId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -152,12 +157,14 @@ public class ReservationCommandService {
         return ReservationConverter.toStatusChange(reservation);
     }
 
+    //유효한 게스트가 맞는지
     private void validateGuest(Reservation reservation, Long guestId) {
         if (!reservation.getUser().getUserId().equals(guestId)) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
         }
     }
 
+    //게스트가 예약 취소 가능한 상태인지
     private void validateGuestCancelable(Reservation reservation) {
         ReservationStatus status = reservation.getStatus();
         if (status != ReservationStatus.PENDING_APPROVAL && status != ReservationStatus.APPROVED) {
@@ -165,6 +172,7 @@ public class ReservationCommandService {
         }
     }
 
+    //퇴실 증빙 제출
     public ReservationResDTO.StatusChange submitCheckout(
             Long reservationId, Long guestId, ReservationReqDTO.Checkout request
     ) {
@@ -192,6 +200,7 @@ public class ReservationCommandService {
         return ReservationConverter.toStatusChange(reservation);
     }
 
+    //퇴실 승인(호스트)
     public ReservationResDTO.StatusChange approveCheckout(Long reservationId, Long hostId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -202,7 +211,28 @@ public class ReservationCommandService {
         }
 
         reservation.completeCheckout();
-        // TODO: Escrow - 호스트 지급 + 보증금 부분환불 동시 실행
+        // TODO: Payment - 호스트 지급 + 보증금 부분환불 동시 실행
+
+        return ReservationConverter.toStatusChange(reservation);
+    }
+
+    //퇴실 거절(호스트) - 게스트에게 재인증 요청, 반복 거절 가능
+    public ReservationResDTO.StatusChange rejectCheckout(Long reservationId, Long hostId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        validateHost(reservation, hostId);
+        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        if (reservation.getCheckoutSubmittedAt() == null) {
+            // 아직 제출된 증빙 자체가 없는데 거절할 수는 없음
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+
+        checkoutImageRepository.deleteAllByReservationId(reservationId);
+        reservation.rejectCheckout();
+        // TODO: Notification 도메인 - 게스트에게 재인증 요청 알림 발송
 
         return ReservationConverter.toStatusChange(reservation);
     }

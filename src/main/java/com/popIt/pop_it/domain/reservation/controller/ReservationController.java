@@ -2,17 +2,19 @@ package com.popIt.pop_it.domain.reservation.controller;
 
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
 import com.popIt.pop_it.domain.reservation.dto.ReservationResDTO;
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationSuccessCode;
 import com.popIt.pop_it.domain.reservation.service.ReservationCommandService;
 import com.popIt.pop_it.domain.reservation.service.ReservationQueryService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
+@Tag(name = "예약")
 @RestController
 @RequestMapping("/api/v1/reservations")
 @RequiredArgsConstructor
@@ -21,29 +23,63 @@ public class ReservationController {
     private final ReservationQueryService reservationQueryService;
     private final ReservationCommandService reservationCommandService;
 
-    //게스트 예약 목록 조회
+    @Operation(summary = "게스트 예약 목록 조회", description = "게스트 본인의 예약 내역을 조회합니다.<br>"
+            + "커서 기반 무한스크롤 방식이며, status로 탭(승인대기/계약대기/사용중 등) 필터링이 가능합니다.<br>"
+            + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/me")
-    public ApiResponse<List<ReservationResDTO.Summary>> getMyReservations(
+    public ApiResponse<ReservationResDTO.PagedSummary> getMyReservations(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam(required = false) ReservationStatus status,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_LIST,
+                reservationQueryService.getMyReservations(userId, status, cursor, size)
+        );
+    }
+
+    @Operation(summary = "게스트 예약 상태별 개수 조회", description = "게스트 예약관리 화면 상단 탭(승인대기/계약대기/사용중 등)에 붙는 배지 숫자를 상태별로 반환합니다.")
+    @GetMapping("/me/status-counts")
+    public ApiResponse<ReservationResDTO.StatusCounts> getMyStatusCounts(
             @AuthenticationPrincipal Long userId
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getMyReservations(userId)
+                reservationQueryService.getMyStatusCounts(userId)
         );
     }
 
-    //호스트 예약 목록 조회
+    @Operation(summary = "호스트 예약 목록 조회", description = "호스트가 등록한 공간에 걸린 예약 내역을 조회합니다.<br>"
+            + "커서 기반 무한스크롤 방식이며, status로 탭 필터링이 가능합니다.<br>"
+            + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/host")
-    public ApiResponse<List<ReservationResDTO.Summary>> getHostReservations(
+    public ApiResponse<ReservationResDTO.PagedSummary> getHostReservations(
+            @AuthenticationPrincipal Long hostId,
+            @RequestParam(required = false) ReservationStatus status,
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "10") int size
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_LIST,
+                reservationQueryService.getHostReservations(hostId, status, cursor, size)
+        );
+    }
+
+    @Operation(summary = "호스트 예약 상태별 개수 조회", description = "호스트 예약관리 화면 상단 탭에 붙는 배지 숫자를 상태별로 반환합니다.")
+    @GetMapping("/host/status-counts")
+    public ApiResponse<ReservationResDTO.StatusCounts> getHostStatusCounts(
             @AuthenticationPrincipal Long hostId
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getHostReservations(hostId)
+                reservationQueryService.getHostStatusCounts(hostId)
         );
     }
 
-    //예약 요청
+    @Operation(summary = "예약 요청", description = "게스트가 특정 공간에 대해 예약을 요청합니다. (상태: 승인대기 PENDING_APPROVAL 생성)<br>"
+            + "대여료/보험료(대여료의 5%)/보증금을 서버에서 계산해 총 결제 금액을 반환합니다.<br>"
+            + "(이용 기간 최대 90일, 공간의 대여 가능 기간 범위 내에서만 요청 가능)")
     @PostMapping
     public ApiResponse<ReservationResDTO.CreateRes> createReservation(
             @AuthenticationPrincipal Long userId,
@@ -55,7 +91,8 @@ public class ReservationController {
         );
     }
 
-    //예약 승인(호스트)
+    @Operation(summary = "예약 승인", description = "호스트가 승인대기 상태의 예약을 승인합니다. (PENDING_APPROVAL → APPROVED)<br>"
+            + "승인 시 계약(서명대기) 절차로 이어집니다.")
     @PostMapping("/{reservationId}/approve")
     public ApiResponse<ReservationResDTO.StatusChange> approveReservation(
             @PathVariable Long reservationId,
@@ -67,7 +104,7 @@ public class ReservationController {
         );
     }
 
-    //예약 거절(호스트)
+    @Operation(summary = "예약 거절", description = "호스트가 승인대기 상태의 예약을 거절합니다. (PENDING_APPROVAL → CANCELLED)")
     @PostMapping("/{reservationId}/reject")
     public ApiResponse<ReservationResDTO.StatusChange> rejectReservation(
             @PathVariable Long reservationId,
@@ -79,7 +116,8 @@ public class ReservationController {
         );
     }
 
-    //예약 취소(게스트)
+    @Operation(summary = "예약 취소(게스트)", description = "게스트가 본인 예약을 취소합니다.<br>"
+            + "승인대기/승인완료(PENDING_APPROVAL, APPROVED) 상태에서만 가능하며, 결제(계약완료) 이후 상태는 이 API로 취소할 수 없습니다.")
     @PostMapping("/{reservationId}/cancel")
     public ApiResponse<ReservationResDTO.StatusChange> cancelReservation(
             @PathVariable Long reservationId,
@@ -91,7 +129,9 @@ public class ReservationController {
         );
     }
 
-    //게스트 퇴실 증빙 제출
+    @Operation(summary = "퇴실 증빙 제출", description = "게스트가 이용 완료 후 퇴실 사진을 업로드합니다. (여러 장 등록 가능)<br>"
+            + "제출 후에는 호스트 승인 또는 24시간 경과 시 자동 승인으로 퇴실이 완료됩니다.<br>"
+            + "(현재는 이용 완료 USAGE_COMPLETED 상태에서만 제출 가능합니다.)")
     @PostMapping("/{reservationId}/checkout")
     public ApiResponse<ReservationResDTO.StatusChange> submitCheckout(
             @PathVariable Long reservationId,
@@ -104,7 +144,8 @@ public class ReservationController {
         );
     }
 
-    //호스트 퇴실 승인
+    @Operation(summary = "퇴실 승인", description = "호스트가 제출된 퇴실 증빙을 확인하고 승인합니다. (USAGE_COMPLETED → CHECKOUT_COMPLETED)<br>"
+            + "승인 즉시 정산(호스트 지급 + 보증금 환불)이 실행됩니다.")
     @PostMapping("/{reservationId}/checkout/approve")
     public ApiResponse<ReservationResDTO.StatusChange> approveCheckout(
             @PathVariable Long reservationId,
@@ -116,5 +157,41 @@ public class ReservationController {
         );
     }
 
+    @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
+            + "거절 시 기존 제출 사진은 초기화되며, 반복 거절이 가능합니다. (게스트 재제출 전까지 자동승인 대상에서 제외됩니다.)")
+    @PostMapping("/{reservationId}/checkout/reject")
+    public ApiResponse<ReservationResDTO.StatusChange> rejectCheckout(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal Long hostId
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_REJECT,
+                reservationCommandService.rejectCheckout(reservationId, hostId)
+        );
+    }
+
+    @Operation(summary = "퇴실 증빙 사진 조회", description = "호스트가 게스트의 퇴실 증빙 사진 목록을 조회합니다. (승인/거절 전 확인용)")
+    @GetMapping("/{reservationId}/checkout-images")
+    public ApiResponse<ReservationResDTO.CheckoutImages> getCheckoutImages(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal Long hostId
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_IMAGES,
+                reservationQueryService.getCheckoutImages(reservationId, hostId)
+        );
+    }
+
+    @Operation(summary = "공간별 예약 불가 날짜 조회", description = "특정 공간에 대해 이미 선점(승인대기~진행 중)된 기간 목록을 반환합니다.<br>"
+            + "프론트에서 예약 요청 화면의 캘린더에 예약 불가 날짜를 비활성화 표시하는 용도입니다. (지난 날짜는 제외됩니다.)")
+    @GetMapping("/{spaceId}/unavailable-dates")
+    public ApiResponse<ReservationResDTO.UnavailableDates> getUnavailableDates(
+            @PathVariable Long spaceId
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_UNAVAILABLE_DATES,
+                reservationQueryService.getUnavailableDates(spaceId)
+        );
+    }
 
 }

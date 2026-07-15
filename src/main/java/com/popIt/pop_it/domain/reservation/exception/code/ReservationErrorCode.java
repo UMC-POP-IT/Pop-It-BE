@@ -15,6 +15,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     RESERVATION_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION400_3", "결제 금액이 예약 금액과 일치하지 않습니다."),
     RESERVATION_NOT_MODIFIABLE(HttpStatus.BAD_REQUEST, "RESERVATION400_4", "취소 또는 완료된 예약은 수정할 수 없습니다."),
     RESERVATION_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "RESERVATION400_5", "예약 대기(hold) 시간이 만료되어 결제를 진행할 수 없습니다."),
+    RESERVATION_PERIOD_EXCEEDED(HttpStatus.BAD_REQUEST, "RESERVATION400_6", "예약 가능 기간은 최대 90일입니다."),
 
     // ===== 403 FORBIDDEN : 권한 없음 =====
     RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_1", "본인의 예약이 아니므로 접근할 수 없습니다."),

@@ -18,4 +18,7 @@ public interface CheckoutImageRepository extends JpaRepository<CheckoutImage, Lo
 
     List<CheckoutImage> findAllByReservationIdOrderBySortOrder(Long reservationId);
 
+    // 퇴실 거절 시 기존 제출 사진 초기화용
+    void deleteAllByReservationId(Long reservationId);
+
 }
