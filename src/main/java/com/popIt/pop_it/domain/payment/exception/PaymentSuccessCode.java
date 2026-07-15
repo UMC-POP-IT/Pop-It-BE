@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.payment.enums;
+package com.popIt.pop_it.domain.payment.exception;
 
 import com.popIt.pop_it.global.apiPayload.code.BaseSuccessCode;
 import lombok.Getter;

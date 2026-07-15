@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.contract.enums;
+package com.popIt.pop_it.domain.contract.exception;
 
 import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
 import lombok.Getter;
