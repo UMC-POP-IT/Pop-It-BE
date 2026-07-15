@@ -16,6 +16,9 @@ public enum ReservationErrorCode implements BaseErrorCode {
     RESERVATION_NOT_MODIFIABLE(HttpStatus.BAD_REQUEST, "RESERVATION400_4", "취소 또는 완료된 예약은 수정할 수 없습니다."),
     RESERVATION_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "RESERVATION400_5", "예약 대기(hold) 시간이 만료되어 결제를 진행할 수 없습니다."),
     RESERVATION_PERIOD_EXCEEDED(HttpStatus.BAD_REQUEST, "RESERVATION400_6", "예약 가능 기간은 최대 90일입니다."),
+    RESERVATION_CHECKOUT_PHOTO_REQUIRED(HttpStatus.BAD_REQUEST, "RESERVATION400_7", "퇴실 증빙 사진은 최소 1장 이상 등록해야 합니다."),
+    RESERVATION_INVALID_PAGE_SIZE(HttpStatus.BAD_REQUEST, "RESERVATION400_8", "size 값은 1~100 사이여야 합니다."),
+    RESERVATION_INVALID_CURSOR(HttpStatus.BAD_REQUEST, "RESERVATION400_9", "잘못된 페이징 커서입니다."),
 
     // ===== 403 FORBIDDEN : 권한 없음 =====
     RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_1", "본인의 예약이 아니므로 접근할 수 없습니다."),
@@ -30,6 +33,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     RESERVATION_PAYMENT_IN_PROGRESS(HttpStatus.CONFLICT, "RESERVATION409_2", "다른 사용자가 결제를 진행 중입니다. 잠시 후 다시 시도해주세요."),
     RESERVATION_PAYMENT_DUPLICATED(HttpStatus.CONFLICT, "RESERVATION409_3", "이미 처리된 결제입니다. (중복 결제 방지)"),
     RESERVATION_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "RESERVATION409_4", "현재 예약 상태에서는 취소/환불이 불가능합니다."),
+    RESERVATION_CHECKOUT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "RESERVATION409_5", "이미 퇴실 증빙이 제출되어 호스트 확인을 기다리고 있습니다."),
 
     // ===== 500 INTERNAL SERVER ERROR : 서버/외부 PG 연동 오류 =====
     RESERVATION_PAYMENT_APPROVAL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RESERVATION500_1", "결제 승인 처리 중 오류가 발생했습니다."),

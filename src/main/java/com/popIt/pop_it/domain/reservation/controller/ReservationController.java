@@ -145,7 +145,7 @@ public class ReservationController {
     }
 
     @Operation(summary = "퇴실 승인", description = "호스트가 제출된 퇴실 증빙을 확인하고 승인합니다. (USAGE_COMPLETED → CHECKOUT_COMPLETED)<br>"
-            + "승인 즉시 정산(호스트 지급 + 보증금 환불)이 실행됩니다.")
+            + "승인 즉시 정산되도록 연동 예정입니다.")
     @PostMapping("/{reservationId}/checkout/approve")
     public ApiResponse<ReservationResDTO.StatusChange> approveCheckout(
             @PathVariable Long reservationId,

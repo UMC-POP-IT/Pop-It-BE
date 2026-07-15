@@ -34,7 +34,7 @@ public class ReservationCheckoutScheduler {
         }
     }
 
-    // 2. 이용 기간 종료 → 이용완료(USAGE_COMPLETED) 자동 전환
+    // 2. 이용 기간 종료 → 이용완료(USAGE_COMPLETED) 자동 전환 (종료일 다음날 00:00 기준)
     @Scheduled(cron = "0 0 * * * *") // 매시 정각
     @Transactional
     public void completeUsagePeriod() {
@@ -57,11 +57,11 @@ public class ReservationCheckoutScheduler {
         List<Reservation> submitted = reservationRepository
                 .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtBefore(ReservationStatus.USAGE_COMPLETED, cutoff);
 
-        // 사진 스킵한 경우(거절된 적 없음) - 이용 종료일 기준 24h
+        // 사진 스킵한 경우(거절된 적 없음) - USAGE_COMPLETED 전환 시점(endDate 다음날 00:00) 기준 24h
         List<Reservation> skipCandidates = reservationRepository
                 .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNull(ReservationStatus.USAGE_COMPLETED);
         List<Reservation> skipped = skipCandidates.stream()
-                .filter(r -> r.getEndDate().atStartOfDay().plusHours(24).isBefore(LocalDateTime.now()))
+                .filter(r -> r.getEndDate().plusDays(2).atStartOfDay().isBefore(LocalDateTime.now()))
                 .toList();
 
         submitted.forEach(r -> {

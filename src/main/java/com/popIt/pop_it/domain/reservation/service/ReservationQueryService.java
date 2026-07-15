@@ -33,6 +33,8 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReservationQueryService {
 
+    private static final int MAX_PAGE_SIZE = 100;
+
     private final ReservationRepository reservationRepository;
     private final SpaceImageRepository spaceImageRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -44,7 +46,7 @@ public class ReservationQueryService {
     ) {
         ReservationCursor.Decoded decoded = ReservationCursor.decode(cursor);
         Slice<Reservation> slice = reservationRepository.findMyReservationsByCursor(
-                userId, status, decoded.createdAt(), decoded.id(), PageRequest.of(0, size)
+                userId, status, decoded.createdAt(), decoded.id(), pageRequest(size)
         );
         return toPagedSummary(slice, false);
     }
@@ -55,9 +57,17 @@ public class ReservationQueryService {
     ) {
         ReservationCursor.Decoded decoded = ReservationCursor.decode(cursor);
         Slice<Reservation> slice = reservationRepository.findHostReservationsByCursor(
-                hostId, status, decoded.createdAt(), decoded.id(), PageRequest.of(0, size)
+                hostId, status, decoded.createdAt(), decoded.id(), pageRequest(size)
         );
         return toPagedSummary(slice, true);
+    }
+
+    //size 값 상한/하한 검증 후 PageRequest 생성
+    private PageRequest pageRequest(int size) {
+        if (size < 1 || size > MAX_PAGE_SIZE) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_PAGE_SIZE);
+        }
+        return PageRequest.of(0, size);
     }
 
     //게스트 상태별 탭 카운트
@@ -142,7 +152,7 @@ public class ReservationQueryService {
         return new HashSet<>(checkoutImageRepository.findVerifiedReservationIds(reservationIds));
     }
 
-    //각 예약 대표 사진 불러오기
+    //각 예약 대표 사진 불러오기 (공간당 sortOrder 중복 등록 등 데이터 이상 상황에 방어적으로 첫 값만 채택)
     private Map<Long, String> getThumbnailMap(List<Reservation> reservations) {
         List<Long> spaceIds = reservations.stream()
                 .map(r -> r.getSpace().getId())
@@ -154,7 +164,8 @@ public class ReservationQueryService {
         return spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(
                         si -> si.getSpace().getId(),
-                        SpaceImage::getImageUrl
+                        SpaceImage::getImageUrl,
+                        (existing, duplicate) -> existing
                 ));
     }
 }

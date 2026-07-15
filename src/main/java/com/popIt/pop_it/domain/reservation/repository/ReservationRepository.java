@@ -15,8 +15,11 @@ import java.util.List;
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
     // 게스트 "내 예약 내역" 목록 - 커서 기반 (createdAt:id 복합 커서), 상태 필터 선택
+    // space/user는 *-to-one 관계라 join fetch로 페이징과 같이 써도 안전 (N+1 방지)
     @Query("""
         select r from Reservation r
+        join fetch r.space
+        join fetch r.user
         where r.user.userId = :userId
         and (:status is null or r.status = :status)
         and (
@@ -37,6 +40,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     // 호스트 "예약관리" 목록 - 커서 기반, 상태 필터 선택
     @Query("""
         select r from Reservation r
+        join fetch r.space
+        join fetch r.user
         where r.space.hostId = :hostId
         and (:status is null or r.status = :status)
         and (

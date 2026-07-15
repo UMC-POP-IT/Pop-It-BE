@@ -172,7 +172,7 @@ public class ReservationCommandService {
         }
     }
 
-    //퇴실 증빙 제출
+    //퇴실 증빙 제출 - 최초 제출 또는 거절 후 재제출만 허용, 사진 최소 1장 필수
     public ReservationResDTO.StatusChange submitCheckout(
             Long reservationId, Long guestId, ReservationReqDTO.Checkout request
     ) {
@@ -183,30 +183,38 @@ public class ReservationCommandService {
         if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
         }
-
-        if (request.getPhotoUrls() != null && !request.getPhotoUrls().isEmpty()) {
-            List<CheckoutImage> images = IntStream.range(0, request.getPhotoUrls().size())
-                    .mapToObj(i -> CheckoutImage.builder()
-                            .checkoutImageUrl(request.getPhotoUrls().get(i))
-                            .sortOrder(i)
-                            .reservation(reservation)
-                            .build())
-                    .toList();
-            checkoutImageRepository.saveAll(images);
+        // 이미 유효한 제출이 있고(호스트가 아직 거절하지 않음) 대기 중이면 재제출 불가
+        if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
         }
+        if (request.getPhotoUrls() == null || request.getPhotoUrls().isEmpty()) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
+        }
+
+        List<CheckoutImage> images = IntStream.range(0, request.getPhotoUrls().size())
+                .mapToObj(i -> CheckoutImage.builder()
+                        .checkoutImageUrl(request.getPhotoUrls().get(i))
+                        .sortOrder(i)
+                        .reservation(reservation)
+                        .build())
+                .toList();
+        checkoutImageRepository.saveAll(images);
 
         reservation.markCheckoutSubmitted();
 
         return ReservationConverter.toStatusChange(reservation);
     }
 
-    //퇴실 승인(호스트)
+    //퇴실 승인(호스트) - 유효한 제출이 존재하고 거절 상태가 아닐 때만 승인 가능
     public ReservationResDTO.StatusChange approveCheckout(Long reservationId, Long hostId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         validateHost(reservation, hostId);
         if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        if (reservation.getCheckoutRejected()) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
         }
 
