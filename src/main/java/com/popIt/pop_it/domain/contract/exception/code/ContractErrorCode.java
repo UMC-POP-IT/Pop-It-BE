@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
-public class ContractErrorCode implements BaseErrorCode {
+public enum ContractErrorCode implements BaseErrorCode {;
 
     private final HttpStatus status;
     private final String code;
