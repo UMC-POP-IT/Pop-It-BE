@@ -47,7 +47,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         try {
             // AccessToken 검증하기: 올바른 토큰이면
-            if (jwtUtil.isValid(token)) {
+            if (jwtUtil.isValid(token) && jwtUtil.isAccessToken(token)) {
                 // JWT 토큰에서 유저 정보 조: UID와 소셜 로그인 타입 가져오기
                 String uid = jwtUtil.getUid(token);
                 SocialProvider socialProvider = jwtUtil.getSocialProvider(token);
