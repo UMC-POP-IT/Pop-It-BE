@@ -33,3 +33,6 @@ jwt:
     secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
     expiration:
       access: 1800000 # 30분
+
+toss:
+  secret-key: ${TOSS_SECRET_KEY}

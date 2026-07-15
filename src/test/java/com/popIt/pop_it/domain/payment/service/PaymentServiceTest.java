@@ -13,7 +13,7 @@ import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
-import com.popIt.pop_it.domain.payment.enums.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;

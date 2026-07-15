@@ -51,4 +51,17 @@ public class Payment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "contract_id", nullable = false)
     private Contract contract; // 대상 계약
+
+    // 토스 결제 승인 성공 처리
+    public void markAsPaid(String paymentKey, PaymentMethod method, LocalDateTime paidAt) {
+        this.paymentKey = paymentKey;
+        this.method = method;
+        this.paidAt = paidAt;
+        this.status = PaymentStatus.PAID;
+    }
+
+    // 토스 결제 승인 실패 처리
+    public void markAsFailed() {
+        this.status = PaymentStatus.FAILED;
+    }
 }

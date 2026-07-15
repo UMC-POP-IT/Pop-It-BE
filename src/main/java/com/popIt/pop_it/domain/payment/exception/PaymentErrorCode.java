@@ -14,7 +14,9 @@ public enum PaymentErrorCode implements BaseErrorCode {
     PAYMENT_CONFLICT_PAYMENT(HttpStatus.CONFLICT, "PAYMENT409_1", "결제 가능한 계약 상태가 아닙니다."),
     PAYMENT_CONFLICT_KEY(HttpStatus.CONFLICT, "PAYMENT409_2", "동일한 Idempotency-Key로 다른 요청이 이미 처리되었습니다."),
     PAYMENT_ALREADY_PAID(HttpStatus.CONFLICT, "PAYMENT409_3", "이미 결제가 완료되었습니다."),
-    PAYMENT_RETRYABLE(HttpStatus.CONFLICT, "PAYMENT409_4", "이전 결제 시도가 실패했습니다. 새로운 Idempotency-Key로 다시 요청해주세요.");
+    PAYMENT_RETRYABLE(HttpStatus.CONFLICT, "PAYMENT409_4", "이전 결제 시도가 실패했습니다. 새로운 Idempotency-Key로 다시 요청해주세요."),
+    PAYMENT_ORDER_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT400_1", "요청한 주문번호가 결제 정보와 일치하지 않습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT400_2", "요청한 결제 금액이 계약 금액과 일치하지 않습니다.");
 
     private final HttpStatus status;
     private final String code;

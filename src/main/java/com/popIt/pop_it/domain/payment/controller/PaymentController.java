@@ -2,7 +2,7 @@ package com.popIt.pop_it.domain.payment.controller;
 
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
-import com.popIt.pop_it.domain.payment.enums.PaymentSuccessCode;
+import com.popIt.pop_it.domain.payment.exception.PaymentSuccessCode;
 import com.popIt.pop_it.domain.payment.service.PaymentService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.security.entity.AuthUser;
@@ -33,5 +33,16 @@ public class PaymentController {
         PaymentResDTO.Prepare resDTO = paymentService.prepare(
                 contractId, idempotencyKey, authUser.getUser().getUserId());
         return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_PREPARED, resDTO);
+    }
+
+    @Operation(summary = "결제 승인", description = "토스페이먼츠 결제창에서 인증 완료 후 전달받은 정보로 결제 승인을 요청합니다.")
+    @PostMapping("/api/v1/payments/{paymentId}/confirm")
+    public ApiResponse<PaymentResDTO.Confirm> confirm(
+            @Parameter(description = "승인할 결제 ID", example = "1")
+            @PathVariable Long paymentId,
+            @RequestBody PaymentReqDTO.Confirm reqDTO
+    ) {
+        PaymentResDTO.Confirm resDTO = paymentService.confirm(paymentId, reqDTO);
+        return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_CONFIRM, resDTO);
     }
 }
