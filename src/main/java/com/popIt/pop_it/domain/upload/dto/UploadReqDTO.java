@@ -19,7 +19,7 @@ public class UploadReqDTO {
 
     public record FileInfo(
             @NotBlank
-            @Schema(description = "파일 MIME 타입", allowableValues = {"image/jpeg", "image/png", "application/pdf"})
+            @Schema(description = "파일 MIME 타입", allowableValues = {"image/jpeg", "image/png"})
             String contentType
     ) {}
 }
