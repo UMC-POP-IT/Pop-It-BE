@@ -1,8 +1,8 @@
 package com.popIt.pop_it.domain.identity_verification.entity;
 
-import com.popIt.pop_it.domain.identity_verification.converter.CryptoConverter;
 import com.popIt.pop_it.domain.identity_verification.entity.enums.Gender;
 import com.popIt.pop_it.domain.user.entity.User;
+import com.popIt.pop_it.global.util.CryptoConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;

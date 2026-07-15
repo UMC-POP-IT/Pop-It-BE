@@ -1,9 +1,9 @@
-package com.popIt.pop_it.domain.identity_verification.converter;
+package com.popIt.pop_it.global.util;
 
-import jakarta.persistence.AttributeConverter;
-import jakarta.persistence.Converter;
+import com.popIt.pop_it.global.apiPayload.code.CryptoErrorCode;
+import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.GCMParameterSpec;
@@ -12,9 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Base64;
 
-@Converter
-@Component
-public class CryptoConverter implements AttributeConverter<String, String> {
+@Service
+public class CryptoService {
 
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;   // 12바이트 권장
@@ -23,20 +22,8 @@ public class CryptoConverter implements AttributeConverter<String, String> {
     @Value("${spring.security.crypto.secret-key}")
     private String secretKey; // 32바이트(256bit) 길이의 키 필요
 
-    @Override
-    public String convertToDatabaseColumn(String attribute) {
-        if (attribute == null) return null;
-        return encrypt(attribute);
-    }
-
-    @Override
-    public String convertToEntityAttribute(String dbData) {
-        if (dbData == null) return null;
-        return decrypt(dbData);
-    }
-
-    private String encrypt(String plainText) {
-        // AES-GCM 암호화 로직
+    // AES-GCM 암호화
+    public String encrypt(String plainText) {
         try {
             byte[] iv = new byte[GCM_IV_LENGTH];
             new SecureRandom().nextBytes(iv);
@@ -55,12 +42,12 @@ public class CryptoConverter implements AttributeConverter<String, String> {
 
             return Base64.getEncoder().encodeToString(combined);
         } catch (Exception e) {
-            throw new IllegalStateException("암호화에 실패했습니다", e);
+            throw new ProjectException(CryptoErrorCode.ENCRYPTION_FAILED, e);
         }
     }
 
-    private String decrypt(String encryptedText) {
-        // AES-GCM 복호화 로직
+    // AES-GCM 복호화
+    public String decrypt(String encryptedText) {
         try {
             byte[] combined = Base64.getDecoder().decode(encryptedText);
 
@@ -77,7 +64,7 @@ public class CryptoConverter implements AttributeConverter<String, String> {
             byte[] plainText = cipher.doFinal(cipherText);
             return new String(plainText, StandardCharsets.UTF_8);
         } catch (Exception e) {
-            throw new IllegalStateException("복호화에 실패했습니다", e);
+            throw new ProjectException(CryptoErrorCode.DECRYPTION_FAILED, e);
         }
     }
 }
