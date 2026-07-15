@@ -20,12 +20,17 @@ public class JwtUtil {
 
     private final SecretKey secretKey;
     private final Duration accessExpiration;
+    private final Duration refreshExpiration;
+    private static final String TOKEN_TYPE_CLAIM = "token_type";
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
 
     private static final int MIN_SECRET_KEY_BYTES = 32;
 
     public JwtUtil(
             @Value("${jwt.token.secretKey}") String secret,
-            @Value("${jwt.token.expiration.access}") Long accessExpiration) {
+            @Value("${jwt.token.expiration.access}") Long accessExpiration,
+            @Value("${jwt.token.expiration.refresh}") Long refreshExpiration) {
 
         // JWT_SECRET_KEY 최소 길이 검증 로직
         byte[] secretBytes = secret.getBytes(StandardCharsets.UTF_8);
@@ -38,11 +43,17 @@ public class JwtUtil {
 
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessExpiration = Duration.ofMillis(accessExpiration);
+        this.refreshExpiration = Duration.ofMillis(refreshExpiration);
     }
 
     // AccessToken 생성
     public String createAccessToken(AuthUser user) {
-        return createToken(user, accessExpiration);
+        return createToken(user, accessExpiration, ACCESS_TOKEN_TYPE);
+    }
+
+    // RefreshToken 생성
+    public String createRefreshToken(AuthUser user) {
+        return createToken(user, refreshExpiration, REFRESH_TOKEN_TYPE);
     }
 
     // 토큰에서 소셜 uid 가져오기
@@ -73,8 +84,16 @@ public class JwtUtil {
         }
     }
 
+    public boolean isAccessToken(String token) {
+        return isTokenType(token, ACCESS_TOKEN_TYPE);
+    }
+
+    public boolean isRefreshToken(String token) {
+        return isTokenType(token, REFRESH_TOKEN_TYPE);
+    }
+
     // 토큰 생성
-    public String createToken(AuthUser user, Duration expiration) {
+    public String createToken(AuthUser user, Duration expiration, String tokenType) {
         Instant now = Instant.now();
 
         // 인가 정보
@@ -86,6 +105,7 @@ public class JwtUtil {
                 .subject(user.getUsername()) // USER UID를 subject로
                 .claim("role", authorities)
                 .claim("social_provider", user.getUser().getSocialProvider())
+                .claim(TOKEN_TYPE_CLAIM, tokenType)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(expiration)))
                 .signWith(secretKey)
@@ -99,5 +119,14 @@ public class JwtUtil {
                 .clockSkewSeconds(60)
                 .build()
                 .parseSignedClaims(token);
+    }
+
+    private boolean isTokenType(String token, String tokenType) {
+        try {
+            Object claim = getClaims(token).getPayload().get(TOKEN_TYPE_CLAIM);
+            return tokenType.equals(claim);
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }

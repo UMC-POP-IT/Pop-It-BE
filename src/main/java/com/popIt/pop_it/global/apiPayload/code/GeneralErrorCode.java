@@ -17,7 +17,8 @@ public enum GeneralErrorCode implements BaseErrorCode {
     CONFLICT(HttpStatus.CONFLICT, "COMMON409_1", "요청이 현재 상태와 충돌합니다."),
     UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "COMMON415_1", "지원하지 않는 미디어 타입입니다."),
     TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "COMMON429_1", "요청이 너무 많습니다. 잠시 후 다시 시도해주세요."),
-    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500_1", "내부 서버 오류가 발생했습니다.");
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500_1", "내부 서버 오류가 발생했습니다."),
+    FUNCTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "COMMON500_2", "아직 기능이 준비되지 않았습니다.");
 
     private final HttpStatus status;
     private final String code;
