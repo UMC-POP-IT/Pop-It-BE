@@ -5,6 +5,7 @@ import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -32,7 +33,19 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         BaseErrorCode errorCode = e.getErrorCode();
         log.warn("ProjectException: {}", errorCode.getCode(), e);
         return ResponseEntity.status(errorCode.getStatus())
-                .body(ApiResponse.onFailure(errorCode, null));
+                .body(ApiResponse.onFailure(errorCode.getCode(), e.getMessage(), null));
+    }
+
+    // 유니크 제약 등 DB 무결성 위반 시 처리 (동시 요청으로 애플리케이션 검증을 모두 통과한 경우의 안전망)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse<Void>> handleDataIntegrityViolationException(
+            DataIntegrityViolationException e
+    ) {
+        log.warn("DataIntegrityViolationException", e);
+
+        BaseErrorCode errorCode = GeneralErrorCode.CONFLICT;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
     }
 
     // @Valid 어노테이션 검증 실패 시 필드별 실패 사유를 담아 응답

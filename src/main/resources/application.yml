@@ -31,6 +31,8 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
+    crypto:
+      secret-key: ${CRYPTO_SECRET_KEY}
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:validate}
@@ -60,3 +62,7 @@ cloud:
     region: ${AWS_REGION}
     s3:
         bucket: ${AWS_S3_BUCKET}
+
+
+portone:
+  api-secret: ${PORTONE_API_SECRET_KEY}
