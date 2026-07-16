@@ -34,6 +34,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     RESERVATION_PAYMENT_DUPLICATED(HttpStatus.CONFLICT, "RESERVATION409_3", "이미 처리된 결제입니다. (중복 결제 방지)"),
     RESERVATION_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "RESERVATION409_4", "현재 예약 상태에서는 취소/환불이 불가능합니다."),
     RESERVATION_CHECKOUT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "RESERVATION409_5", "이미 퇴실 증빙이 제출되어 호스트 확인을 기다리고 있습니다."),
+    RESERVATION_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "RESERVATION409_6", "다른 요청에 의해 이미 처리된 예약입니다. 새로고침 후 다시 시도해주세요."),
 
     // ===== 500 INTERNAL SERVER ERROR : 서버/외부 PG 연동 오류 =====
     RESERVATION_PAYMENT_APPROVAL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RESERVATION500_1", "결제 승인 처리 중 오류가 발생했습니다."),

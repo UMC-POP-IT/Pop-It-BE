@@ -62,6 +62,11 @@ public class Reservation {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
 
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private Space space; // 예약 대상 공간
