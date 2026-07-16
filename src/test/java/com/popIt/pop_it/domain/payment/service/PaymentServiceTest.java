@@ -5,27 +5,33 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.willAnswer;
+import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.payment.client.HostPayoutClient;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
+import com.popIt.pop_it.domain.payment.enums.SettlementStepStatus;
 import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.exception.TossErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
+import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -48,17 +54,24 @@ class PaymentServiceTest {
     @Mock
     private TossPaymentClient tossPaymentClient;
 
+    @Mock
+    private HostPayoutClient hostPayoutClient;
+
+    @Mock
+    private PaymentSettlementRecorder paymentSettlementRecorder;
+
     @InjectMocks
     private PaymentService paymentService;
 
     private static final Long CONTRACT_ID = 1L;
     private static final Long USER_ID = 10L;
+    private static final Long HOST_ID = 999L;
     private static final String IDEMPOTENCY_KEY = "idem-key-1";
     private static final Long PAYMENT_ID = 1L;
 
     private Contract contractOf(Long contractId, ContractStatus status, Long ownerUserId) {
         User user = User.builder().userId(ownerUserId).build();
-        Space space = Space.builder().buildingName("팝잇 빌딩").build();
+        Space space = Space.builder().buildingName("팝잇 빌딩").hostId(HOST_ID).build();
         Reservation reservation = Reservation.builder()
                 .rentalFee(100_000L)
                 .deposit(50_000L)
@@ -84,6 +97,16 @@ class PaymentServiceTest {
                 .idempotencyKey(IDEMPOTENCY_KEY)
                 .contract(contract)
                 .build();
+    }
+
+    // 실제 PaymentSettlementRecorder는 별도 트랜잭션에서 DB에 반영하지만,
+    // 단위 테스트에서는 mutation을 같은 payment 인스턴스에 바로 적용해 결과를 검증한다.
+    private void stubSettlementRecorderToMutate(Payment payment) {
+        willAnswer(invocation -> {
+            Consumer<Payment> mutation = invocation.getArgument(1);
+            mutation.accept(payment);
+            return null;
+        }).given(paymentSettlementRecorder).update(eq(payment.getId()), any());
     }
 
     @Test
@@ -279,5 +302,109 @@ class PaymentServiceTest {
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(tossErrorCode);
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+    }
+
+    @Test
+    void 정산에_성공하면_호스트지급과_보증금환불이_둘다_완료된다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        stubSettlementRecorderToMutate(payment);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        paymentService.settle(PAYMENT_ID);
+
+        assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.DONE);
+        assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
+        verify(hostPayoutClient).payout("ORDER_1_abc-HOST", HOST_ID, 100_000L);
+        verify(tossPaymentClient).cancelPartial(payment.getPaymentKey(), 50_000L, "퇴실 승인에 따른 보증금 환불");
+    }
+
+    @Test
+    void 결제를_찾을_수_없으면_정산_예외() {
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_NOT_FOUND);
+    }
+
+    @Test
+    void 결제완료_상태가_아니면_정산_예외() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_NOT_PAID);
+    }
+
+    @Test
+    void 호스트지급이_실패해도_보증금환불은_시도되고_정산_예외가_발생한다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        stubSettlementRecorderToMutate(payment);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        willThrow(new ProjectException(GeneralErrorCode.INTERNAL_SERVER_ERROR))
+                .given(hostPayoutClient).payout(any(), any(), any());
+
+        assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
+
+        assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.FAILED);
+        assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
+        verify(tossPaymentClient).cancelPartial(any(), any(), any());
+    }
+
+    @Test
+    void 보증금환불이_실패해도_호스트지급_결과는_유지되고_정산_예외가_발생한다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        stubSettlementRecorderToMutate(payment);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        willThrow(new ProjectException(new TossErrorCode(
+                HttpStatus.BAD_REQUEST, "NOT_CANCELABLE_AMOUNT", "취소 가능 금액을 초과했습니다.")))
+                .given(tossPaymentClient).cancelPartial(any(), any(), any());
+
+        assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
+
+        assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.DONE);
+        assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.FAILED);
+        verify(hostPayoutClient).payout(any(), any(), any());
+    }
+
+    @Test
+    void 이미_완료된_단계는_재시도하지_않는다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = Payment.builder()
+                .id(PAYMENT_ID)
+                .status(PaymentStatus.PAID)
+                .orderId("ORDER_1_abc")
+                .paymentKey("paymentKey-1")
+                .idempotencyKey(IDEMPOTENCY_KEY)
+                .contract(contract)
+                .hostPayoutStatus(SettlementStepStatus.DONE)
+                .depositRefundStatus(SettlementStepStatus.PENDING)
+                .build();
+        stubSettlementRecorderToMutate(payment);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        paymentService.settle(PAYMENT_ID);
+
+        assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
+        verify(hostPayoutClient, never()).payout(any(), any(), any());
+        verify(tossPaymentClient).cancelPartial(any(), any(), any());
     }
 }
