@@ -17,7 +17,7 @@ import org.springframework.web.client.RestClientResponseException;
 @Component
 public class TossPaymentClient {
 
-    private static final String CONFIRM_URL = "https://api.tosspayments.com/v1/payments/confirm";
+    private static final String BASE_URL = "https://api.tosspayments.com/v1/payments";
 
     private final RestClient restClient;
 
@@ -27,21 +27,36 @@ public class TossPaymentClient {
                 .encodeToString((secretKey + ":").getBytes(StandardCharsets.UTF_8));
 
         this.restClient = RestClient.builder()
-                .baseUrl(CONFIRM_URL)
+                .baseUrl(BASE_URL)
                 .defaultHeader("Authorization", "Basic " + encodedAuth)
                 .build();
     }
 
     public PaymentResDTO.TossConfirm confirm(String paymentKey, String orderId, Long amount) {
+        return post("/confirm", new ConfirmRequest(paymentKey, orderId, amount), PaymentResDTO.TossConfirm.class);
+    }
+
+    /**
+     * 결제 금액 일부 취소
+     *
+     * @see <a href="https://docs.tosspayments.com/reference/error-codes#결제-취소">결제 취소 에러코드 전체 목록</a>
+     */
+    public PaymentResDTO.TossCancel cancelPartial(String paymentKey, Long cancelAmount, String cancelReason) {
+        return post("/{paymentKey}/cancel", new CancelRequest(cancelAmount, cancelReason),
+                PaymentResDTO.TossCancel.class, paymentKey);
+    }
+
+    private <T> T post(String uriTemplate, Object requestBody, Class<T> responseType, Object... uriVariables) {
         try {
             return restClient.post()
+                    .uri(uriTemplate, uriVariables)
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(new ConfirmRequest(paymentKey, orderId, amount))
+                    .body(requestBody)
                     .retrieve()
-                    .body(PaymentResDTO.TossConfirm.class);
+                    .body(responseType);
         } catch (RestClientResponseException e) {
             PaymentResDTO.TossError tossError = parseTossError(e);
-            log.warn("토스 결제 승인 실패: status={}, code={}, message={}",
+            log.warn("토스 결제 API 실패: status={}, code={}, message={}",
                     e.getStatusCode(), tossError.code(), tossError.message());
             throw new ProjectException(new TossErrorCode(
                     HttpStatus.valueOf(e.getStatusCode().value()), tossError.code(), tossError.message()));
@@ -52,10 +67,13 @@ public class TossPaymentClient {
         try {
             return e.getResponseBodyAs(PaymentResDTO.TossError.class);
         } catch (Exception parseException) {
-            return new PaymentResDTO.TossError("UNKNOWN_PAYMENT_ERROR", "결제 승인에 실패했습니다.");
+            return new PaymentResDTO.TossError("UNKNOWN_PAYMENT_ERROR", "결제 처리에 실패했습니다.");
         }
     }
 
     private record ConfirmRequest(String paymentKey, String orderId, Long amount) {
+    }
+
+    private record CancelRequest(Long cancelAmount, String cancelReason) {
     }
 }

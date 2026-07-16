@@ -11,21 +11,27 @@ import static org.mockito.Mockito.verify;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
+import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
-import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
+import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.exception.TossErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import java.time.OffsetDateTime;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -39,12 +45,16 @@ class PaymentServiceTest {
     @Mock
     private PaymentIdempotentSaver paymentIdempotentSaver;
 
+    @Mock
+    private TossPaymentClient tossPaymentClient;
+
     @InjectMocks
     private PaymentService paymentService;
 
     private static final Long CONTRACT_ID = 1L;
     private static final Long USER_ID = 10L;
     private static final String IDEMPOTENCY_KEY = "idem-key-1";
+    private static final Long PAYMENT_ID = 1L;
 
     private Contract contractOf(Long contractId, ContractStatus status, Long ownerUserId) {
         User user = User.builder().userId(ownerUserId).build();
@@ -188,5 +198,86 @@ class PaymentServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_RETRYABLE);
+    }
+
+    @Test
+    void 결제_승인에_성공한다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        OffsetDateTime approvedAt = OffsetDateTime.now();
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
+                .willReturn(new PaymentResDTO.TossConfirm(
+                        "paymentKey-1", "ORDER_1_abc", "카드", "DONE", 155_000L, approvedAt));
+
+        PaymentResDTO.Confirm result = paymentService.confirm(PAYMENT_ID, reqDTO);
+
+        assertThat(result.paymentId()).isEqualTo(payment.getId());
+        assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
+        assertThat(result.method()).isEqualTo(PaymentMethod.CARD.name());
+        assertThat(result.status()).isEqualTo(PaymentStatus.PAID.name());
+        assertThat(payment.getPaymentKey()).isEqualTo("paymentKey-1");
+        assertThat(payment.getPaidAt()).isEqualTo(approvedAt.toLocalDateTime());
+    }
+
+    @Test
+    void 결제를_찾을_수_없으면_승인_예외() {
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_NOT_FOUND);
+    }
+
+    @Test
+    void 요청한_주문번호가_다르면_승인_예외() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_다른값", 155_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_ORDER_MISMATCH);
+    }
+
+    @Test
+    void 요청한_금액이_계약_금액과_다르면_승인_예외() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 1_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_AMOUNT_MISMATCH);
+    }
+
+    @Test
+    void 토스_승인_실패시_결제가_실패_처리되고_예외가_전파된다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        TossErrorCode tossErrorCode = new TossErrorCode(
+                HttpStatus.BAD_REQUEST, "INVALID_CARD_NUMBER", "카드번호를 다시 확인해주세요.");
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
+                .willThrow(new ProjectException(tossErrorCode));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(tossErrorCode);
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
     }
 }

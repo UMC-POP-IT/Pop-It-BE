@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.payment.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -77,6 +78,7 @@ public class PaymentResDTO {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record TossConfirm(
             String paymentKey,
             String orderId,
@@ -84,6 +86,14 @@ public class PaymentResDTO {
             String status, // READY, DONE, CANCELED, PARTIAL_CANCELED 등
             Long totalAmount,
             OffsetDateTime approvedAt
+    ) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record TossCancel(
+            String paymentKey,
+            String orderId,
+            String status // CANCELED, PARTIAL_CANCELED 등
     ) {
     }
 

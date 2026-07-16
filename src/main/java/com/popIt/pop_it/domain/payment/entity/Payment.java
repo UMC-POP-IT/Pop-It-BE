@@ -3,6 +3,7 @@ package com.popIt.pop_it.domain.payment.entity;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
+import com.popIt.pop_it.domain.payment.enums.SettlementStepStatus;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -52,6 +53,20 @@ public class Payment {
     @JoinColumn(name = "contract_id", nullable = false)
     private Contract contract; // 대상 계약
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private SettlementStepStatus hostPayoutStatus = SettlementStepStatus.PENDING; // 호스트 임대료 지급 상태
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private SettlementStepStatus depositRefundStatus = SettlementStepStatus.PENDING; // 게스트 보증금 환불 상태
+
+    private LocalDateTime hostPayoutAt; // 호스트 지급 완료 일시
+
+    private LocalDateTime depositRefundedAt; // 보증금 환불 완료 일시
+
     // 토스 결제 승인 성공 처리
     public void markAsPaid(String paymentKey, PaymentMethod method, LocalDateTime paidAt) {
         this.paymentKey = paymentKey;
@@ -63,5 +78,25 @@ public class Payment {
     // 토스 결제 승인 실패 처리
     public void markAsFailed() {
         this.status = PaymentStatus.FAILED;
+    }
+
+    // 호스트 지급, 보증금 환불은 각각 별도의 외부 API 호출이라 독립적으로 성공/실패할 수 있어
+    // 두 단계를 따로 추적하고, 실패한 쪽만 재시도할 수 있게 한다.
+    public void markHostPayoutDone() {
+        this.hostPayoutStatus = SettlementStepStatus.DONE;
+        this.hostPayoutAt = LocalDateTime.now();
+    }
+
+    public void markHostPayoutFailed() {
+        this.hostPayoutStatus = SettlementStepStatus.FAILED;
+    }
+
+    public void markDepositRefundDone() {
+        this.depositRefundStatus = SettlementStepStatus.DONE;
+        this.depositRefundedAt = LocalDateTime.now();
+    }
+
+    public void markDepositRefundFailed() {
+        this.depositRefundStatus = SettlementStepStatus.FAILED;
     }
 }

@@ -4,13 +4,16 @@ import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.exception.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.payment.client.HostPayoutClient;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.converter.PaymentConverter;
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
-import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
+import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
+import com.popIt.pop_it.domain.payment.enums.SettlementStepStatus;
+import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 
@@ -18,9 +21,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentService {
@@ -28,7 +33,9 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final ContractRepository contractRepository;
     private final PaymentIdempotentSaver paymentIdempotentSaver;
+    private final PaymentSettlementRecorder paymentSettlementRecorder;
     private final TossPaymentClient tossPaymentClient;
+    private final HostPayoutClient hostPayoutClient;
 
     @Transactional
     public PaymentResDTO.Prepare prepare(Long contractId, String idempotencyKey, Long userId) {
@@ -108,5 +115,67 @@ public class PaymentService {
         }
 
         return PaymentResDTO.Confirm.of(payment);
+    }
+
+    /**
+     * 퇴실 승인 시 내부적으로 호출되는 정산 처리.
+     * (1) 임대료를 호스트에게 지급 (2) 보증금을 게스트에게 부분취소(환불)
+     * <p>
+     * 둘 다 신뢰할 수 없는 외부 API 호출이라 하나가 실패해도 다른 하나의 시도를 막지 않는다.
+     * 각 단계의 성공/실패는 별도 트랜잭션(PaymentSettlementRecorder)에 즉시 커밋되므로,
+     * 이 메서드가 최종적으로 예외를 던져도 이미 완료된 단계의 기록은 롤백되지 않는다.
+     * 이미 DONE인 단계는 건너뛰므로, 실패했던 단계만 골라 안전하게 재시도할 수 있다.
+     */
+    // @TODO: 퇴실 사진 승인 시 호출
+    // @TODO: 정산 실패 단계 재시도 필요
+    @Transactional(readOnly = true)
+    public void settle(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_NOT_PAID);
+        }
+
+        Contract contract = payment.getContract();
+
+        boolean hostPayoutOk = settleHostPayout(payment, contract);
+        boolean depositRefundOk = settleDepositRefund(payment, contract);
+
+        if (!hostPayoutOk || !depositRefundOk) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
+        }
+    }
+
+    private boolean settleHostPayout(Payment payment, Contract contract) {
+        if (payment.getHostPayoutStatus() == SettlementStepStatus.DONE) {
+            return true;
+        }
+        try {
+            Long hostId = contract.getReservation().getSpace().getHostId();
+            hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, contract.getRentalFee());
+        } catch (ProjectException e) {
+            log.warn("호스트 정산 지급 실패: paymentId={}", payment.getId(), e);
+            paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutFailed);
+            return false;
+        }
+        paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
+        return true;
+    }
+
+    private boolean settleDepositRefund(Payment payment, Contract contract) {
+        if (payment.getDepositRefundStatus() == SettlementStepStatus.DONE) {
+            return true;
+        }
+        try {
+            tossPaymentClient.cancelPartial(
+                    payment.getPaymentKey(), contract.getDeposit(), "퇴실 승인에 따른 보증금 환불");
+        } catch (ProjectException e) {
+            log.warn("보증금 환불 실패: paymentId={}", payment.getId(), e);
+            paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundFailed);
+            return false;
+        }
+        paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundDone);
+        return true;
     }
 }
