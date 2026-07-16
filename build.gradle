@@ -28,6 +28,7 @@ dependencies {
 	runtimeOnly 'org.springframework.boot:spring-boot-h2console'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	testImplementation 'org.springframework.security:spring-security-oauth2-client'
 	testCompileOnly 'org.projectlombok:lombok'
