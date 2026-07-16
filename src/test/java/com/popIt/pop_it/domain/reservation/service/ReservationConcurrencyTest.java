@@ -129,10 +129,15 @@ public class ReservationConcurrencyTest {
             });
         }
 
-        startLatch.countDown(); // 출발 신호
-        doneLatch.await(10, TimeUnit.SECONDS);
-        executor.shutdown();
+        boolean completedInTime;
+        try {
+            startLatch.countDown(); // 출발 신호
+            completedInTime = doneLatch.await(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdown();
+        }
 
+        assertThat(completedInTime).isTrue();
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(conflictCount.get()).isEqualTo(THREAD_COUNT - 1);
         assertThat(unexpectedCount.get()).isZero();

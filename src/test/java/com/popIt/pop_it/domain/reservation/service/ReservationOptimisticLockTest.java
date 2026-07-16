@@ -17,6 +17,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
 import java.time.LocalDate;
 import java.util.concurrent.CountDownLatch;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @SpringBootTest
 public class ReservationOptimisticLockTest {
@@ -137,14 +139,38 @@ public class ReservationOptimisticLockTest {
         }
 
         startLatch.countDown();
-        doneLatch.await(10, TimeUnit.SECONDS);
-        executor.shutdown();
+        boolean completedInTime;
+        try {
+            completedInTime = doneLatch.await(10, TimeUnit.SECONDS);
+        } finally {
+            executor.shutdown();
+        }
 
+        assertThat(completedInTime).isTrue();
         assertThat(successCount.get()).isEqualTo(1);
         assertThat(conflictCount.get()).isEqualTo(1);
         assertThat(unexpectedCount.get()).isZero();
 
         Reservation result = reservationRepository.findById(reservationId).orElseThrow();
         assertThat(result.getStatus()).isEqualTo(ReservationStatus.APPROVED);
+    }
+
+    @Test
+    //스레드 타이밍에 의존하지 않고 @Version 자체가 확실히 동작하는지 결정론적으로 검증
+    void 같은_버전을_읽은_두_건_중_먼저_저장한_것만_성공한다() {
+        // 두 트랜잭션이 "동시에" 같은 버전을 읽었다고 가정 - 별도 조회로 재현
+        Reservation copy1 = reservationRepository.findById(reservationId).orElseThrow();
+        Reservation copy2 = reservationRepository.findById(reservationId).orElseThrow();
+
+        copy1.approve();
+        reservationRepository.saveAndFlush(copy1); // 먼저 저장 - 성공 (version 0 -> 1)
+
+        copy2.approve();
+        assertThatThrownBy(() -> reservationRepository.saveAndFlush(copy2))
+                .isInstanceOf(ObjectOptimisticLockingFailureException.class); // 버전 충돌 확정
+
+        Reservation result = reservationRepository.findById(reservationId).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.APPROVED);
+        assertThat(result.getVersion()).isEqualTo(1L);
     }
 }
