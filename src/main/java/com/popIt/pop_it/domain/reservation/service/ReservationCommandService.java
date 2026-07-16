@@ -18,6 +18,7 @@ import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -42,9 +43,13 @@ public class ReservationCommandService {
 
     //예약 요청
     public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
-        Space space = spaceRepository.findById(request.spaceId())
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
-
+        Space space;
+        try {
+            space = spaceRepository.findByIdForUpdate(request.spaceId())
+                    .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_ALREADY_TAKEN);
+        }
         User guest = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
