@@ -127,4 +127,9 @@ public class Reservation {
     public long getPeriod() {
         return ChronoUnit.DAYS.between(startDate, endDate);
     }
+
+    // 호스트의 총 금액
+    public Long getHostTotalPrice() {
+        return rentalFee - platformFee;
+    }
 }

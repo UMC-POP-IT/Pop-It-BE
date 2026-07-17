@@ -14,7 +14,8 @@ public class ContractResDTO {
             Long period,
             Long rentalFee,
             Long deposit,
-            Long insuranceFee
+            Long insuranceFee,
+            Long totalPrice
     ) implements ContractInfoRes {}
 
     @Builder
@@ -24,7 +25,8 @@ public class ContractResDTO {
             LocalDate endDate,
             Long period,
             Long rentalFee,
-            Long platformFee
+            Long platformFee,
+            Long totalPrice
     ) implements ContractInfoRes {}
 
     @Builder

@@ -13,6 +13,7 @@ public class ContractConverter {
                 .rentalFee(reservation.getRentalFee())
                 .deposit(reservation.getDeposit())
                 .insuranceFee(reservation.getInsuranceFee())
+                .totalPrice(reservation.getTotalPrice())
                 .build();
     }
 
@@ -24,6 +25,7 @@ public class ContractConverter {
                 .period(reservation.getPeriod())
                 .rentalFee(reservation.getRentalFee())
                 .platformFee(reservation.getPlatformFee())
+                .totalPrice(reservation.getHostTotalPrice())
                 .build();
     }
 }
