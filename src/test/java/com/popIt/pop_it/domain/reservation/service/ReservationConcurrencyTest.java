@@ -92,7 +92,6 @@ public class ReservationConcurrencyTest {
     void tearDown() {
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
-        // identityVerificationRepository.deleteAll();
         userRepository.deleteAll();
     }
 
