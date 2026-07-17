@@ -42,6 +42,7 @@ public class ReservationConcurrencyTest {
     @Autowired
     private ReservationRepository reservationRepository;
 
+
     private Long spaceId;
     private List<Long> guestIds;
 
@@ -91,6 +92,7 @@ public class ReservationConcurrencyTest {
     void tearDown() {
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
+        // identityVerificationRepository.deleteAll();
         userRepository.deleteAll();
     }
 

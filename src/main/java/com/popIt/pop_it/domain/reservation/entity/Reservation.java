@@ -6,6 +6,8 @@ import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,6 +48,9 @@ public class Reservation {
 
     @Column(nullable = false)
     private Long insuranceFee; // 보험료
+
+    @Column(nullable = false)
+    private Long platformFee; // 플랫폼 수수료
 
     @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액
@@ -116,5 +121,10 @@ public class Reservation {
     //퇴실 완료
     public void completeCheckout() {
         this.status = ReservationStatus.CHECKOUT_COMPLETED;
+    }
+
+    // 기간 계산
+    public long getPeriod() {
+        return ChronoUnit.DAYS.between(startDate, endDate);
     }
 }

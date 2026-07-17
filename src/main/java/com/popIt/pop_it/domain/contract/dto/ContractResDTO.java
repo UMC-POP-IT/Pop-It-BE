@@ -1,10 +1,12 @@
 package com.popIt.pop_it.domain.contract.dto;
 
+import lombok.Builder;
+
 import java.time.LocalDate;
 
 public class ContractResDTO {
+    @Builder
     public record GetGuestContractInfoRes (
-            Long contractId,
             String spaceName,
             LocalDate startDate,
             LocalDate endDate,
@@ -12,20 +14,25 @@ public class ContractResDTO {
             Long rentalFee,
             Long deposit,
             Long insuranceFee
-    ) {}
+    ) implements ContractInfoRes {}
 
+    @Builder
     public record GetHostContractInfoRes (
-            Long contractId,
             String spaceName,
             LocalDate startDate,
             LocalDate endDate,
             Long period,
             Long rentalFee,
             Long platformFee
-    ) {}
+    ) implements ContractInfoRes {}
 
     public record SignatureRes (
             String reservationStatus,
             Boolean bothSigned
     ){}
+
+    public sealed interface ContractInfoRes permits GetGuestContractInfoRes, GetHostContractInfoRes {
+    }
+
+
 }
