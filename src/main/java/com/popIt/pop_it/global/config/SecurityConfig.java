@@ -45,7 +45,9 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/v3/api-docs/**",
-            "/auth/**"
+            "/auth/**",
+            // 토스페이먼츠 서버가 호출하는 웹훅 (JWT 없음)
+            "/api/v1/payments/webhook"
     };
 
     private final String[] publicAPI = {

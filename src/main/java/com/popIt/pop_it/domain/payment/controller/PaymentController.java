@@ -4,8 +4,10 @@ import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.exception.PaymentSuccessCode;
 import com.popIt.pop_it.domain.payment.service.PaymentService;
+import com.popIt.pop_it.domain.payment.service.PaymentWebhookService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.security.entity.AuthUser;
+import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final PaymentWebhookService paymentWebhookService;
 
     @Operation(summary = "결제 요청(준비)", description = "계약을 완료하고 결제 요청를 요청합니다.")
     @PostMapping("/api/v1/contracts/{contractId}/payments")
@@ -44,5 +47,13 @@ public class PaymentController {
     ) {
         PaymentResDTO.Confirm resDTO = paymentService.confirm(paymentId, reqDTO);
         return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_CONFIRM, resDTO);
+    }
+
+    @Hidden
+    @Operation(summary = "토스페이먼츠 웹훅", description = "결제 상태 변경 시 토스페이먼츠 서버가 호출하는 웹훅입니다.")
+    @PostMapping("/api/v1/payments/webhook")
+    public ApiResponse<Void> webhook(@RequestBody PaymentReqDTO.Webhook payload) {
+        paymentWebhookService.handle(payload);
+        return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_WEBHOOK_RECEIVED, null);
     }
 }

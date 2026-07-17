@@ -80,6 +80,11 @@ public class Payment {
         this.status = PaymentStatus.FAILED;
     }
 
+    // 인증 후 승인 시간 초과로 결제가 만료된 경우 (토스 웹훅으로 통지받음)
+    public void markAsExpired() {
+        this.status = PaymentStatus.EXPIRED;
+    }
+
     // 호스트 지급, 보증금 환불은 각각 별도의 외부 API 호출이라 독립적으로 성공/실패할 수 있어
     // 두 단계를 따로 추적하고, 실패한 쪽만 재시도할 수 있게 한다.
     public void markHostPayoutDone() {
