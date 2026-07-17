@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.payment.service.PaymentService;
 import com.popIt.pop_it.domain.reservation.converter.ReservationConverter;
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
 import com.popIt.pop_it.domain.reservation.dto.ReservationResDTO;
@@ -18,6 +19,7 @@ import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -27,6 +29,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -39,6 +42,7 @@ public class ReservationCommandService {
     private final CheckoutImageRepository checkoutImageRepository;
     private final SpaceRepository spaceRepository;
     private final UserRepository userRepository;
+    private final PaymentService paymentService;
 
     //예약 요청
     public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
@@ -223,7 +227,14 @@ public class ReservationCommandService {
         }
 
         reservation.completeCheckout();
-        // TODO: Payment - 호스트 지급 + 보증금 부분환불 동시 실행
+
+        try {
+            paymentService.settleByReservation(reservationId);
+        } catch (ProjectException e) {
+            // 정산 일부 실패는 퇴실 승인 자체를 막지 않음
+            // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
+            log.warn("퇴실 승인 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
+        }
 
         return ReservationConverter.toStatusChange(reservation);
     }

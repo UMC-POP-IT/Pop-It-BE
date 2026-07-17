@@ -130,6 +130,14 @@ public class PaymentService {
         return PaymentResDTO.Confirm.of(payment);
     }
 
+    // 퇴실 승인 시 예약 ID로 결제를 찾아 정산한다.
+    @Transactional(readOnly = true)
+    public void settleByReservation(Long reservationId) {
+        Payment payment = paymentRepository.findByContractReservationIdAndStatus(reservationId, PaymentStatus.PAID)
+                .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+        settle(payment.getId());
+    }
+
     /**
      * 퇴실 승인 시 내부적으로 호출되는 정산 처리.
      * (1) 임대료를 호스트에게 지급 (2) 보증금을 게스트에게 부분취소(환불)
@@ -139,7 +147,6 @@ public class PaymentService {
      * 이 메서드가 최종적으로 예외를 던져도 이미 완료된 단계의 기록은 롤백되지 않는다.
      * 이미 DONE인 단계는 건너뛰므로, 실패했던 단계만 골라 안전하게 재시도할 수 있다.
      */
-    // @TODO: 퇴실 사진 승인 시 호출
     // @TODO: 정산 실패 단계 재시도 필요
     @Transactional(readOnly = true)
     public void settle(Long paymentId) {
