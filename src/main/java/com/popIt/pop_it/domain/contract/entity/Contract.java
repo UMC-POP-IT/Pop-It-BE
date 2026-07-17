@@ -56,4 +56,8 @@ public class Contract {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
+
+    public void markAsCompleted() {
+        this.status = ContractStatus.COMPLETED;
+    }
 }

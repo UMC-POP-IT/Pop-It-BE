@@ -6,6 +6,8 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+import com.popIt.pop_it.domain.contract.entity.Contract;
+import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
@@ -36,11 +38,16 @@ class PaymentWebhookServiceTest {
     private static final String PAYMENT_KEY = "payment-key-1";
 
     private Payment paymentOf(PaymentStatus status) {
+        Contract contract = Contract.builder()
+                .id(1L)
+                .status(ContractStatus.PENDING_PAYMENT)
+                .build();
         return Payment.builder()
                 .id(1L)
                 .status(status)
                 .orderId(ORDER_ID)
                 .idempotencyKey("idem-key-1")
+                .contract(contract)
                 .build();
     }
 
@@ -64,6 +71,7 @@ class PaymentWebhookServiceTest {
         paymentWebhookService.handle(webhookOf("DONE"));
 
         assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
+        assertThat(payment.getContract().getStatus()).isEqualTo(ContractStatus.COMPLETED);
     }
 
     @Test

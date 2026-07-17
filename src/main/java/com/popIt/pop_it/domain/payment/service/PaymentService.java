@@ -19,6 +19,7 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,9 +89,19 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResDTO.Confirm confirm(Long paymentId, PaymentReqDTO.Confirm reqDTO) {
+    public PaymentResDTO.Confirm confirm(Long paymentId, PaymentReqDTO.Confirm reqDTO, Long userId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+        // 본인 계약의 결제인지 확인
+        if (!payment.getContract().getReservation().getUser().getUserId().equals(userId)) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_FORBIDDEN);
+        }
+
+        // 이미 승인된 결제면 재승인을 시도하지 않고 그대로 반환한다.
+        if (payment.getStatus() == PaymentStatus.PAID) {
+            return PaymentResDTO.Confirm.of(payment);
+        }
 
         if (!payment.getOrderId().equals(reqDTO.orderId())) {
             throw new ProjectException(PaymentErrorCode.PAYMENT_ORDER_MISMATCH);
@@ -109,6 +120,8 @@ public class PaymentService {
                     PaymentMethod.fromDescription(tossConfirm.method()),
                     tossConfirm.approvedAt().toLocalDateTime()
             );
+            // 계약 완료 처리
+            payment.getContract().markAsCompleted();
         } catch (ProjectException e) {
             payment.markAsFailed();
             throw e;
@@ -154,13 +167,13 @@ public class PaymentService {
         try {
             Long hostId = contract.getReservation().getSpace().getHostId();
             hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, contract.getRentalFee());
-        } catch (ProjectException e) {
+            paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
+            return true;
+        } catch (Exception e) {
             log.warn("호스트 정산 지급 실패: paymentId={}", payment.getId(), e);
-            paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutFailed);
+            markFailedBestEffort(payment.getId(), Payment::markHostPayoutFailed);
             return false;
         }
-        paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
-        return true;
     }
 
     private boolean settleDepositRefund(Payment payment, Contract contract) {
@@ -170,12 +183,21 @@ public class PaymentService {
         try {
             tossPaymentClient.cancelPartial(
                     payment.getPaymentKey(), contract.getDeposit(), "퇴실 승인에 따른 보증금 환불");
-        } catch (ProjectException e) {
+            paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundDone);
+            return true;
+        } catch (Exception e) {
             log.warn("보증금 환불 실패: paymentId={}", payment.getId(), e);
-            paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundFailed);
+            markFailedBestEffort(payment.getId(), Payment::markDepositRefundFailed);
             return false;
         }
-        paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundDone);
-        return true;
+    }
+
+    // 실패 기록 자체가 실패해도(예: REQUIRES_NEW 커밋 중 일시적 오류) settle()을 중단시키지 않는다.
+    private void markFailedBestEffort(Long paymentId, Consumer<Payment> mutation) {
+        try {
+            paymentSettlementRecorder.update(paymentId, mutation);
+        } catch (Exception e) {
+            log.warn("정산 실패 상태 기록도 실패: paymentId={}", paymentId, e);
+        }
     }
 }

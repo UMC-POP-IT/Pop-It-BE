@@ -18,7 +18,8 @@ public enum PaymentErrorCode implements BaseErrorCode {
     PAYMENT_ORDER_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT400_1", "요청한 주문번호가 결제 정보와 일치하지 않습니다."),
     PAYMENT_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "PAYMENT400_2", "요청한 결제 금액이 계약 금액과 일치하지 않습니다."),
     PAYMENT_NOT_PAID(HttpStatus.CONFLICT, "PAYMENT409_5", "결제가 완료되지 않아 정산할 수 없습니다."),
-    PAYMENT_SETTLEMENT_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT502_1", "정산 처리 중 일부가 실패했습니다. 잠시 후 재시도해주세요.");
+    PAYMENT_SETTLEMENT_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT502_1", "정산 처리 중 일부가 실패했습니다. 잠시 후 재시도해주세요."),
+    PAYMENT_GATEWAY_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "PAYMENT502_2", "결제 게이트웨이와 통신할 수 없습니다. 잠시 후 다시 시도해주세요.");
 
     private final HttpStatus status;
     private final String code;

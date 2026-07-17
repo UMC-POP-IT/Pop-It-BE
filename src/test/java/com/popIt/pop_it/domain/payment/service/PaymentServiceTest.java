@@ -235,7 +235,7 @@ class PaymentServiceTest {
                 .willReturn(new PaymentResDTO.TossConfirm(
                         "paymentKey-1", "ORDER_1_abc", "카드", "DONE", 155_000L, approvedAt));
 
-        PaymentResDTO.Confirm result = paymentService.confirm(PAYMENT_ID, reqDTO);
+        PaymentResDTO.Confirm result = paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(payment.getId());
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
@@ -243,6 +243,7 @@ class PaymentServiceTest {
         assertThat(result.status()).isEqualTo(PaymentStatus.PAID.name());
         assertThat(payment.getPaymentKey()).isEqualTo("paymentKey-1");
         assertThat(payment.getPaidAt()).isEqualTo(approvedAt.toLocalDateTime());
+        assertThat(contract.getStatus()).isEqualTo(ContractStatus.COMPLETED);
     }
 
     @Test
@@ -251,10 +252,24 @@ class PaymentServiceTest {
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_NOT_FOUND);
+    }
+
+    @Test
+    void 본인_결제가_아니면_승인_예외() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, 999L))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_FORBIDDEN);
     }
 
     @Test
@@ -265,7 +280,7 @@ class PaymentServiceTest {
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_ORDER_MISMATCH);
@@ -279,7 +294,7 @@ class PaymentServiceTest {
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
-        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_AMOUNT_MISMATCH);
@@ -297,7 +312,7 @@ class PaymentServiceTest {
         given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
                 .willThrow(new ProjectException(tossErrorCode));
 
-        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO))
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(tossErrorCode);

@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.payment.client;
 
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
+import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.exception.TossErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.nio.charset.StandardCharsets;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 @Slf4j
@@ -76,6 +78,10 @@ public class TossPaymentClient {
                     e.getStatusCode(), tossError.code(), tossError.message());
             throw new ProjectException(new TossErrorCode(
                     HttpStatus.valueOf(e.getStatusCode().value()), tossError.code(), tossError.message()));
+        } catch (RestClientException e) {
+            // 타임아웃, 연결 실패 등 HTTP 응답 자체를 받지 못한 경우
+            log.warn("토스 결제 API 통신 실패", e);
+            throw new ProjectException(PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE, e);
         }
     }
 

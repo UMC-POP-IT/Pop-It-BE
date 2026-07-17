@@ -31,6 +31,11 @@ public class PaymentWebhookService {
         }
 
         PaymentReqDTO.Webhook.WebhookData data = payload.data();
+        if (data == null || data.orderId() == null || data.paymentKey() == null) {
+            log.warn("웹훅 payload에 data가 없거나 불완전함: {}", payload);
+            return;
+        }
+
         Payment payment = paymentRepository.findByOrderId(data.orderId()).orElse(null);
         if (payment == null) {
             log.warn("웹훅 대상 결제를 찾을 수 없음: orderId={}", data.orderId());
@@ -67,6 +72,8 @@ public class PaymentWebhookService {
                 PaymentMethod.fromDescription(actual.method()),
                 actual.approvedAt().toLocalDateTime()
         );
+        // 계약 완료 처리
+        payment.getContract().markAsCompleted();
         log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
     }
 
