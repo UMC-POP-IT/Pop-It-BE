@@ -99,6 +99,18 @@ class PaymentServiceTest {
                 .build();
     }
 
+    // 정산(settle) 테스트 전용: 실제 토스 승인 후에만 채워지는 paymentKey를 가진 승인 완료 결제
+    private Payment approvedPaymentOf(Contract contract, String orderId) {
+        return Payment.builder()
+                .id(PAYMENT_ID)
+                .status(PaymentStatus.PAID)
+                .orderId(orderId)
+                .paymentKey("paymentKey-1")
+                .idempotencyKey(IDEMPOTENCY_KEY)
+                .contract(contract)
+                .build();
+    }
+
     // 실제 PaymentSettlementRecorder는 별도 트랜잭션에서 DB에 반영하지만,
     // 단위 테스트에서는 mutation을 같은 payment 인스턴스에 바로 적용해 결과를 검증한다.
     private void stubSettlementRecorderToMutate(Payment payment) {
@@ -116,7 +128,9 @@ class PaymentServiceTest {
 
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.empty());
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
-        given(paymentIdempotentSaver.save(any(Payment.class), eq(IDEMPOTENCY_KEY))).willReturn(savedPayment);
+        given(paymentRepository.findByContractIdAndStatus(CONTRACT_ID, PaymentStatus.PENDING))
+                .willReturn(Optional.empty());
+        given(paymentIdempotentSaver.save(any(Payment.class))).willReturn(savedPayment);
 
         PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
@@ -127,7 +141,7 @@ class PaymentServiceTest {
         assertThat(result.deposit()).isEqualTo(50_000L);
         assertThat(result.insuranceFee()).isEqualTo(5_000L);
         assertThat(result.status()).isEqualTo("PENDING");
-        verify(paymentIdempotentSaver).save(any(Payment.class), eq(IDEMPOTENCY_KEY));
+        verify(paymentIdempotentSaver).save(any(Payment.class));
     }
 
     @Test
@@ -137,7 +151,7 @@ class PaymentServiceTest {
 
         assertThatThrownBy(() -> paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID))
                 .isInstanceOf(ProjectException.class);
-        verify(paymentIdempotentSaver, never()).save(any(), any());
+        verify(paymentIdempotentSaver, never()).save(any());
     }
 
     @Test
@@ -151,7 +165,7 @@ class PaymentServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_FORBIDDEN);
-        verify(paymentIdempotentSaver, never()).save(any(), any());
+        verify(paymentIdempotentSaver, never()).save(any());
     }
 
     @Test
@@ -165,7 +179,7 @@ class PaymentServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(PaymentErrorCode.PAYMENT_CONFLICT_PAYMENT);
-        verify(paymentIdempotentSaver, never()).save(any(), any());
+        verify(paymentIdempotentSaver, never()).save(any());
     }
 
     @Test
@@ -193,7 +207,7 @@ class PaymentServiceTest {
 
         assertThat(result.paymentId()).isEqualTo(existingPayment.getId());
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
-        verify(paymentIdempotentSaver, never()).save(any(), any());
+        verify(paymentIdempotentSaver, never()).save(any());
         verify(contractRepository, never()).findWithReservationAndUserById(any());
     }
 
@@ -273,6 +287,36 @@ class PaymentServiceTest {
     }
 
     @Test
+    void 실패한_결제는_재승인_대상이_아니다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.FAILED, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_RETRYABLE);
+        verify(tossPaymentClient, never()).confirm(any(), any(), any());
+    }
+
+    @Test
+    void 만료된_결제는_재승인_대상이_아니다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.EXPIRED, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_RETRYABLE);
+        verify(tossPaymentClient, never()).confirm(any(), any(), any());
+    }
+
+    @Test
     void 요청한_주문번호가_다르면_승인_예외() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
@@ -307,6 +351,7 @@ class PaymentServiceTest {
         PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
         TossErrorCode tossErrorCode = new TossErrorCode(
                 HttpStatus.BAD_REQUEST, "INVALID_CARD_NUMBER", "카드번호를 다시 확인해주세요.");
+        stubSettlementRecorderToMutate(payment);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
@@ -322,7 +367,7 @@ class PaymentServiceTest {
     @Test
     void 정산에_성공하면_호스트지급과_보증금환불이_둘다_완료된다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
-        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
@@ -332,7 +377,7 @@ class PaymentServiceTest {
         assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.DONE);
         assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
         verify(hostPayoutClient).payout("ORDER_1_abc-HOST", HOST_ID, 100_000L);
-        verify(tossPaymentClient).cancelPartial(payment.getPaymentKey(), 50_000L, "퇴실 승인에 따른 보증금 환불");
+        verify(tossPaymentClient).cancelPartial("paymentKey-1", 50_000L, "퇴실 승인에 따른 보증금 환불", "ORDER_1_abc-REFUND");
     }
 
     @Test
@@ -361,7 +406,7 @@ class PaymentServiceTest {
     @Test
     void 호스트지급이_실패해도_보증금환불은_시도되고_정산_예외가_발생한다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
-        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
@@ -375,19 +420,19 @@ class PaymentServiceTest {
 
         assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.FAILED);
         assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
-        verify(tossPaymentClient).cancelPartial(any(), any(), any());
+        verify(tossPaymentClient).cancelPartial(any(), any(), any(), any());
     }
 
     @Test
     void 보증금환불이_실패해도_호스트지급_결과는_유지되고_정산_예외가_발생한다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
-        Payment payment = paymentOf(contract, PaymentStatus.PAID, "ORDER_1_abc");
+        Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         willThrow(new ProjectException(new TossErrorCode(
                 HttpStatus.BAD_REQUEST, "NOT_CANCELABLE_AMOUNT", "취소 가능 금액을 초과했습니다.")))
-                .given(tossPaymentClient).cancelPartial(any(), any(), any());
+                .given(tossPaymentClient).cancelPartial(any(), any(), any(), any());
 
         assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
                 .isInstanceOf(ProjectException.class)
@@ -420,6 +465,6 @@ class PaymentServiceTest {
 
         assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
         verify(hostPayoutClient, never()).payout(any(), any(), any());
-        verify(tossPaymentClient).cancelPartial(any(), any(), any());
+        verify(tossPaymentClient).cancelPartial(any(), any(), any(), any());
     }
 }

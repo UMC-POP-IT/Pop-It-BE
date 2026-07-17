@@ -1,8 +1,8 @@
 package com.popIt.pop_it.domain.payment.service;
 
 import com.popIt.pop_it.domain.contract.entity.Contract;
-import com.popIt.pop_it.domain.contract.exception.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
+import com.popIt.pop_it.domain.contract.exception.code.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.domain.payment.client.HostPayoutClient;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,12 +75,26 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_CONFLICT_PAYMENT);
         }
 
+        // 계약 행을 잠근 상태에서 재확인: 다른 Idempotency-Key로 이미 진행 중인 결제가 있으면
+        // 새로 만들지 않고 그 결제를 그대로 반환한다 (동시 요청으로 인한 중복 생성 방지)
+        Optional<Payment> activePayment = paymentRepository.findByContractIdAndStatus(contractId, PaymentStatus.PENDING);
+        if (activePayment.isPresent()) {
+            return PaymentResDTO.Prepare.of(activePayment.get(), contract);
+        }
+
         // orderId 생성
         String orderId = generateOrderId(contractId);
 
         // PENDING 저장 (동시 요청 레이스는 별도 트랜잭션에서 UNIQUE 제약으로 최종 방어)
         Payment payment = PaymentConverter.toPayment(contract, orderId, idempotencyKey);
-        Payment savedPayment = paymentIdempotentSaver.save(payment, idempotencyKey);
+        Payment savedPayment;
+        try {
+            savedPayment = paymentIdempotentSaver.save(payment);
+        } catch (DataIntegrityViolationException e) {
+            // 동시 요청이 같은 Idempotency-Key로 먼저 저장에 성공한 경우: 실패한 저장 트랜잭션과
+            // 독립된 이 트랜잭션(정상 상태)에서 재조회해 그 결제를 반환한다.
+            savedPayment = paymentRepository.findByIdempotencyKey(idempotencyKey).orElseThrow(() -> e);
+        }
 
         return PaymentResDTO.Prepare.of(savedPayment, contract);
     }
@@ -103,6 +118,11 @@ public class PaymentService {
             return PaymentResDTO.Confirm.of(payment);
         }
 
+        // 실패/만료된 결제는 재승인 대상이 아니다 - prepare()에서 새 Idempotency-Key로 다시 준비해야 한다.
+        if (payment.getStatus() == PaymentStatus.FAILED || payment.getStatus() == PaymentStatus.EXPIRED) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_RETRYABLE);
+        }
+
         if (!payment.getOrderId().equals(reqDTO.orderId())) {
             throw new ProjectException(PaymentErrorCode.PAYMENT_ORDER_MISMATCH);
         }
@@ -123,7 +143,10 @@ public class PaymentService {
             // 계약 완료 처리
             payment.getContract().markAsCompleted();
         } catch (ProjectException e) {
-            payment.markAsFailed();
+            // 이 메서드는 @Transactional이라 여기서 던지는 예외로 트랜잭션 전체가 롤백된다.
+            // markAsFailed()를 이 트랜잭션 안에서만 반영하면 롤백과 함께 사라지므로,
+            // 별도 트랜잭션(REQUIRES_NEW)에 즉시 커밋해 실패 상태가 남도록 한다.
+            paymentSettlementRecorder.update(payment.getId(), Payment::markAsFailed);
             throw e;
         }
 
@@ -188,8 +211,11 @@ public class PaymentService {
             return true;
         }
         try {
+            // 취소는 성공했지만 아래 기록이 실패해 재시도되는 경우를 대비해, orderId 기반의
+            // 고정된 키를 매번 동일하게 전달한다 (토스가 같은 키의 재요청을 중복 취소로 처리하지 않도록).
             tossPaymentClient.cancelPartial(
-                    payment.getPaymentKey(), contract.getDeposit(), "퇴실 승인에 따른 보증금 환불");
+                    payment.getPaymentKey(), contract.getDeposit(), "퇴실 승인에 따른 보증금 환불",
+                    payment.getOrderId() + "-REFUND");
             paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundDone);
             return true;
         } catch (Exception e) {

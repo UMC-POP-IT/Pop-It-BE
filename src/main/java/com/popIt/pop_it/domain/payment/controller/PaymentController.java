@@ -11,10 +11,15 @@ import io.swagger.v3.oas.annotations.Hidden;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @RestController
 @RequiredArgsConstructor
 @Tag(name = "결제", description = "토스페이먼츠로 계약에 대한 결제를 진행합니다.")
@@ -30,7 +35,10 @@ public class PaymentController {
             @PathVariable Long contractId,
             @Parameter(description = "중복 요청 방지를 위한 클라이언트 생성 키. 같은 키로 재요청 시 동일한 결제를 그대로 반환합니다.",
                     example = "550e8400-e29b-41d4-a716-446655440000")
-            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @RequestHeader("Idempotency-Key")
+            @NotBlank(message = "Idempotency-Key는 필수입니다.")
+            @Size(max = 100, message = "Idempotency-Key는 100자를 초과할 수 없습니다.")
+            String idempotencyKey,
             @AuthenticationPrincipal AuthUser authUser
     ) {
         PaymentResDTO.Prepare resDTO = paymentService.prepare(
@@ -43,7 +51,7 @@ public class PaymentController {
     public ApiResponse<PaymentResDTO.Confirm> confirm(
             @Parameter(description = "승인할 결제 ID", example = "1")
             @PathVariable Long paymentId,
-            @RequestBody PaymentReqDTO.Confirm reqDTO,
+            @Valid @RequestBody PaymentReqDTO.Confirm reqDTO,
             @AuthenticationPrincipal AuthUser authUser
     ) {
         PaymentResDTO.Confirm resDTO = paymentService.confirm(

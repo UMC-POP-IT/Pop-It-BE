@@ -32,7 +32,7 @@ public class PaymentWebhookService {
 
         PaymentReqDTO.Webhook.WebhookData data = payload.data();
         if (data == null || data.orderId() == null || data.paymentKey() == null) {
-            log.warn("웹훅 payload에 data가 없거나 불완전함: {}", payload);
+            log.warn("웹훅 payload에 data가 없거나 불완전함: eventType={}", payload.eventType());
             return;
         }
 
