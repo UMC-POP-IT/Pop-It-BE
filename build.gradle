@@ -46,6 +46,13 @@ dependencies {
 
 	// OAuth
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
+
+	// AWS SDK v2 - S3 (presigned URL 발급 포함)
+	implementation platform('software.amazon.awssdk:bom:2.47.1')
+	implementation 'software.amazon.awssdk:s3'
+
+	// RestClient
+	implementation 'org.springframework.boot:spring-boot-starter-restclient'
 }
 
 tasks.named('test') {

@@ -1,7 +1,6 @@
 package com.popIt.pop_it.domain.contract.repository;
 
 import com.popIt.pop_it.domain.contract.entity.Contract;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;

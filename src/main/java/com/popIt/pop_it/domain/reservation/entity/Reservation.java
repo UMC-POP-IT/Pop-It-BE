@@ -50,6 +50,14 @@ public class Reservation {
     @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액
 
+    @Column
+    private LocalDateTime checkoutSubmittedAt; // 퇴실 증빙 제출 시각 (자동승인 기준)
+
+    @Column(nullable = false)
+    @Builder.Default
+    // 호스트가 퇴실 증빙을 거절한 상태(재인증 대기)인지 여부
+    private Boolean checkoutRejected = false; // 호스트가 퇴실 거부한 경우 스케줄러가 작동 안하도록
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
@@ -61,4 +69,47 @@ public class Reservation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
     private User user; // 게스트
+
+    //도메인 메서드
+
+    //예약 승인
+    public void approve() {
+        this.status = ReservationStatus.APPROVED;
+    }
+
+    //예약 거절
+    public void reject() {
+        this.status = ReservationStatus.CANCELLED;
+    }
+
+    //예약 취소(호출부에서 구분되도록 reject()와 분리)
+    public void cancel() {
+        this.status = ReservationStatus.CANCELLED;
+    }
+
+    //사용 중 -> 이용 완료
+    public void completeUsage() {
+        this.status = ReservationStatus.USAGE_COMPLETED;
+    }
+
+    //계약완료 -> 사용 중 (이용 시작일 도래)
+    public void startUsage() {
+        this.status = ReservationStatus.IN_USE;
+    }
+
+    //퇴실 증빙 제출 시간 기록
+    public void markCheckoutSubmitted() {
+        this.checkoutSubmittedAt = LocalDateTime.now();
+        this.checkoutRejected = false;
+    }
+
+    //퇴실 증빙 거절(재인증 대기 상태로 전환)
+    public void rejectCheckout() {
+        this.checkoutRejected = true;
+    }
+
+    //퇴실 완료
+    public void completeCheckout() {
+        this.status = ReservationStatus.CHECKOUT_COMPLETED;
+    }
 }

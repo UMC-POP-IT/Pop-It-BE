@@ -1,4 +1,6 @@
 spring:
+  config:
+    import: optional:file:.env[.properties]
   datasource:
     url: ${DB_URL:jdbc:h2:~/popit;MODE=MySQL;AUTO_SERVER=TRUE}
     username: ${DB_USERNAME:sa}
@@ -14,6 +16,23 @@ spring:
               - profile
               - email
             redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+            scope:
+              - profile_nickname
+            provider: kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+    crypto:
+      secret-key: ${CRYPTO_SECRET_KEY}
   jpa:
     hibernate:
       ddl-auto: ${DDL_AUTO:validate}
@@ -33,6 +52,20 @@ jwt:
     secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
     expiration:
       access: 1800000 # 30분
+      refresh: 1209600000 # 14일
+
+cloud:
+  aws:
+    credentials:
+        access-key: ${AWS_ACCESS_KEY_ID}
+        secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region: ${AWS_REGION}
+    s3:
+        bucket: ${AWS_S3_BUCKET}
+
+
+portone:
+  api-secret: ${PORTONE_API_SECRET_KEY}
 
 toss:
   secret-key: ${TOSS_SECRET_KEY}

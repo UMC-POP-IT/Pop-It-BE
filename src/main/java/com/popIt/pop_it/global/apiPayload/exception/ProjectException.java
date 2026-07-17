@@ -16,4 +16,10 @@ public class ProjectException extends RuntimeException {
         super(errorCode.getMessage(), cause);
         this.errorCode = errorCode;
     }
+
+    // 동적 메시지를 담고 싶을 때
+    public ProjectException(BaseErrorCode errorCode, String customMessage) {
+        super(customMessage);
+        this.errorCode = errorCode;
+    }
 }
