@@ -16,11 +16,11 @@ import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ContractService {
 
     private final ContractRepository contractRepository;
@@ -32,9 +32,7 @@ public class ContractService {
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         // 사용자의 예약인지 검사
-        if ( reservation.getUser() != user ) {
-            throw new ReservationException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
-        }
+        validateUserReservation(user, reservation);
 
         // 결제 정보 조회 (예약 정보 조회)
         UserMode currentMode = user.getCurrentMode();
@@ -46,48 +44,54 @@ public class ContractService {
 
     }
 
+    @Transactional
     public ContractResDTO.SignatureRes signature(User user, Long reservationId, ContractReqDTO.SignatureReq dto) {
 
         // 예약 조회
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
         // 사용자의 예약인지 검사
-        if ( reservation.getUser() != user ) {
-            throw new ReservationException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
-        }
+        validateUserReservation(user, reservation);
 
-        // 사용자 모드 조희
-        UserMode currentMode = user.getCurrentMode();
-
-        // 예약 id로 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
+        // 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
 
         // 서명 이미지 저장
         // 호스트가 먼저 서명하고 나서 게스트 서명 가능 -> 계약 COMPLETE
-        if (currentMode == UserMode.HOST & contract.getStatus() == ContractStatus.HOST_SIGNATURE_PENDING ) {
-            contract = Contract.builder()
-                    .status(ContractStatus.GUEST_SIGNATURE_PENDING)
-                    .guestSignatureUrl(dto.signatureUrl())
-                    .guestSignedAt(LocalDateTime.now())
-                    .reservation(reservation)
-                    .build();
-
-            contractRepository.save(contract);
+        UserMode currentMode = user.getCurrentMode();
+        if (currentMode == UserMode.HOST) {
+            switch (contract.getStatus()) {
+                // 이미 모두 서명 처리되었는데 다시 요청할 경우
+                case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                // 이미 호스트 서명 처리되었는데 다시 요청할 경우
+                case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
+                // 호스트 서명 처리
+                case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl());
+            }
         }
-        if (currentMode == UserMode.GUEST & contract.getStatus() == ContractStatus.GUEST_SIGNATURE_PENDING) {
-            contract = Contract.builder()
-                    .status(ContractStatus.COMPLETED)
-                    .guestSignatureUrl(dto.signatureUrl())
-                    .guestSignedAt(LocalDateTime.now())
-                    .reservation(reservation)
-                    .build();
-
-            contractRepository.save(contract);
+        else if (currentMode == UserMode.GUEST) {
+            switch (contract.getStatus()) {
+                // 이미 모두 서명 처리되었는데 다시 요청할 경우
+                case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
+                case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
+                // 게스트 서명 처리
+                case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl());
+            }
         }
 
         return ContractResDTO.SignatureRes.builder()
                 .contractStatus(contract.getStatus())
                 .bothSigned(contract.getStatus() == ContractStatus.COMPLETED)
                 .build();
+    }
+
+    // 사용자(호스트/게스트)의 예약인지 검사
+    private void validateUserReservation(User user, Reservation reservation) {
+        if (!reservation.getUser().getUserId().equals(user.getUserId()) &&    // 게스트
+                !reservation.getSpace().getHostId().equals(user.getUserId())  // 호스트
+        ) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
+        }
     }
 }

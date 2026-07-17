@@ -44,4 +44,17 @@ public class Contract {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
+
+    // 호스트 서명: 호스트 서명 정보 업데이트
+    public void signByHost(ContractStatus status, String hostSignatureUrl) {
+        this.status = status;
+        this.hostSignatureUrl = hostSignatureUrl;
+        this.hostSignedAt = LocalDateTime.now();
+    }
+    // 게스트 서명: 게스트 서명 정보 업데이트
+    public void signByGuest(ContractStatus status, String guestSignatureUrl) {
+        this.status = status;
+        this.guestSignatureUrl = guestSignatureUrl;
+        this.guestSignedAt = LocalDateTime.now();
+    }
 }
