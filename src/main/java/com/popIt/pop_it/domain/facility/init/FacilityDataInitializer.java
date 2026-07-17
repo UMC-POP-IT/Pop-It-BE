@@ -6,10 +6,12 @@ import com.popIt.pop_it.domain.facility.repository.FacilityRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
 import java.util.List;
 
+@Component
 @RequiredArgsConstructor
 public class FacilityDataInitializer implements ApplicationRunner {
 
@@ -29,5 +31,6 @@ public class FacilityDataInitializer implements ApplicationRunner {
                 .toList();
 
         facilityRepository.saveAll(facilities);
+        System.out.println(">>> [FacilityInit] 시설 " + facilities.size() + "개 삽입 완료");
     }
 }
