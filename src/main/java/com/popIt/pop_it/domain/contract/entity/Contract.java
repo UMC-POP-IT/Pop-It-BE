@@ -25,7 +25,7 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ContractStatus status = ContractStatus.PENDING_SIGNATURE; // 계약 상태 (기본값: 서명대기)
+    private ContractStatus status = ContractStatus.HOST_SIGNATURE_PENDING; // 계약 상태 (기본값: 호스트서명대기)
 
     @Column(length = 255)
     private String hostSignatureUrl; // 호스트 서명 URL

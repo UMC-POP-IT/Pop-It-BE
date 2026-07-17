@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum ContractStatus {
 
-    PENDING_SIGNATURE("서명대기"),
+    HOST_SIGNATURE_PENDING("호스트 서명대기"), // 호스트가 서명하면 GUEST_PENDING_SIGNATURE로 전이
+    GUEST_SIGNATURE_PENDING("게스트 서명대기"), // 게스트가 서명하면 COMPLETED로 전이
     COMPLETED("완료")
     ;
 

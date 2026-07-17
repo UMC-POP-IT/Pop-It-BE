@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.contract.dto;
 
+import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import lombok.Builder;
 
 import java.time.LocalDate;
@@ -26,8 +27,9 @@ public class ContractResDTO {
             Long platformFee
     ) implements ContractInfoRes {}
 
+    @Builder
     public record SignatureRes (
-            String reservationStatus,
+            ContractStatus contractStatus,
             Boolean bothSigned
     ){}
 
