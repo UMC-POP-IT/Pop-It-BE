@@ -310,6 +310,7 @@ public class ReservationCommandService {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
         if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) return;
+        if (reservation.getCheckoutRejected()) return; // 조회~처리 사이 호스트가 거절했으면 자동승인 스킵
         reservation.completeCheckout();
         reservationRepository.saveAndFlush(reservation);
     }

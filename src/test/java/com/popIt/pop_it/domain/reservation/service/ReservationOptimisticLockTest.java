@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
@@ -41,6 +42,9 @@ public class ReservationOptimisticLockTest {
     private SpaceRepository spaceRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private IdentityVerificationRepository identityVerificationRepository;
+
 
     private Long reservationId;
     private Long hostId;
@@ -103,6 +107,7 @@ public class ReservationOptimisticLockTest {
     void tearDown() {
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
+        identityVerificationRepository.deleteAll();
         userRepository.deleteAll();
     }
 
