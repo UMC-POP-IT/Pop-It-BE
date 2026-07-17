@@ -23,7 +23,7 @@ public class ContractController {
 
     // 결제/임대 예정 계약 정보 조회
     // @TODO: 기본값은 Guest 기반 반환. 계약 기능 구현 시 세분화할 예정
-    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "'계약하기' 시 단기 임대차 계약서 본문입니다. 결제 예정(게스트)/입금 예정(호스트) 금액 정보를 조회합니다.<br>" + "(현재는 게스트 응답만 제공됩니다.)")
+    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "'계약하기' 시 단기 임대차 계약서 본문입니다. 결제 예정(게스트)/입금 예정(호스트) 금액 정보를 조회합니다.")
     @GetMapping
     public ApiResponse<ContractResDTO.ContractInfoRes> getContractInfo(
             @AuthenticationPrincipal AuthUser authUser,
