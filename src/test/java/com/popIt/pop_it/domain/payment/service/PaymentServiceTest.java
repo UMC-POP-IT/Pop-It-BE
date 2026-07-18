@@ -121,6 +121,12 @@ class PaymentServiceTest {
         }).given(paymentSettlementRecorder).update(eq(payment.getId()), any());
     }
 
+    // 정상 흐름 테스트에서는 선점(claim)이 항상 성공해 외부 API 호출까지 이어지도록 스텁한다.
+    private void stubClaimsToSucceed(Long paymentId) {
+        given(paymentSettlementRecorder.claimHostPayout(paymentId)).willReturn(true);
+        given(paymentSettlementRecorder.claimDepositRefund(paymentId)).willReturn(true);
+    }
+
     @Test
     void 신규_결제_준비에_성공한다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
@@ -369,6 +375,7 @@ class PaymentServiceTest {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
+        stubClaimsToSucceed(PAYMENT_ID);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -408,6 +415,7 @@ class PaymentServiceTest {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
+        stubClaimsToSucceed(PAYMENT_ID);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         willThrow(new ProjectException(GeneralErrorCode.INTERNAL_SERVER_ERROR))
@@ -428,6 +436,7 @@ class PaymentServiceTest {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
         stubSettlementRecorderToMutate(payment);
+        stubClaimsToSucceed(PAYMENT_ID);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         willThrow(new ProjectException(new TossErrorCode(
@@ -458,6 +467,7 @@ class PaymentServiceTest {
                 .depositRefundStatus(SettlementStepStatus.PENDING)
                 .build();
         stubSettlementRecorderToMutate(payment);
+        given(paymentSettlementRecorder.claimDepositRefund(PAYMENT_ID)).willReturn(true);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -465,6 +475,26 @@ class PaymentServiceTest {
 
         assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
         verify(hostPayoutClient, never()).payout(any(), any(), any());
+        verify(paymentSettlementRecorder, never()).claimHostPayout(any());
         verify(tossPaymentClient).cancelPartial(any(), any(), any(), any());
+    }
+
+    @Test
+    void 다른_실행이_이미_처리중이면_외부_API를_다시_호출하지_않는다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        // 선점 실패 = 다른 실행이 이미 PROCESSING으로 가져갔거나 그 사이 DONE으로 끝냈다는 뜻
+        given(paymentSettlementRecorder.claimHostPayout(PAYMENT_ID)).willReturn(false);
+        given(paymentSettlementRecorder.claimDepositRefund(PAYMENT_ID)).willReturn(false);
+
+        assertThatThrownBy(() -> paymentService.settle(PAYMENT_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
+
+        verify(hostPayoutClient, never()).payout(any(), any(), any());
+        verify(tossPaymentClient, never()).cancelPartial(any(), any(), any(), any());
     }
 }

@@ -25,4 +25,17 @@ class PaymentSettlementRecorder {
                 .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
         mutation.accept(payment);
     }
+
+    // 외부 API를 호출하기 전에 DB에서 조건부 UPDATE로 단일 실행권을 선점한다.
+    // 두 실행이 동시에 들어와도 이 UPDATE는 행 잠금을 거쳐 순차적으로 처리되므로,
+    // 먼저 커밋된 쪽만 PENDING/FAILED -> PROCESSING 전환에 성공하고 나머지는 0건으로 실패한다.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean claimHostPayout(Long paymentId) {
+        return paymentRepository.claimHostPayoutForProcessing(paymentId) > 0;
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public boolean claimDepositRefund(Long paymentId) {
+        return paymentRepository.claimDepositRefundForProcessing(paymentId) > 0;
+    }
 }

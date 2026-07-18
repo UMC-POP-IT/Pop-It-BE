@@ -197,6 +197,12 @@ public class PaymentService {
         if (payment.getHostPayoutStatus() == SettlementStepStatus.DONE) {
             return true;
         }
+        // 외부 호출 전에 DB에서 PROCESSING으로 선점한다. 동시에 두 실행이 여기 도달해도
+        // 조건부 UPDATE가 행 잠금을 거쳐 순차 처리되므로 하나만 선점에 성공한다.
+        if (!paymentSettlementRecorder.claimHostPayout(payment.getId())) {
+            // 이미 다른 실행이 처리 중이거나(PROCESSING) 그 사이 완료된 경우: 중복 호출하지 않는다.
+            return isHostPayoutDone(payment.getId());
+        }
         try {
             Long hostId = contract.getReservation().getSpace().getHostId();
             hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, contract.getRentalFee());
@@ -213,6 +219,9 @@ public class PaymentService {
         if (payment.getDepositRefundStatus() == SettlementStepStatus.DONE) {
             return true;
         }
+        if (!paymentSettlementRecorder.claimDepositRefund(payment.getId())) {
+            return isDepositRefundDone(payment.getId());
+        }
         try {
             // 취소는 성공했지만 아래 기록이 실패해 재시도되는 경우를 대비해, orderId 기반의
             // 고정된 키를 매번 동일하게 전달한다 (토스가 같은 키의 재요청을 중복 취소로 처리하지 않도록).
@@ -226,6 +235,18 @@ public class PaymentService {
             markFailedBestEffort(payment.getId(), Payment::markDepositRefundFailed);
             return false;
         }
+    }
+
+    private boolean isHostPayoutDone(Long paymentId) {
+        return paymentRepository.findById(paymentId)
+                .map(p -> p.getHostPayoutStatus() == SettlementStepStatus.DONE)
+                .orElse(false);
+    }
+
+    private boolean isDepositRefundDone(Long paymentId) {
+        return paymentRepository.findById(paymentId)
+                .map(p -> p.getDepositRefundStatus() == SettlementStepStatus.DONE)
+                .orElse(false);
     }
 
     // 실패 기록 자체가 실패해도(예: REQUIRES_NEW 커밋 중 일시적 오류) settle()을 중단시키지 않는다.
