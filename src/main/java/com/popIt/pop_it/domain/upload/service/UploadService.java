@@ -47,9 +47,9 @@ public class UploadService {
             throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
         }
 
-        // 업로드 타입에 따라 대상 버킷 분기 (민감서류는 프라이빗 버킷으로 격리)
+        // 민감서류(HOST_DOCUMENT)는 프라이빗 전용 버킷으로, 일반 이미지는 기본 버킷으로 분기
         String bucket = resolveBucket(uploadType);
-        // 유저(호스트)별로 파일을 분리 관리: {path}/{userId}/{uuid}.{ext}
+        // S3 key: {uploadType}/{userId}/{uuid}.{ext} — 유저별 경로로 분리해 관리
         String key = uploadType.getPath() + "/" + userId + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -63,13 +63,15 @@ public class UploadService {
                 .putObjectRequest(putObjectRequest)
                 .build();
 
+        // presignedUrl: 프론트가 S3에 직접 PUT 업로드할 때 사용 (10분 유효)
+        // fileUrl: 업로드 완료 후 DB에 저장할 영구 접근 URL
         String presignedUrl = s3Presigner.presignPutObject(presignedRequest).url().toString();
         String fileUrl = "https://%s.s3.%s.amazonaws.com/%s".formatted(bucket, awsProperties.region(), key);
 
         return new UploadResDTO.PresignedUrlInfo(presignedUrl, fileUrl);
     }
 
-    // 업로드 타입의 버킷 구분에 따라 실제 버킷 이름을 선택
+    // UploadType.BucketType에 따라 실제 버킷 이름 반환 (새 버킷 추가 시 여기에만 추가)
     private String resolveBucket(UploadType uploadType) {
         return switch (uploadType.getBucketType()) {
             case GENERAL -> awsProperties.s3().bucket();
