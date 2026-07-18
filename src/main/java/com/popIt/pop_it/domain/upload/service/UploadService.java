@@ -32,16 +32,16 @@ public class UploadService {
             "application/pdf", "pdf"
     );
 
-    public UploadResDTO.PresignedUrlList issuePresignedUrls(UploadReqDTO.PresignedUrl request) {
+    public UploadResDTO.PresignedUrlList issuePresignedUrls(Long userId, UploadReqDTO.PresignedUrl request) {
 
         List<UploadResDTO.PresignedUrlInfo> uploads = request.files().stream()
-                .map(file -> issueOne(request.uploadType(), file.contentType()))
+                .map(file -> issueOne(userId, request.uploadType(), file.contentType()))
                 .toList();
 
         return new UploadResDTO.PresignedUrlList(uploads);
     }
 
-    private UploadResDTO.PresignedUrlInfo issueOne(UploadType uploadType, String contentType) {
+    private UploadResDTO.PresignedUrlInfo issueOne(Long userId, UploadType uploadType, String contentType) {
         String extension = ALLOWED_CONTENT_TYPES.get(contentType);
         if (extension == null) {
             throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
@@ -49,7 +49,8 @@ public class UploadService {
 
         // 업로드 타입에 따라 대상 버킷 분기 (민감서류는 프라이빗 버킷으로 격리)
         String bucket = resolveBucket(uploadType);
-        String key = uploadType.getPath() + "/" + UUID.randomUUID() + "." + extension;
+        // 유저(호스트)별로 파일을 분리 관리: {path}/{userId}/{uuid}.{ext}
+        String key = uploadType.getPath() + "/" + userId + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
