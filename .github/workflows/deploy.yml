@@ -42,3 +42,19 @@ jobs:
             docker compose pull
             docker compose up -d
             docker image prune -f
+            
+            # 헬스체크: 최대 60초간 응답 대기
+            echo "헬스체크 시작..."
+            for i in $(seq 1 12); do
+              CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost/swagger-ui/index.html || true)
+              if [ "$CODE" = "200" ]; then
+                echo "배포 성공 (HTTP $CODE)"
+                exit 0
+              fi
+              echo "대기 중... ($i/12, 현재 응답: $CODE)"
+              sleep 5
+            done
+
+            echo "헬스체크 실패. 앱 로그:"
+            docker compose logs --tail=50 app
+            exit 1
