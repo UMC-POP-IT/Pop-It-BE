@@ -5,6 +5,8 @@ import com.popIt.pop_it.domain.user.dto.HostRegisterResponse;
 import com.popIt.pop_it.domain.user.exception.code.HostSuccessCode;
 import com.popIt.pop_it.domain.user.service.HostService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
+import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -49,6 +51,11 @@ public class HostController {
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody HostRegisterRequest request
     ) {
+        // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
+        if (authUser == null || authUser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
         Long userId = authUser.getUser().getUserId();
         HostRegisterResponse result = hostService.register(userId, request);
 

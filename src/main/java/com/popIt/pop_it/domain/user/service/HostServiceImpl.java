@@ -11,6 +11,7 @@ import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +25,7 @@ public class HostServiceImpl implements HostService {
     @Override
     @Transactional
     public HostRegisterResponse register(Long userId, HostRegisterRequest request) {
-        // 한 사용자당 호스트 프로필은 1개만 허용 → 중복 등록 방지
+        // 한 사용자당 호스트 프로필은 1개만 허용 → 중복 등록 선검사(빠른 실패 + 친절한 응답)
         if (hostProfileRepository.existsByUserId(userId)) {
             throw new ProjectException(HostErrorCode.HOST_PROFILE_ALREADY_EXISTS);
         }
@@ -34,7 +35,12 @@ public class HostServiceImpl implements HostService {
                 .orElseThrow(() -> new ProjectException(GeneralErrorCode.UNAUTHORIZED));
 
         HostProfile hostProfile = HostConverter.toHostProfile(userId, request);
-        hostProfileRepository.save(hostProfile);
+        try {
+            // 동시 요청으로 선검사를 함께 통과한 경우, DB user_id 유니크 제약이 최종 방어선
+            hostProfileRepository.saveAndFlush(hostProfile);
+        } catch (DataIntegrityViolationException e) {
+            throw new ProjectException(HostErrorCode.HOST_PROFILE_ALREADY_EXISTS);
+        }
 
         // 등록 완료 → 호스트 권한 활성화 (도메인 메서드로 상태 전이)
         user.switchToHost();
