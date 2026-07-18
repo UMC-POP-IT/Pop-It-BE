@@ -4,6 +4,7 @@ import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpHeaders;
@@ -46,6 +47,24 @@ public class GeneralExceptionAdvice extends ResponseEntityExceptionHandler {
         BaseErrorCode errorCode = GeneralErrorCode.CONFLICT;
         return ResponseEntity.status(errorCode.getStatus())
                 .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), null));
+    }
+
+    // @Validated로 검증하는 메서드 파라미터(헤더, 경로변수 등) 제약 위반 시 필드별 실패 사유를 담아 응답
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ApiResponse<Map<String, List<String>>>> handleConstraintViolationException(
+            ConstraintViolationException e
+    ) {
+        Map<String, List<String>> errors = new HashMap<>();
+        e.getConstraintViolations().forEach(violation -> {
+            String path = violation.getPropertyPath().toString();
+            String field = path.substring(path.lastIndexOf('.') + 1);
+            errors.computeIfAbsent(field, key -> new ArrayList<>()).add(violation.getMessage());
+        });
+
+        log.warn("ConstraintViolationException: {}", errors);
+        BaseErrorCode errorCode = GeneralErrorCode.BAD_REQUEST;
+        return ResponseEntity.status(errorCode.getStatus())
+                .body(ApiResponse.onFailure(errorCode.getCode(), errorCode.getMessage(), errors));
     }
 
     // @Valid 어노테이션 검증 실패 시 필드별 실패 사유를 담아 응답
