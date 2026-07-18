@@ -25,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -154,7 +155,9 @@ public class PaymentService {
     }
 
     // 퇴실 승인 시 예약 ID로 결제를 찾아 정산한다.
-    @Transactional(readOnly = true)
+    // REQUIRES_NEW: 호출하는 쪽(퇴실 승인)의 트랜잭션과 분리해, 정산 중의 느린 외부 API 호출이
+    // 호출자의 DB 커넥션/락을 붙잡고 있지 않게 하고, 두 트랜잭션의 커밋 성패가 서로 얽히지 않게 한다.
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
     public void settleByReservation(Long reservationId) {
         Payment payment = paymentRepository.findByContractReservationIdAndStatus(reservationId, PaymentStatus.PAID)
                 .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));

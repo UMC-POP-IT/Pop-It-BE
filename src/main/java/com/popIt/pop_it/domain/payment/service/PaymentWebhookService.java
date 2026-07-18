@@ -4,14 +4,10 @@ import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
-import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
-import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -22,8 +18,9 @@ public class PaymentWebhookService {
 
     private final PaymentRepository paymentRepository;
     private final TossPaymentClient tossPaymentClient;
+    private final PaymentWebhookApplier paymentWebhookApplier;
 
-    @Transactional
+    // 검증(payload 확인, 결제 조회, 토스 API 호출)은 트랜잭션 밖에서 수행한다.
     public void handle(PaymentReqDTO.Webhook payload) {
         if (!PAYMENT_STATUS_CHANGED.equals(payload.eventType())) {
             log.info("처리 대상이 아닌 웹훅 이벤트: {}", payload.eventType());
@@ -50,38 +47,6 @@ public class PaymentWebhookService {
             return;
         }
 
-        applyStatus(payment, actual);
-    }
-
-    private void applyStatus(Payment payment, PaymentResDTO.TossConfirm actual) {
-        switch (actual.status()) {
-            case "DONE" -> markPaidIfNotAlready(payment, actual);
-            case "EXPIRED" -> markIfPending(payment, Payment::markAsExpired, "만료");
-            case "ABORTED" -> markIfPending(payment, Payment::markAsFailed, "실패");
-            default -> log.info("반영하지 않는 결제 상태: paymentId={}, status={}",
-                    payment.getId(), actual.status());
-        }
-    }
-
-    private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirm actual) {
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            return;
-        }
-        payment.markAsPaid(
-                actual.paymentKey(),
-                PaymentMethod.fromDescription(actual.method()),
-                actual.approvedAt().toLocalDateTime()
-        );
-        // 계약 완료 처리
-        payment.getContract().markAsCompleted();
-        log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
-    }
-
-    private void markIfPending(Payment payment, Consumer<Payment> mutation, String label) {
-        if (payment.getStatus() != PaymentStatus.PENDING) {
-            return;
-        }
-        mutation.accept(payment);
-        log.info("웹훅으로 결제 {} 반영: paymentId={}", label, payment.getId());
+        paymentWebhookApplier.apply(payment.getId(), actual);
     }
 }

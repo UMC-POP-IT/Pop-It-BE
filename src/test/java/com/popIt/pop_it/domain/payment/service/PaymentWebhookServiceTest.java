@@ -22,6 +22,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+// handle()의 책임(검증/조회/토스 재확인 후 위임)만 검증한다.
 @ExtendWith(MockitoExtension.class)
 class PaymentWebhookServiceTest {
 
@@ -31,9 +32,13 @@ class PaymentWebhookServiceTest {
     @Mock
     private TossPaymentClient tossPaymentClient;
 
+    @Mock
+    private PaymentWebhookApplier paymentWebhookApplier;
+
     @InjectMocks
     private PaymentWebhookService paymentWebhookService;
 
+    private static final Long PAYMENT_ID = 1L;
     private static final String ORDER_ID = "ORDER_1_abcdefabcdef";
     private static final String PAYMENT_KEY = "payment-key-1";
 
@@ -43,7 +48,7 @@ class PaymentWebhookServiceTest {
                 .status(ContractStatus.PENDING_PAYMENT)
                 .build();
         return Payment.builder()
-                .id(1L)
+                .id(PAYMENT_ID)
                 .status(status)
                 .orderId(ORDER_ID)
                 .idempotencyKey("idem-key-1")
@@ -63,48 +68,15 @@ class PaymentWebhookServiceTest {
     }
 
     @Test
-    void DONE_상태면_결제완료로_반영한다() {
+    void 검증을_통과하면_applier에_반영을_위임한다() {
         Payment payment = paymentOf(PaymentStatus.PENDING);
+        PaymentResDTO.TossConfirm actual = tossConfirmOf("DONE");
         given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
-        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(tossConfirmOf("DONE"));
+        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(actual);
 
         paymentWebhookService.handle(webhookOf("DONE"));
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
-        assertThat(payment.getContract().getStatus()).isEqualTo(ContractStatus.COMPLETED);
-    }
-
-    @Test
-    void 이미_PAID인_결제는_DONE_웹훅을_받아도_그대로_유지한다() {
-        Payment payment = paymentOf(PaymentStatus.PAID);
-        given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
-        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(tossConfirmOf("DONE"));
-
-        paymentWebhookService.handle(webhookOf("DONE"));
-
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PAID);
-    }
-
-    @Test
-    void EXPIRED_상태면_결제를_만료로_반영한다() {
-        Payment payment = paymentOf(PaymentStatus.PENDING);
-        given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
-        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(tossConfirmOf("EXPIRED"));
-
-        paymentWebhookService.handle(webhookOf("EXPIRED"));
-
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.EXPIRED);
-    }
-
-    @Test
-    void ABORTED_상태면_결제를_실패로_반영한다() {
-        Payment payment = paymentOf(PaymentStatus.PENDING);
-        given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
-        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(tossConfirmOf("ABORTED"));
-
-        paymentWebhookService.handle(webhookOf("ABORTED"));
-
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        verify(paymentWebhookApplier).apply(PAYMENT_ID, actual);
     }
 
     @Test
@@ -114,6 +86,7 @@ class PaymentWebhookServiceTest {
         paymentWebhookService.handle(webhookOf("DONE"));
 
         verify(tossPaymentClient, never()).getPayment(any());
+        verify(paymentWebhookApplier, never()).apply(any(), any());
     }
 
     @Test
@@ -124,6 +97,17 @@ class PaymentWebhookServiceTest {
         paymentWebhookService.handle(payload);
 
         verify(paymentRepository, never()).findByOrderId(any());
+        verify(paymentWebhookApplier, never()).apply(any(), any());
+    }
+
+    @Test
+    void data가_없으면_조용히_무시한다() {
+        PaymentReqDTO.Webhook payload = new PaymentReqDTO.Webhook("PAYMENT_STATUS_CHANGED", null);
+
+        paymentWebhookService.handle(payload);
+
+        verify(paymentRepository, never()).findByOrderId(any());
+        verify(paymentWebhookApplier, never()).apply(any(), any());
     }
 
     @Test
@@ -135,6 +119,6 @@ class PaymentWebhookServiceTest {
 
         paymentWebhookService.handle(webhookOf("DONE"));
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.PENDING);
+        verify(paymentWebhookApplier, never()).apply(any(), any());
     }
 }
