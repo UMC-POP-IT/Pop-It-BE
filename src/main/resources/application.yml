@@ -62,6 +62,7 @@ cloud:
     region: ${AWS_REGION}
     s3:
         bucket: ${AWS_S3_BUCKET}
+        host-document-bucket: ${AWS_HOST_DOCUMENT_BUCKET}
 
 
 portone:

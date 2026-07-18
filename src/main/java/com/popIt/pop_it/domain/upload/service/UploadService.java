@@ -47,7 +47,8 @@ public class UploadService {
             throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
         }
 
-        String bucket = awsProperties.s3().bucket();
+        // 업로드 타입에 따라 대상 버킷 분기 (민감서류는 프라이빗 버킷으로 격리)
+        String bucket = resolveBucket(uploadType);
         String key = uploadType.getPath() + "/" + UUID.randomUUID() + "." + extension;
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
@@ -65,5 +66,13 @@ public class UploadService {
         String fileUrl = "https://%s.s3.%s.amazonaws.com/%s".formatted(bucket, awsProperties.region(), key);
 
         return new UploadResDTO.PresignedUrlInfo(presignedUrl, fileUrl);
+    }
+
+    // 업로드 타입의 버킷 구분에 따라 실제 버킷 이름을 선택
+    private String resolveBucket(UploadType uploadType) {
+        return switch (uploadType.getBucketType()) {
+            case GENERAL -> awsProperties.s3().bucket();
+            case HOST_DOCUMENT -> awsProperties.s3().hostDocumentBucket();
+        };
     }
 }
