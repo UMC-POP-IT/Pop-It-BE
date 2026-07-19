@@ -37,6 +37,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
@@ -134,8 +135,6 @@ class PaymentServiceTest {
 
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.empty());
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
-        given(paymentRepository.findByContractIdAndStatus(CONTRACT_ID, PaymentStatus.PENDING))
-                .willReturn(Optional.empty());
         given(paymentIdempotentSaver.save(any(Payment.class))).willReturn(savedPayment);
 
         PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
@@ -148,6 +147,24 @@ class PaymentServiceTest {
         assertThat(result.insuranceFee()).isEqualTo(5_000L);
         assertThat(result.status()).isEqualTo("PENDING");
         verify(paymentIdempotentSaver).save(any(Payment.class));
+    }
+
+    @Test
+    void 다른_멱등키로_동시_요청이_먼저_PENDING을_생성하면_그_결제를_반환한다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment concurrentlyCreatedPayment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+
+        given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.empty());
+        given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
+        given(paymentIdempotentSaver.save(any(Payment.class)))
+                .willThrow(new DataIntegrityViolationException("duplicate key"));
+        given(paymentRepository.findByContractIdAndStatus(CONTRACT_ID, PaymentStatus.PENDING))
+                .willReturn(Optional.of(concurrentlyCreatedPayment));
+
+        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+
+        assertThat(result.paymentId()).isEqualTo(1L);
+        assertThat(result.status()).isEqualTo("PENDING");
     }
 
     @Test

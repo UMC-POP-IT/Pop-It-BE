@@ -76,25 +76,24 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_CONFLICT_PAYMENT);
         }
 
-        // 계약 행을 잠근 상태에서 재확인: 다른 Idempotency-Key로 이미 진행 중인 결제가 있으면
-        // 새로 만들지 않고 그 결제를 그대로 반환한다 (동시 요청으로 인한 중복 생성 방지)
-        Optional<Payment> activePayment = paymentRepository.findByContractIdAndStatus(contractId, PaymentStatus.PENDING);
-        if (activePayment.isPresent()) {
-            return PaymentResDTO.Prepare.of(activePayment.get(), contract);
-        }
-
         // orderId 생성
         String orderId = generateOrderId(contractId);
 
-        // PENDING 저장 (동시 요청 레이스는 별도 트랜잭션에서 UNIQUE 제약으로 최종 방어)
+        // PENDING 저장. 동시 요청 레이스는 별도 트랜잭션에서 DB 제약으로 최종 방어한다:
+        // - idempotencyKey unique 제약: 같은 Idempotency-Key로 동시 요청이 들어온 경우
+        // - payment(contract_id) partial unique index (status='PENDING'): 서로 다른
+        //   Idempotency-Key라도 같은 계약에 PENDING 결제가 이미 있으면 새로 만들지 못하게 막는다
         Payment payment = PaymentConverter.toPayment(contract, orderId, idempotencyKey);
         Payment savedPayment;
         try {
             savedPayment = paymentIdempotentSaver.save(payment);
         } catch (DataIntegrityViolationException e) {
-            // 동시 요청이 같은 Idempotency-Key로 먼저 저장에 성공한 경우: 실패한 저장 트랜잭션과
-            // 독립된 이 트랜잭션(정상 상태)에서 재조회해 그 결제를 반환한다.
-            savedPayment = paymentRepository.findByIdempotencyKey(idempotencyKey).orElseThrow(() -> e);
+            // 동시 요청이 먼저 저장에 성공한 경우: 실패한 저장 트랜잭션과 독립된 이 트랜잭션
+            // (정상 상태)에서 재조회해 그 결제를 반환한다. 어떤 제약을 위반했는지는 구분하지 않고
+            // Idempotency-Key로 먼저 찾아보고, 없으면 같은 계약의 PENDING 결제를 찾는다.
+            savedPayment = paymentRepository.findByIdempotencyKey(idempotencyKey)
+                    .or(() -> paymentRepository.findByContractIdAndStatus(contractId, PaymentStatus.PENDING))
+                    .orElseThrow(() -> e);
         }
 
         return PaymentResDTO.Prepare.of(savedPayment, contract);
