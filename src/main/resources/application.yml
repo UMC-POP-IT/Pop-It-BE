@@ -66,3 +66,12 @@ cloud:
 
 portone:
   api-secret: ${PORTONE_API_SECRET_KEY}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
