@@ -123,9 +123,9 @@ public class Reservation {
         this.status = ReservationStatus.CHECKOUT_COMPLETED;
     }
 
-    // 기간 계산
+    // 기간 계산 (시작일/종료일 모두 포함)
     public long getPeriod() {
-        return ChronoUnit.DAYS.between(startDate, endDate);
+        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
     }
 
     // 호스트의 총 금액
