@@ -41,6 +41,11 @@ public class Contract {
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
 
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약

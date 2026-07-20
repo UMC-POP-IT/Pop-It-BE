@@ -15,6 +15,7 @@ import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,25 +60,33 @@ public class ContractService {
         // 서명 이미지 저장
         // 호스트가 먼저 서명하고 나서 게스트 서명 가능 -> 계약 COMPLETE
         UserMode currentMode = user.getCurrentMode();
-        if (currentMode == UserMode.HOST) {
-            switch (contract.getStatus()) {
-                // 이미 모두 서명 처리되었는데 다시 요청할 경우
-                case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
-                // 이미 호스트 서명 처리되었는데 다시 요청할 경우
-                case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
-                // 호스트 서명 처리
-                case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl());
+        try {
+            if (currentMode == UserMode.HOST) {
+                switch (contract.getStatus()) {
+                    // 이미 모두 서명 처리되었는데 다시 요청할 경우
+                    case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                    // 이미 호스트 서명 처리되었는데 다시 요청할 경우
+                    case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
+                    // 호스트 서명 처리
+                    case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl());
+                }
             }
-        }
-        else if (currentMode == UserMode.GUEST) {
-            switch (contract.getStatus()) {
-                // 이미 모두 서명 처리되었는데 다시 요청할 경우
-                case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
-                // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
-                case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
-                // 게스트 서명 처리
-                case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl());
+            else if (currentMode == UserMode.GUEST) {
+                switch (contract.getStatus()) {
+                    // 이미 모두 서명 처리되었는데 다시 요청할 경우
+                    case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                    // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
+                    case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
+                    // 게스트 서명 처리
+                    case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl());
+                }
             }
+
+            // 동일 상태를 읽은 두 요청이 동시에 서명해도, 여기서 버전 충돌이 즉시 감지되도록 flush를 명시적으로 끌어옴
+            contractRepository.saveAndFlush(contract);
+
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ContractException(ContractErrorCode.CONTRACT_CONCURRENT_MODIFICATION);
         }
 
         return ContractResDTO.SignatureRes.builder()
