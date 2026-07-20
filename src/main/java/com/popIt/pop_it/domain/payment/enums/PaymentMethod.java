@@ -2,7 +2,7 @@ package com.popIt.pop_it.domain.payment.enums;
 
 import java.util.Arrays;
 
-import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.exception.code.PaymentErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

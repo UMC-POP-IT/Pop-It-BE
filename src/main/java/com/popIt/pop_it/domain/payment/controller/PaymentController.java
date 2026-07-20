@@ -2,7 +2,7 @@ package com.popIt.pop_it.domain.payment.controller;
 
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
-import com.popIt.pop_it.domain.payment.exception.PaymentSuccessCode;
+import com.popIt.pop_it.domain.payment.exception.code.PaymentSuccessCode;
 import com.popIt.pop_it.domain.payment.service.PaymentService;
 import com.popIt.pop_it.domain.payment.service.PaymentWebhookService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;

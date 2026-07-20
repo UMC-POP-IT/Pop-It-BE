@@ -1,4 +1,4 @@
-package com.popIt.pop_it.domain.payment.exception;
+package com.popIt.pop_it.domain.payment.exception.code;
 
 import com.popIt.pop_it.global.apiPayload.code.BaseErrorCode;
 import lombok.Getter;

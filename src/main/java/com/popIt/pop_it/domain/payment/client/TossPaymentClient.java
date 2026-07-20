@@ -1,8 +1,8 @@
 package com.popIt.pop_it.domain.payment.client;
 
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
-import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
-import com.popIt.pop_it.domain.payment.exception.TossErrorCode;
+import com.popIt.pop_it.domain.payment.exception.code.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.exception.code.TossErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;

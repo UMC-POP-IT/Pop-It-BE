@@ -1,7 +1,7 @@
 package com.popIt.pop_it.domain.payment.service;
 
 import com.popIt.pop_it.domain.payment.entity.Payment;
-import com.popIt.pop_it.domain.payment.exception.PaymentErrorCode;
+import com.popIt.pop_it.domain.payment.exception.code.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.util.function.Consumer;
