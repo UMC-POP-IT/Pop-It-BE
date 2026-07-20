@@ -97,9 +97,16 @@ public class ContractService {
 
     // 사용자(호스트/게스트)의 예약인지 검사
     private void validateUserReservation(User user, Reservation reservation) {
-        if (!reservation.getUser().getUserId().equals(user.getUserId()) &&    // 게스트
-                !reservation.getSpace().getHostId().equals(user.getUserId())  // 호스트
-        ) {
+
+        // 예약 당시의 사용자 모드 확인
+        boolean isGuest = reservation.getUser().getUserId().equals(user.getUserId());
+        boolean isHost = reservation.getSpace().getHostId().equals(user.getUserId());
+
+        // 예약의 사용자 모드가 실제 사용자 모드와 일치하는 지 검증
+        boolean authorizedRole = (user.getCurrentMode() == UserMode.GUEST && isGuest) ||
+                (user.getCurrentMode() == UserMode.HOST && isHost);
+
+        if (!authorizedRole) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
         }
     }
