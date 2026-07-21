@@ -105,6 +105,7 @@ class HostControllerTest {
                 .userId(user.getUserId())
                 .taxationType(TaxationType.GENERAL)
                 .businessRegistrationNumber("9999999999")
+                .businessRegistrationNumberHash("hash-9999999999") // 유니크 필수 컬럼 (validRequest와 다른 값)
                 .businessLicenseUrl("https://s3.example.com/x.png")
                 .businessName("기존 상회")
                 .businessAddress("서울시 어딘가")

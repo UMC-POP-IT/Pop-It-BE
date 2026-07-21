@@ -7,11 +7,13 @@ import com.popIt.pop_it.domain.user.entity.HostProfile;
 public class HostConverter {
 
     // 요청 DTO → HostProfile 엔티티 (민감 필드는 평문 세팅, 암호화는 CryptoConverter에 위임)
-    public static HostProfile toHostProfile(Long userId, HostRegisterRequest request) {
+    // businessRegistrationNumberHash는 빈(CryptoService) 의존이 필요해 Service에서 계산 후 주입받는다.
+    public static HostProfile toHostProfile(Long userId, HostRegisterRequest request, String businessRegistrationNumberHash) {
         return HostProfile.builder()
                 .userId(userId)
                 .taxationType(request.taxationType())
                 .businessRegistrationNumber(request.normalizedBusinessRegistrationNumber())
+                .businessRegistrationNumberHash(businessRegistrationNumberHash)
                 .businessLicenseUrl(request.businessLicenseUrl())
                 .businessName(request.businessName())
                 .businessAddress(request.businessAddress())

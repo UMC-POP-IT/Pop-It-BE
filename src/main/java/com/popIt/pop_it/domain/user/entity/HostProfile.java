@@ -32,6 +32,11 @@ public class HostProfile {
     @Column(nullable = false)
     private String businessRegistrationNumber;
 
+    // 사업자등록번호 해시(HMAC): 암호문은 유니크 제약이 불가능하므로,
+    // 결정적 해시를 유니크 컬럼으로 두어 서로 다른 사용자의 사업자번호 중복 등록을 DB 차원에서 차단
+    @Column(name = "business_registration_number_hash", nullable = false, unique = true)
+    private String businessRegistrationNumberHash;
+
     @Column(nullable = false)
     private String businessLicenseUrl;
 
