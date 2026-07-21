@@ -9,5 +9,7 @@ public record AwsProperties(
         S3 s3
 ) {
     public record Credentials(String accessKey, String secretKey) {}
-    public record S3(String bucket) {}
+
+    // bucket: 일반(공간 이미지 등), hostDocumentBucket: 민감서류(통장/사업자등록증) 전용 프라이빗 버킷
+    public record S3(String bucket, String hostDocumentBucket) {}
 }

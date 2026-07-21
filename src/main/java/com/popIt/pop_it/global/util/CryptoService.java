@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Cipher;
+import javax.crypto.Mac;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,7 @@ public class CryptoService {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int GCM_IV_LENGTH = 12;   // 12바이트 권장
     private static final int GCM_TAG_LENGTH = 128; // 비트 단위
+    private static final String HMAC_ALGORITHM = "HmacSHA256";
 
     @Value("${spring.security.crypto.secret-key}")
     private String secretKey; // 32바이트(256bit) 길이의 키 필요
@@ -65,6 +67,21 @@ public class CryptoService {
             return new String(plainText, StandardCharsets.UTF_8);
         } catch (Exception e) {
             throw new ProjectException(CryptoErrorCode.DECRYPTION_FAILED, e);
+        }
+    }
+
+    // 결정적 단방향 해시(HMAC-SHA256)
+    // 암호화 컬럼은 매번 다른 암호문이 나와 유니크 제약을 걸 수 없으므로,
+    // 같은 값이면 항상 같은 결과가 나오는 이 해시를 별도 컬럼에 저장해 유니크 판별에 사용한다.
+    // 비밀키 기반이라 해시만으로는 원문(예: 10자리 사업자번호)을 무차별 대입으로 역추적하기 어렵다.
+    public String hash(String plainText) {
+        try {
+            Mac mac = Mac.getInstance(HMAC_ALGORITHM);
+            mac.init(new SecretKeySpec(Base64.getDecoder().decode(secretKey), HMAC_ALGORITHM));
+            byte[] result = mac.doFinal(plainText.getBytes(StandardCharsets.UTF_8));
+            return Base64.getEncoder().encodeToString(result);
+        } catch (Exception e) {
+            throw new ProjectException(CryptoErrorCode.ENCRYPTION_FAILED, e);
         }
     }
 }
