@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.contract.dto.ContractResDTO;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.identity_verification.service.IdentityVerificationService;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
@@ -15,14 +16,19 @@ import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user.repository.UserRepository;
+import com.popIt.pop_it.global.util.S3ObjectHasher;
+import java.time.LocalDate;
+import java.util.Optional;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @Transactional
@@ -38,6 +44,16 @@ public class ContractSignatureTest {
     private ContractRepository contractRepository;
     @Autowired
     private ContractService contractService;
+
+    // 실제 PortOne/S3 연동 없이 계약 서명 로직만 검증하기 위해 외부 연동 지점을 목으로 대체한다.
+    @MockitoBean
+    private IdentityVerificationService identityVerificationService;
+    @MockitoBean
+    private S3ObjectHasher s3ObjectHasher;
+
+    private static final String HOST_CI_HASH = "host-ci-hash";
+    private static final String GUEST_CI_HASH = "guest-ci-hash";
+    private static final String IMAGE_HASH = "signature-image-hash";
 
     private User host;
     private User guest;
@@ -104,6 +120,14 @@ public class ContractSignatureTest {
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
                 .reservation(reservation)
                 .build());
+
+        // 본인인증은 완료된 상태를 기본값으로 두고, 이미지 해시는 S3를 실제로 호출하지 않도록 고정값을 반환
+        when(identityVerificationService.getVerifiedCiHash(any(User.class)))
+                .thenAnswer(invocation -> {
+                    User signer = invocation.getArgument(0);
+                    return Optional.of(signer.getUserId().equals(hostId) ? HOST_CI_HASH : GUEST_CI_HASH);
+                });
+        when(s3ObjectHasher.hash(anyString())).thenReturn(IMAGE_HASH);
     }
 
     @Test
@@ -125,6 +149,10 @@ public class ContractSignatureTest {
         assertThat(contract.getHostSignatureUrl()).isEqualTo(signatureUrl);
         assertThat(contract.getHostSignedAt()).isNotNull();
         assertThat(contract.getGuestSignatureUrl()).isNull();
+
+        // 본인인증 ciHash와 서명 이미지 해시도 함께 기록됐는지 확인
+        assertThat(contract.getHostSignerCiHash()).isEqualTo(HOST_CI_HASH);
+        assertThat(contract.getHostSignatureImgHash()).isEqualTo(IMAGE_HASH);
     }
 
     @Test
@@ -150,5 +178,9 @@ public class ContractSignatureTest {
         assertThat(contract.getHostSignatureUrl()).isEqualTo(hostSignatureUrl);
         assertThat(contract.getGuestSignatureUrl()).isEqualTo(guestSignatureUrl);
         assertThat(contract.getGuestSignedAt()).isNotNull();
+
+        // 본인인증 ciHash와 서명 이미지 해시도 함께 기록됐는지 확인
+        assertThat(contract.getGuestSignerCiHash()).isEqualTo(GUEST_CI_HASH);
+        assertThat(contract.getGuestSignatureImgHash()).isEqualTo(IMAGE_HASH);
     }
 }
