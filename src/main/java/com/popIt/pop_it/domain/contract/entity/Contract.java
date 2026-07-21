@@ -37,6 +37,17 @@ public class Contract {
 
     private LocalDateTime guestSignedAt; // 게스트 서명 일시
 
+    /**
+     * 전자서명 시 필요한 해시값
+     */
+    private String hostSignerCiHash; // 호스트 본인인증 ci 해시
+
+    private String guestSignerCiHash; // 게스트 본인인증 ci 해시
+
+    private String signatureImageHash;    // 이미지 위변조 검증
+
+    private String contractContentHash;   // 서명 시점 계약 내용 스냅샷
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
@@ -51,15 +62,17 @@ public class Contract {
     private Reservation reservation; // 대상 예약
 
     // 호스트 서명: 호스트 서명 정보 업데이트
-    public void signByHost(ContractStatus status, String hostSignatureUrl) {
+    public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash) {
         this.status = status;
         this.hostSignatureUrl = hostSignatureUrl;
         this.hostSignedAt = LocalDateTime.now();
+        this.hostSignerCiHash = hostSignerCiHash;
     }
     // 게스트 서명: 게스트 서명 정보 업데이트
-    public void signByGuest(ContractStatus status, String guestSignatureUrl) {
+    public void signByGuest(ContractStatus status, String guestSignatureUrl, String guestSignerCiHash) {
         this.status = status;
         this.guestSignatureUrl = guestSignatureUrl;
         this.guestSignedAt = LocalDateTime.now();
+        this.guestSignerCiHash = guestSignerCiHash;
     }
 }

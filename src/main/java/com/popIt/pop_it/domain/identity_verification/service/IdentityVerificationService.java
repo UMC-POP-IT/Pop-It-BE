@@ -20,6 +20,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -118,5 +119,10 @@ public class IdentityVerificationService {
         IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user);
 
         return IdentityVerificationConverter.toVerify(verifiedUser);
+    }
+
+    // Contract에서 본인인증 여부 조회 시 필요
+    public Optional<String> getVerifiedCiHash(User user) {
+        return identityVerificationRepository.findCiHashByUser(user);
     }
 }

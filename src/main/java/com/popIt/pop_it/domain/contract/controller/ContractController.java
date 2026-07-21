@@ -9,6 +9,7 @@ import com.popIt.pop_it.global.apiPayload.code.BaseSuccessCode;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -39,7 +40,7 @@ public class ContractController {
     public ApiResponse<ContractResDTO.SignatureRes> signature(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long reservationId,
-            @RequestBody ContractReqDTO.SignatureReq dto
+            @RequestBody @Valid ContractReqDTO.SignatureReq dto
             ) {
         BaseSuccessCode code = ContractSuccessCode.SIGNATURE_SUCCESS;
         return ApiResponse.onSuccess(code, contractService.signature(authUser.getUser(), reservationId, dto));
