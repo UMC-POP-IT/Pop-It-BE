@@ -1,6 +1,8 @@
 package com.popIt.pop_it.domain.reservation.entity;
 
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
+import com.popIt.pop_it.domain.reservation.exception.ReservationException;
+import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
@@ -105,6 +107,14 @@ public class Reservation {
     //계약완료 -> 사용 중 (이용 시작일 도래)
     public void startUsage() {
         this.status = ReservationStatus.IN_USE;
+    }
+
+    //계약 완료 기록
+    public void markContractCompleted() {
+        if (this.status != ReservationStatus.APPROVED) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        this.status = ReservationStatus.CONTRACT_COMPLETED;
     }
 
     //퇴실 증빙 제출 시간 기록

@@ -87,7 +87,10 @@ public class ContractService {
                     // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
                     case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
                     // 게스트 서명 처리
-                    case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl(), ciHash, signatureImgHash);
+                    case GUEST_SIGNATURE_PENDING -> {
+                        contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl(), ciHash, signatureImgHash);
+                        reservation.markContractCompleted();
+                    }
                 }
             }
 
