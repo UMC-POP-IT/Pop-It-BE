@@ -1,0 +1,37 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+    crypto:
+      secret-key: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+
+jwt:
+  token:
+    secretKey: "abcdefghijklmnopqrstuvwxyz123456"
+    expiration:
+      access: 1800000
+      refresh: 1209600000
+
+portone:
+  api-secret: "test-portone-secret"
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    s3:
+      bucket: test-bucket
+      host-document-bucket: test-host-document-bucket
