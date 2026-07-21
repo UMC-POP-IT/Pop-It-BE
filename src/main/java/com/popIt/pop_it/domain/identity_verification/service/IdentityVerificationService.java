@@ -67,6 +67,7 @@ public class IdentityVerificationService {
 
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneIdentityVerification.VerifiedCustomer customer = response.verifiedCustomer();
+        // ciHash 생성
         String ciHash = HashUtil.sha256(customer.ci());
 
         // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우

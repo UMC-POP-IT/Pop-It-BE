@@ -8,8 +8,6 @@ import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.exception.ContractException;
 import com.popIt.pop_it.domain.contract.exception.code.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
-import com.popIt.pop_it.domain.identity_verification.exception.IdentityVerificationException;
-import com.popIt.pop_it.domain.identity_verification.exception.code.IdentityVerificationErrorCode;
 import com.popIt.pop_it.domain.identity_verification.service.IdentityVerificationService;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.exception.ReservationException;
@@ -17,6 +15,7 @@ import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
+import com.popIt.pop_it.global.util.S3ObjectHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -30,6 +29,7 @@ public class ContractService {
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
     private final IdentityVerificationService identityVerificationService;
+    private final S3ObjectHasher s3ObjectHasher;
 
     public ContractResDTO.ContractInfoRes getContractInfo(User user, Long reservationId) {
 
@@ -52,15 +52,16 @@ public class ContractService {
     @Transactional
     public ContractResDTO.SignatureRes signature(User user, Long reservationId, ContractReqDTO.SignatureReq dto) {
 
-        // 예약 조회
+        // 예약 조회 후 사용자의 예약인지 검사
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
-
-        // 사용자의 예약인지 검사
         validateUserReservation(user, reservation);
 
-        // 본인인증이 되었는지 검사 - 본인인증 ciHash 조회
+        // 본인인증이 되었는지 검사: 본인인증 ciHash 조회
         String ciHash = identityVerificationService.getVerifiedCiHash(user)
                 .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_SIGNER_NOT_VERIFIED));
+
+        // 서명 이미지 해시 생성
+        String signatureImgHash = s3ObjectHasher.hash(dto.signatureUrl());
 
         // 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
@@ -76,7 +77,7 @@ public class ContractService {
                     // 이미 호스트 서명 처리되었는데 다시 요청할 경우
                     case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
                     // 호스트 서명 처리
-                    case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl(), ciHash);
+                    case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl(), ciHash, signatureImgHash);
                 }
             }
             else if (currentMode == UserMode.GUEST) {
@@ -86,7 +87,7 @@ public class ContractService {
                     // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
                     case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
                     // 게스트 서명 처리
-                    case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl(), ciHash);
+                    case GUEST_SIGNATURE_PENDING -> contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl(), ciHash, signatureImgHash);
                 }
             }
 
