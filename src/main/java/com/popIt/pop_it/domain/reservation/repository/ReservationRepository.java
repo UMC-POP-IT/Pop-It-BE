@@ -73,7 +73,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
         """)
     List<ReservationStatusCount> countHostReservationsByStatus(@Param("hostId") Long hostId);
 
-    // 동시 예약 방지용 - 특정 공간의 특정 기간에 겹치는 활성 예약 존재 여부 확인 (락은 추후 구현)
+    // 동시 예약 방지용 - 특정 공간의 특정 기간에 겹치는 활성 예약 존재 여부 확인 (Space 락으로 보호됨)
     @Query("""
         select count(r) > 0 from Reservation r
         where r.space.id = :spaceId
