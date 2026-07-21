@@ -56,6 +56,9 @@ public class Space {
     @Column(nullable = false)
     private String roadAddress; // 도로명 주소
 
+    @Column(length = 30, nullable = false)
+    private String addressDetail; // 상세 주소
+
     @Column(nullable = false)
     private Long deposit; // 보증금
 
