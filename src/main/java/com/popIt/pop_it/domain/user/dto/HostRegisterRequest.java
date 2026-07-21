@@ -22,7 +22,8 @@ public record HostRegisterRequest(
 
         @Schema(description = "사업자등록증 사본 URL(S3)", example = "https://s3.example.com/business-license.png")
         @NotBlank(message = "사업자등록증 사본 URL은 필수입니다.")
-        @Pattern(regexp = "^https?://.+", message = "유효한 URL이어야 합니다.")
+        // S3 업로드 URL은 항상 https → http 허용 시 평문 전송 위험이 있어 https만 강제
+        @Pattern(regexp = "^https://.+", message = "유효한 https URL이어야 합니다.")
         String businessLicenseUrl,
 
         @Schema(description = "상호명", example = "팝잇 상회")
@@ -49,7 +50,8 @@ public record HostRegisterRequest(
 
         @Schema(description = "통장 사본 URL(S3)", example = "https://s3.example.com/bankbook.png")
         @NotBlank(message = "통장 사본 URL은 필수입니다.")
-        @Pattern(regexp = "^https?://.+", message = "유효한 URL이어야 합니다.")
+        // S3 업로드 URL은 항상 https → http 허용 시 평문 전송 위험이 있어 https만 강제
+        @Pattern(regexp = "^https://.+", message = "유효한 https URL이어야 합니다.")
         String bankbookCopyUrl
 ) {
 
