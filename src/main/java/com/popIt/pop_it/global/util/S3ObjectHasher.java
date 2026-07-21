@@ -17,13 +17,26 @@ public class S3ObjectHasher {
     // fileUrl 형식: https://{bucket}.s3.{region}.amazonaws.com/{key}
     public String hash(String fileUrl) {
         URI uri = URI.create(fileUrl);
-        String bucket = uri.getHost().split("\\.")[0];
-        String key = uri.getPath().substring(1); // 앞의 '/' 제거
+        String host = uri.getHost();
+        String path = uri.getPath();
 
-        byte[] bytes = s3Client.getObjectAsBytes(
-                GetObjectRequest.builder().bucket(bucket).key(key).build()
-        ).asByteArray();
+        // URL 유효성 및 S3 도메인 여부 1차 검증
+        if (host == null || !host.contains(".s3.") || path == null || path.length() <= 1) {
+            throw new IllegalArgumentException("유효한 S3 객체 URL이 아닙니다.");
+        }
 
-        return HashUtil.sha256(bytes);
+        // 마침표가 포함된 버킷명도 정상적으로 추출되도록 처리
+        String bucket = host.substring(0, host.indexOf(".s3."));
+        String key = path.substring(1); // 앞의 '/' 제거
+
+        // 전체 데이터를 메모리에 올리지 않고 스트림 방식으로 해시 계산
+        try (java.io.InputStream is = s3Client.getObject(
+                GetObjectRequest.builder().bucket(bucket).key(key).build(),
+                software.amazon.awssdk.core.sync.ResponseTransformer.toInputStream())) {
+
+            return HashUtil.sha256(is.toString());
+        } catch (Exception e) {
+            throw new IllegalStateException("서명 이미지 위변조 검증 중 해시 계산에 실패했습니다.", e);
+        }
     }
 }
