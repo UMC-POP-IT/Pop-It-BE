@@ -24,6 +24,7 @@ import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -142,6 +143,15 @@ public class PaymentService {
             );
             // 계약 완료 처리
             payment.getContract().markAsCompleted();
+            // Contract는 @Version이 걸려 있어, 웹훅 등 다른 경로가 동시에 완료 처리하면 버전
+            // 충돌이 날 수 있다. 이 트랜잭션 안에서 즉시 감지해 catch할 수 있도록 명시적으로 flush한다.
+            paymentRepository.saveAndFlush(payment);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            // 다른 경로(웹훅 등)가 같은 계약을 먼저 완료 처리해 버전이 충돌한 경우.
+            // 이 결제 자체는 이미 성공했으므로 실패로 기록하지 않고, 재조회를 안내한다.
+            log.warn("계약 버전 충돌로 완료 처리 커밋 실패(다른 경로가 먼저 처리한 것으로 추정): paymentId={}",
+                    payment.getId(), e);
+            throw new ProjectException(PaymentErrorCode.PAYMENT_CONCURRENT_MODIFICATION);
         } catch (ProjectException e) {
             // 이 메서드는 @Transactional이라 여기서 던지는 예외로 트랜잭션 전체가 롤백된다.
             // 실패 상태를 이 트랜잭션 안에서만 반영하면 롤백과 함께 사라지므로, 별도

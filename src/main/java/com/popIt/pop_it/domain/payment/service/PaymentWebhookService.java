@@ -7,6 +7,7 @@ import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -47,6 +48,14 @@ public class PaymentWebhookService {
             return;
         }
 
-        paymentWebhookApplier.apply(payment.getId(), actual);
+        try {
+            paymentWebhookApplier.apply(payment.getId(), actual);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            // confirm() 등 다른 경로가 같은 계약을 먼저 완료 처리해 버전이 충돌한 경우.
+            // apply()의 트랜잭션은 이미 완전히 롤백되었고, 다른 경로가 정상적으로 반영을
+            // 마쳤을 것이므로 이 웹훅에서 다시 처리할 필요는 없다.
+            log.warn("웹훅 반영 중 계약 버전 충돌(다른 경로가 먼저 처리한 것으로 추정): paymentId={}",
+                    payment.getId(), e);
+        }
     }
 }

@@ -26,6 +26,9 @@ jwt:
 portone:
   api-secret: "test-portone-secret"
 
+toss:
+  secret-key: "test-toss-secret-key"
+
 cloud:
   aws:
     region: ap-northeast-2
