@@ -261,7 +261,6 @@ public class ReservationCommandService {
 
             reservation.completeCheckout();
             reservationRepository.saveAndFlush(reservation);
-            reservation.completeCheckout();
 
             try {
                 paymentService.settleByReservation(reservationId);
@@ -331,5 +330,13 @@ public class ReservationCommandService {
         if (reservation.getCheckoutRejected()) return; // 조회~처리 사이 호스트가 거절했으면 자동승인 스킵
         reservation.completeCheckout();
         reservationRepository.saveAndFlush(reservation);
+
+        try {
+            paymentService.settleByReservation(reservationId);
+        } catch (ProjectException e) {
+            // 정산 일부 실패는 퇴실 자동 승인 자체를 막지 않음
+            // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
+            log.warn("퇴실 자동 승인 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
+        }
     }
 }
