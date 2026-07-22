@@ -169,12 +169,12 @@ public class ContractSignatureTest {
         );
 
         // 응답: 완료 상태로 전이, 둘 다 서명됨
-        assertThat(result.contractStatus()).isEqualTo(ContractStatus.COMPLETED);
+        assertThat(result.contractStatus()).isEqualTo(ContractStatus.PENDING_PAYMENT);
         assertThat(result.bothSigned()).isTrue();
 
         // 실제 DB에도 게스트 서명 정보가 반영됐는지 확인
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow();
-        assertThat(contract.getStatus()).isEqualTo(ContractStatus.COMPLETED);
+        assertThat(contract.getStatus()).isEqualTo(ContractStatus.PENDING_PAYMENT);
         assertThat(contract.getHostSignatureUrl()).isEqualTo(hostSignatureUrl);
         assertThat(contract.getGuestSignatureUrl()).isEqualTo(guestSignatureUrl);
         assertThat(contract.getGuestSignedAt()).isNotNull();

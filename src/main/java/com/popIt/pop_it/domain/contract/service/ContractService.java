@@ -78,7 +78,7 @@ public class ContractService {
             if (currentMode == UserMode.HOST) {
                 switch (contract.getStatus()) {
                     // 이미 모두 서명 처리되었는데 다시 요청할 경우
-                    case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                    case PENDING_PAYMENT -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
                     // 이미 호스트 서명 처리되었는데 다시 요청할 경우
                     case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
                     // 호스트 서명 처리
@@ -88,12 +88,12 @@ public class ContractService {
             else if (currentMode == UserMode.GUEST) {
                 switch (contract.getStatus()) {
                     // 이미 모두 서명 처리되었는데 다시 요청할 경우
-                    case COMPLETED -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
+                    case PENDING_PAYMENT -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_ALL_SIGNED);
                     // 호스트가 먼저 서명해야하는데 그 전에 게스트가 먼저 요청한 경우
                     case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
                     // 게스트 서명 처리
                     case GUEST_SIGNATURE_PENDING -> {
-                        contract.signByGuest(ContractStatus.COMPLETED, dto.signatureUrl(), ciHash, signatureImgHash);
+                        contract.signByGuest(ContractStatus.PENDING_PAYMENT, dto.signatureUrl(), ciHash, signatureImgHash);
                         reservation.markContractCompleted();
                     }
                 }
@@ -108,7 +108,7 @@ public class ContractService {
 
         return ContractResDTO.SignatureRes.builder()
                 .contractStatus(contract.getStatus())
-                .bothSigned(contract.getStatus() == ContractStatus.COMPLETED)
+                .bothSigned(contract.getStatus() == ContractStatus.PENDING_PAYMENT)
                 .build();
     }
 

@@ -193,7 +193,7 @@ class PaymentServiceTest {
 
     @Test
     void 결제_가능한_계약_상태가_아니면_예외() {
-        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_SIGNATURE, USER_ID);
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.HOST_SIGNATURE_PENDING, USER_ID);
 
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.empty());
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
