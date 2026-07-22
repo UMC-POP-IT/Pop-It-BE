@@ -88,7 +88,6 @@ public class ReservationCheckoutScheduler {
                 log.warn("퇴실 자동 승인 중 낙관적 락 충돌 - reservationId: {}", r.getId());
             }
         });
-        // TODO: Payment - 두 케이스 모두 정산 실행 (approveCheckout과 로직 공통화 필요)
     }
 }
 

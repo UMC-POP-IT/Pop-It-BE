@@ -55,6 +55,16 @@ dependencies {
 
 	// RestClient
 	implementation 'org.springframework.boot:spring-boot-starter-restclient'
+
+	// FlyWay
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-mysql'
+
+	// Testcontainers
+	testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+	testImplementation platform('org.testcontainers:testcontainers-bom:1.20.4')
+	testImplementation 'org.testcontainers:junit-jupiter'
+	testImplementation 'org.testcontainers:mysql'
 }
 
 tasks.named('test') {

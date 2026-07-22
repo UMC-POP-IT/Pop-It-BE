@@ -54,6 +54,18 @@ public class Contract {
     @Builder.Default
     private Long version = 0L;
 
+    @Column(nullable = false)
+    private Long rentalFee; // 임대료 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long deposit; // 보증금 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long insuranceFee; // 보험료 (계약 체결 시점 확정 금액)
+
+    @Column(nullable = false)
+    private Long totalPrice; // 총 결제 금액 (계약 체결 시점 확정 금액)
+
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
@@ -73,5 +85,9 @@ public class Contract {
         this.guestSignedAt = LocalDateTime.now();
         this.guestSignerCiHash = guestSignerCiHash;
         this.guestSignatureImgHash = guestSignatureImgHash;
+    }
+
+    public void markAsCompleted() {
+        this.status = ContractStatus.COMPLETED;
     }
 }

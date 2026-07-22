@@ -56,14 +56,14 @@ public class Space {
     @Column(nullable = false)
     private String roadAddress; // 도로명 주소
 
+    @Column(length = 30, nullable = false)
+    private String addressDetail; // 상세 주소
+
     @Column(nullable = false)
     private Long deposit; // 보증금
 
+    @Column(nullable = false)
     private Integer pricePerDay; // 일 대여료
-
-    private Integer pricePerWeek; // 주 대여료
-
-    private Integer pricePerMonth; // 월 대여료
 
     @Column(nullable = false)
     private LocalDate availableStartDate; // 대여 가능 시작일
