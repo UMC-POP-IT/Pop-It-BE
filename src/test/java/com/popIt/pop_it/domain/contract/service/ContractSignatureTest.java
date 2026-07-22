@@ -118,6 +118,10 @@ public class ContractSignatureTest {
 
         contractRepository.save(Contract.builder()
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .rentalFee(200_000L)
+                .deposit(1_000_000L)
+                .insuranceFee(10_000L)
+                .totalPrice(1_210_000L)
                 .reservation(reservation)
                 .build());
 
