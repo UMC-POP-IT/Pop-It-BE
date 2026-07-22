@@ -40,6 +40,8 @@ spring:
       hibernate:
         format_sql: true
     show-sql: true
+  flyway:
+    enabled: false # local/test는 H2 + hibernate ddl-auto가 스키마를 관리 (prod에서만 활성화)
   h2:
     console:
       enabled: true
@@ -67,6 +69,9 @@ cloud:
 
 portone:
   api-secret: ${PORTONE_API_SECRET_KEY}
+
+toss:
+  secret-key: ${TOSS_SECRET_KEY}
 
 management:
   endpoints:

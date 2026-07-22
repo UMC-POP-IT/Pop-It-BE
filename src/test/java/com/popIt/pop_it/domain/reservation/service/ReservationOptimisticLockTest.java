@@ -96,6 +96,7 @@ public class ReservationOptimisticLockTest {
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
                 .space(space)
                 .user(guest)

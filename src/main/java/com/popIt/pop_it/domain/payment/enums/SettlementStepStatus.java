@@ -5,12 +5,12 @@ import lombok.RequiredArgsConstructor;
 
 @Getter
 @RequiredArgsConstructor
-public enum PaymentStatus {
+public enum SettlementStepStatus {
 
-    PENDING("결제 대기"),
-    PAID("결제 완료"),
-    FAILED("결제 실패"),
-    EXPIRED("결제 만료")
+    PENDING("대기중"),
+    PROCESSING("처리중"),
+    DONE("완료"),
+    FAILED("실패")
     ;
 
     private final String description;
