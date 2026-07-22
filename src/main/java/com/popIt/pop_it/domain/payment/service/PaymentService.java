@@ -144,9 +144,11 @@ public class PaymentService {
             payment.getContract().markAsCompleted();
         } catch (ProjectException e) {
             // 이 메서드는 @Transactional이라 여기서 던지는 예외로 트랜잭션 전체가 롤백된다.
-            // markAsFailed()를 이 트랜잭션 안에서만 반영하면 롤백과 함께 사라지므로,
-            // 별도 트랜잭션(REQUIRES_NEW)에 즉시 커밋해 실패 상태가 남도록 한다.
-            paymentSettlementRecorder.update(payment.getId(), Payment::markAsFailed);
+            // 실패 상태를 이 트랜잭션 안에서만 반영하면 롤백과 함께 사라지므로, 별도
+            // 트랜잭션(REQUIRES_NEW)의 조건부 UPDATE로 즉시 커밋해 실패 상태가 남도록 한다.
+            // 동시에 다른 confirm() 요청이 먼저 성공해 PAID로 커밋했을 수 있으므로, 그 UPDATE는
+            // 여전히 PENDING인 경우에만 FAILED로 전환해 PAID를 덮어쓰지 않는다.
+            paymentSettlementRecorder.markConfirmFailedIfPending(payment.getId());
             throw e;
         }
 

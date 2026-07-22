@@ -55,4 +55,21 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                 SettlementStepStatus.PROCESSING,
                 List.of(SettlementStepStatus.PENDING, SettlementStepStatus.FAILED));
     }
+
+    // 동시 confirm() 호출 중 하나가 뒤늦게 실패를 기록하려 할 때, 다른 하나가 이미 PAID로
+    // 커밋한 상태를 덮어쓰지 않도록 조건부로 전환한다(status가 여전히 PENDING일 때만 FAILED/EXPIRED로).
+    @Modifying
+    @Query("update Payment p set p.status = :target where p.id = :paymentId and p.status = :expected")
+    int compareAndSetStatus(
+            @Param("paymentId") Long paymentId,
+            @Param("target") PaymentStatus target,
+            @Param("expected") PaymentStatus expected);
+
+    default int markFailedIfPending(Long paymentId) {
+        return compareAndSetStatus(paymentId, PaymentStatus.FAILED, PaymentStatus.PENDING);
+    }
+
+    default int markExpiredIfPending(Long paymentId) {
+        return compareAndSetStatus(paymentId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
+    }
 }

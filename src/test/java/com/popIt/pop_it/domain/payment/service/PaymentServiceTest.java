@@ -374,7 +374,6 @@ class PaymentServiceTest {
         PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
         TossErrorCode tossErrorCode = new TossErrorCode(
                 HttpStatus.BAD_REQUEST, "INVALID_CARD_NUMBER", "카드번호를 다시 확인해주세요.");
-        stubSettlementRecorderToMutate(payment);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
@@ -384,7 +383,29 @@ class PaymentServiceTest {
                 .isInstanceOf(ProjectException.class)
                 .extracting(e -> ((ProjectException) e).getErrorCode())
                 .isEqualTo(tossErrorCode);
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        verify(paymentSettlementRecorder).markConfirmFailedIfPending(PAYMENT_ID);
+    }
+
+    @Test
+    void 동시_confirm_요청_중_하나가_이미_PAID로_커밋했으면_실패_기록이_덮어쓰지_않는다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
+        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        TossErrorCode tossErrorCode = new TossErrorCode(
+                HttpStatus.BAD_REQUEST, "ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제입니다.");
+
+        given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
+                .willThrow(new ProjectException(tossErrorCode));
+        // 다른 confirm() 요청이 이미 PAID로 커밋해, 조건부 UPDATE(WHERE status='PENDING')가 0건에 그친 상황을 흉내낸다.
+        given(paymentSettlementRecorder.markConfirmFailedIfPending(PAYMENT_ID)).willReturn(false);
+
+        assertThatThrownBy(() -> paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID))
+                .isInstanceOf(ProjectException.class);
+
+        // 이 결제 인스턴스는 confirm()의 애초 조회 결과일 뿐이라 여기선 상태 변화가 없는 게 맞다.
+        // 실제 덮어쓰기 방지는 DB의 조건부 UPDATE가 담당하며, 그 결과(false)만 이 테스트에서 확인한다.
+        verify(paymentSettlementRecorder).markConfirmFailedIfPending(PAYMENT_ID);
     }
 
     @Test

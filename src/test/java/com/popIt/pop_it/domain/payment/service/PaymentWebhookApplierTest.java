@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.payment.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
@@ -74,26 +75,31 @@ class PaymentWebhookApplierTest {
     void EXPIRED_상태면_결제를_만료로_반영한다() {
         Payment payment = paymentOf(PaymentStatus.PENDING);
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        given(paymentRepository.markExpiredIfPending(PAYMENT_ID)).willReturn(1);
 
         paymentWebhookApplier.apply(PAYMENT_ID, tossConfirmOf("EXPIRED"));
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.EXPIRED);
+        verify(paymentRepository).markExpiredIfPending(PAYMENT_ID);
     }
 
     @Test
     void ABORTED_상태면_결제를_실패로_반영한다() {
         Payment payment = paymentOf(PaymentStatus.PENDING);
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        given(paymentRepository.markFailedIfPending(PAYMENT_ID)).willReturn(1);
 
         paymentWebhookApplier.apply(PAYMENT_ID, tossConfirmOf("ABORTED"));
 
-        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.FAILED);
+        verify(paymentRepository).markFailedIfPending(PAYMENT_ID);
     }
 
     @Test
     void 이미_PENDING이_아닌_결제는_EXPIRED_웹훅을_받아도_유지한다() {
         Payment payment = paymentOf(PaymentStatus.PAID);
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
+        // DB의 조건부 UPDATE(WHERE status='PENDING')가 실제 방어를 담당하므로,
+        // 이미 PENDING이 아닌 경우를 0건으로 흉내낸다(Mockito 기본값과 동일하지만 의도를 명시).
+        given(paymentRepository.markExpiredIfPending(PAYMENT_ID)).willReturn(0);
 
         paymentWebhookApplier.apply(PAYMENT_ID, tossConfirmOf("EXPIRED"));
 
