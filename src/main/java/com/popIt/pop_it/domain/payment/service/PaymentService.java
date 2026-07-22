@@ -216,7 +216,8 @@ public class PaymentService {
         }
         try {
             Long hostId = contract.getReservation().getSpace().getHostId();
-            hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, contract.getRentalFee());
+            Long hostPayoutAmount = contract.getReservation().getHostTotalPrice();
+            hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, hostPayoutAmount);
             paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
             return true;
         } catch (Exception e) {

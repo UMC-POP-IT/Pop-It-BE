@@ -38,6 +38,7 @@ import java.util.stream.IntStream;
 public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
+    private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
     private static final int MAX_RESERVATION_DAYS = 90;
 
     private final ReservationRepository reservationRepository;
@@ -72,7 +73,11 @@ public class ReservationCommandService {
         Long rentalFee = (long) space.getPricePerDay() * days;
         Long insuranceFee = BigDecimal.valueOf(rentalFee)
                 .multiply(INSURANCE_RATE)
-                .setScale(0, RoundingMode.HALF_UP)
+                .setScale(0, RoundingMode.FLOOR)
+                .longValue();
+        Long platformFee = BigDecimal.valueOf(rentalFee)
+                .multiply(PLATFORM_FEE_RATE)
+                .setScale(0, RoundingMode.FLOOR)
                 .longValue();
         Long deposit = space.getDeposit();
         Long totalPrice = rentalFee + insuranceFee + deposit;
@@ -85,6 +90,7 @@ public class ReservationCommandService {
                 .rentalFee(rentalFee)
                 .deposit(deposit)
                 .insuranceFee(insuranceFee)
+                .platformFee(platformFee)
                 .totalPrice(totalPrice)
                 .space(space)
                 .user(guest)

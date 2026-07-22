@@ -76,6 +76,7 @@ class PaymentServiceTest {
         Reservation reservation = Reservation.builder()
                 .rentalFee(100_000L)
                 .deposit(50_000L)
+                .platformFee(10_000L)
                 .space(space)
                 .user(user)
                 .build();
@@ -421,7 +422,7 @@ class PaymentServiceTest {
 
         assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.DONE);
         assertThat(payment.getDepositRefundStatus()).isEqualTo(SettlementStepStatus.DONE);
-        verify(hostPayoutClient).payout("ORDER_1_abc-HOST", HOST_ID, 100_000L);
+        verify(hostPayoutClient).payout("ORDER_1_abc-HOST", HOST_ID, 90_000L);
         verify(tossPaymentClient).cancelPartial("paymentKey-1", 50_000L, "퇴실 승인에 따른 보증금 환불", "ORDER_1_abc-REFUND");
     }
 
