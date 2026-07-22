@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,7 +57,7 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ApiResponse<SpaceResDTO.CreateResult> createSpace(
+    public ResponseEntity<ApiResponse<SpaceResDTO.CreateResult>> createSpace(
             @AuthenticationPrincipal  AuthUser authUser,
             @Valid @RequestBody SpaceReqDTO.Create request
     ) {
@@ -67,7 +68,8 @@ public class SpaceController {
 
         Long userId = authUser.getUser().getUserId();
         SpaceResDTO.CreateResult result = spaceService.createSpace(userId, request);
-        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result);
+        return ResponseEntity.status(SpaceSuccessCode.SPACE_CREATED.getStatus())
+                .body(ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result));
     }
 
     // @TODO: AI 맞춤 추천 공간 조회
