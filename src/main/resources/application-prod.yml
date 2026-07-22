@@ -17,4 +17,4 @@ spring:
 
 springdoc:
   swagger-ui:
-    enabled: false         # swagger 숨기기
+    enabled: true
