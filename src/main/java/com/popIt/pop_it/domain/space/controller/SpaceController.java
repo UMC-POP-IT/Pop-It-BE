@@ -105,6 +105,45 @@ public class SpaceController {
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
+    @Operation(
+            summary = "내 공간 목록 조회",
+            description = """
+                    호스트모드 - 내 공간 페이지. 로그인한 호스트 본인이 등록한 공간 목록을 조회합니다.
+                    - Authorize에 로그인으로 발급받은 Access Token을 입력하세요.
+                    - 호스트 등록을 완료한 사용자만 호출할 수 있습니다.
+                    - 등록일 최신순으로 정렬되며, 삭제된 공간은 제외됩니다.
+                    - thumbnailUrl: 등록 시 저장한 사진 목록의 첫 번째(대표) 이미지입니다.
+                    - page는 0부터 시작합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "내 공간 목록 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403", description = "호스트 프로필 미등록",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/my")
+    public ApiResponse<SpaceResDTO.MyListResult> getMySpaces(
+            @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "페이지 크기", example = "4")
+            @RequestParam(defaultValue = "4") int size
+    ) {
+        if (authUser == null || authUser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authUser.getUser().getUserId();
+        SpaceResDTO.MyListResult result = spaceService.getMySpaces(userId, page, size);
+        return ApiResponse.onSuccess(SpaceSuccessCode.MY_PAGE_LIST_FETCHED, result);
+    }
+
     // @TODO: AI 맞춤 추천 공간 조회
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")

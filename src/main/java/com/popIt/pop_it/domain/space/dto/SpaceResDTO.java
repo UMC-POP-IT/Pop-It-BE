@@ -116,6 +116,38 @@ public class SpaceResDTO {
             Integer wishCount
     ) {}
 
+    @Schema(description = "내 공간 목록 항목")
+    @Builder
+    public record MySpace(
+            @Schema(description = "공간 ID", example = "10")
+            Long spaceId,
+
+            @Schema(description = "건물명", example = "합정 메세나폴리스")
+            String buildingName,
+
+            @Schema(description = "대표 이미지 URL (사진 목록의 첫 번째)", example = "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg")
+            String thumbnailUrl,
+
+            @Schema(description = "등록일 (yyyy-MM-dd)", example = "2026-07-23")
+            LocalDate registeredAt
+    ) {}
+
+    @Schema(description = "내 공간 목록 조회 응답")
+    @Builder
+    public record MyListResult(
+            @Schema(description = "공간 목록")
+            List<MySpace> spaces,
+
+            @Schema(description = "내가 등록한 전체 공간 수", example = "2")
+            Integer totalCount,
+
+            @Schema(description = "현재 페이지 번호 (0부터 시작)", example = "0")
+            Integer currentPage,
+
+            @Schema(description = "다음 페이지 존재 여부", example = "false")
+            Boolean hasNext
+    ) {}
+
     @Builder
     public record AiRecommendedSpace(
             Long spaceId,

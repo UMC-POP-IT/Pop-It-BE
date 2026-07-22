@@ -17,11 +17,15 @@ import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -104,5 +108,30 @@ public class SpaceService {
         }
 
         return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
+    }
+
+    // 내 공간 목록 조회 (호스트)
+    public SpaceResDTO.MyListResult getMySpaces(Long userId, int page, int size) {
+        // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 내 공간 자체가 존재 X
+        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED));
+
+        // 2. 내 공간 페이징 조회
+        Page<Space> spacePage = spaceRepository.findAllByHostIdAndDeletedAtIsNullOrderByCreatedAtDesc(hostProfile.getId(), PageRequest.of(page, size));
+
+        // 3. 대표 이미지를 한 번의 쿼리로 모아서 조회
+        List<Long> spaceIds = spacePage.getContent().stream()
+                .map(space -> space.getId())
+                .toList();
+
+        Map<Long, String> thumbnailUrlBySpaceId = spaceIds.isEmpty()
+                ? Map.of()
+                : spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getSpace().getId(),
+                        image -> image.getImageUrl(),
+                        (existing, duplicate) -> existing));
+
+        return SpaceConverter.toMyListResult(spacePage, thumbnailUrlBySpaceId);
     }
 }
