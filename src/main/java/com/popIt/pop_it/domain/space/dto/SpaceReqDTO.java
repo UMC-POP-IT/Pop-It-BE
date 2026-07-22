@@ -70,16 +70,6 @@ public class SpaceReqDTO {
             @Positive
             Integer pricePerDay,
 
-            @Schema(description = "주 단위 가격", example = "630000")
-            @NotNull
-            @Positive
-            Integer pricePerWeek,
-
-            @Schema(description = "월 단위 가격", example = "2700000")
-            @NotNull
-            @Positive
-            Integer pricePerMonth,
-
             @Schema(description = "계약 가능 시작일 (yyyy-MM-dd)", example = "2026-06-01")
             @NotNull
             LocalDate availableStartDate,

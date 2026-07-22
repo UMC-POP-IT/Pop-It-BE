@@ -25,8 +25,6 @@ public class SpaceConverter {
                 .addressDetail(request.addressDetail())
                 .deposit(request.deposit())
                 .pricePerDay(request.pricePerDay())
-                .pricePerWeek(request.pricePerWeek())
-                .pricePerMonth(request.pricePerMonth())
                 .availableStartDate(request.availableStartDate())
                 .availableEndDate(request.availableEndDate())
                 .spaceCategory(request.spaceCategory())
