@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -52,6 +53,10 @@ public class SecurityConfig {
             "/api/v1/auth/reissue",
             "/api/v1/facilities",
             "/actuator/health"
+    };
+
+    private final String[] allowGetUris = {
+            "/api/v1/spaces/{spaceId:[0-9]+}"
     };
 
     private final String[] publicAPI = {
@@ -111,6 +116,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(allowUris).permitAll()
                         .requestMatchers(publicAPI).permitAll()
+                        .requestMatchers(HttpMethod.GET, allowGetUris).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))

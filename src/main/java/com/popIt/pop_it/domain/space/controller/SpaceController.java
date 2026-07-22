@@ -10,6 +10,7 @@ import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -70,6 +71,38 @@ public class SpaceController {
         SpaceResDTO.CreateResult result = spaceService.createSpace(userId, request);
         return ResponseEntity.status(SpaceSuccessCode.SPACE_CREATED.getStatus())
                 .body(ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result));
+    }
+
+    // 공간 상세 조회
+    @Operation(
+            summary = "공간 상세 조회",
+            description = """
+                    공간 상세 페이지에 필요한 정보를 조회합니다.
+                    - 비로그인 상태에서도 호출할 수 있습니다.
+                    - 로그인 상태로 호출하면 isMine, isWishlisted가 실제 값으로 채워지고,
+                      비로그인 상태에서는 두 값 모두 항상 false로 내려갑니다.
+                    - isMine: 요청자가 이 공간을 등록한 호스트인지 여부. 프론트는 이 값으로 게스트/호스트 화면을 분기합니다.
+                    - wishCount: 로그인 여부와 무관하게 항상 해당 공간의 총 찜 수입니다.
+                    - imageUrls: 등록 시 저장한 노출 순서대로 내려가며, 첫 번째가 대표 이미지입니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 상세 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404", description = "존재하지 않거나 삭제된 공간",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/{spaceId}")
+    public ApiResponse<SpaceResDTO.Detail> getSpaceDetail(
+            @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "공간 ID", example = "10")
+            @PathVariable Long spaceId
+    ) {
+        Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
+
+        SpaceResDTO.Detail result = spaceService.getSpaceDetail(userId, spaceId);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
     // @TODO: AI 맞춤 추천 공간 조회

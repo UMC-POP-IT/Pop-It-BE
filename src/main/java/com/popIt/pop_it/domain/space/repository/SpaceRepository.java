@@ -17,4 +17,7 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")) // 즉시실패
     @Query("select s from Space s where s.id = :spaceId")
     Optional<Space> findByIdForUpdate(@Param("spaceId") Long spaceId);
+
+    // 소프트 삭제된 공간은 조회 대상에서 제외
+    Optional<Space> findByIdAndDeletedAtIsNull(Long id);
 }

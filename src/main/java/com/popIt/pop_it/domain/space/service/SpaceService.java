@@ -14,6 +14,7 @@ import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.user.entity.HostProfile;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
+import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class SpaceService {
     private final SpaceFacilityRepository spaceFacilityRepository;
     private final FacilityRepository facilityRepository;
     private final HostProfileRepository hostProfileRepository;
+    private final WishlistRepository wishlistRepository;
 
     @Transactional
     public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
@@ -74,5 +76,33 @@ public class SpaceService {
         }
 
         return SpaceConverter.toCreateResult(space);
+    }
+
+    // 공간 상세 조회
+    public SpaceResDTO.Detail getSpaceDetail(Long userId, Long spaceId) {
+        // 1. 공간 조회
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+
+        // 2. 사진, 시설 조회
+        List<String> imageUrls = spaceImageRepository.findImageUrlsBySpaceId(spaceId);
+        List<Facility> facilities = spaceFacilityRepository.findFacilitiesBySpaceId(spaceId);
+
+        // 3. 총 찜 수는 로그인 여부와 상관 없이 항상 나타남
+        int wishCount = (int) wishlistRepository.countBySpaceId(spaceId);
+
+        // 4. isMine, isWishlisted 는 로그인한 경우에만 계산 (비로그인이면 둘 다 false)
+        boolean isMine = false;
+        boolean isWishlist = false;
+
+        if (userId != null) {
+            isMine = hostProfileRepository.findByUserId(userId)
+                    .map(hostProfile -> hostProfile.getId().equals(space.getHostId()))
+                    .orElse(false);
+
+            isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
+        }
+
+        return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
     }
 }
