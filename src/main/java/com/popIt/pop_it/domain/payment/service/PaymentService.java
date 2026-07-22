@@ -93,6 +93,13 @@ public class PaymentService {
             // (정상 상태)에서 재조회해 그 결제를 반환한다. 어떤 제약을 위반했는지는 구분하지 않고
             // Idempotency-Key로 먼저 찾아보고, 없으면 같은 계약의 PENDING 결제를 찾는다.
             savedPayment = paymentRepository.findByIdempotencyKey(idempotencyKey)
+                    .map(existing -> {
+                        // 같은 멱등키로 다른 계약의 결제가 먼저 저장된 경우: 그 결제를 성공 결과로 반환하지 않는다.
+                        if (!existing.getContract().getId().equals(contractId)) {
+                            throw new ProjectException(PaymentErrorCode.PAYMENT_CONFLICT_KEY);
+                        }
+                        return existing;
+                    })
                     .or(() -> paymentRepository.findByContractIdAndStatus(contractId, PaymentStatus.PENDING))
                     .orElseThrow(() -> e);
         }

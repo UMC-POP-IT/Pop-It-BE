@@ -169,6 +169,25 @@ class PaymentServiceTest {
     }
 
     @Test
+    void 같은_멱등키로_동시_요청이_다른_계약의_결제를_먼저_생성했으면_예외() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Long otherContractId = 2L;
+        Contract otherContract = contractOf(otherContractId, ContractStatus.PENDING_PAYMENT, USER_ID);
+        Payment otherContractsPayment = paymentOf(otherContract, PaymentStatus.PENDING, "ORDER_2_abc");
+
+        given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY))
+                .willReturn(Optional.empty(), Optional.of(otherContractsPayment));
+        given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
+        given(paymentIdempotentSaver.save(any(Payment.class)))
+                .willThrow(new DataIntegrityViolationException("duplicate key"));
+
+        assertThatThrownBy(() -> paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID))
+                .isInstanceOf(ProjectException.class)
+                .extracting(e -> ((ProjectException) e).getErrorCode())
+                .isEqualTo(PaymentErrorCode.PAYMENT_CONFLICT_KEY);
+    }
+
+    @Test
     void 계약을_찾을_수_없으면_예외() {
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.empty());
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.empty());
