@@ -6,12 +6,7 @@ import com.popIt.pop_it.domain.space.enums.RegistrantType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -55,10 +50,14 @@ public class SpaceReqDTO {
 
             @Schema(description = "위도 (카카오 지도 SDK geocoder 변환값)", example = "37.5012")
             @NotNull
+            @DecimalMin(value = "-90.0")
+            @DecimalMax(value = "90.0")
             Double latitude,
 
             @Schema(description = "경도 (카카오 지도 SDK geocoder 변환값)", example = "127.0397")
             @NotNull
+            @DecimalMin(value = "-180.0")
+            @DecimalMax(value = "180.0")
             Double longitude,
 
             @Schema(description = "보증금", example = "4500000")
