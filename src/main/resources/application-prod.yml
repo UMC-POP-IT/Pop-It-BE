@@ -7,6 +7,9 @@ spring:
     hibernate:
       ddl-auto: validate   # prod는 절대 create/update 금지
     show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true # 기존 운영 DB에 수동 적용된 스키마를 V1 기준으로 baseline 처리
   h2:
     console:
       enabled: false       # prod는 H2 콘솔 자체 불필요
