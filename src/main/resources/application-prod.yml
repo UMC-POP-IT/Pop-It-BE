@@ -9,7 +9,8 @@ spring:
     show-sql: false
   flyway:
     enabled: true
-    baseline-on-migrate: true # 기존 운영 DB에 수동 적용된 스키마를 V1 기준으로 baseline 처리
+    baseline-on-migrate: true # 안정화되면 false로 되돌리기
+    baseline-version: 0 # V1(인덱스 추가)은 아직 실행된 적 없으므로, baseline이 V1을 건너뛰지 않도록 그보다 낮게 설정
   h2:
     console:
       enabled: false       # prod는 H2 콘솔 자체 불필요
