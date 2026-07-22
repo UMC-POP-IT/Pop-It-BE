@@ -14,7 +14,7 @@ import java.util.Optional;
 public interface SpaceRepository extends JpaRepository<Space, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000")) // 3초
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")) // 즉시실패
     @Query("select s from Space s where s.id = :spaceId")
     Optional<Space> findByIdForUpdate(@Param("spaceId") Long spaceId);
 }

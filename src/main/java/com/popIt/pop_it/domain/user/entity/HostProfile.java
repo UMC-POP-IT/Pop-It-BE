@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.user.entity;
 
 import com.popIt.pop_it.domain.user.entity.enums.Bank;
 import com.popIt.pop_it.domain.user.entity.enums.TaxationType;
+import com.popIt.pop_it.global.util.CryptoConverter;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
@@ -26,8 +27,15 @@ public class HostProfile {
     @Column(nullable = false)
     private TaxationType taxationType;
 
+    // 사업자등록번호: 민감정보 → 암호화 저장 (평문 세팅, 암복호화는 CryptoConverter 위임)
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String businessRegistrationNumber;
+
+    // 사업자등록번호 해시(HMAC): 암호문은 유니크 제약이 불가능하므로,
+    // 결정적 해시를 유니크 컬럼으로 두어 서로 다른 사용자의 사업자번호 중복 등록을 DB 차원에서 차단
+    @Column(name = "business_registration_number_hash", nullable = false, unique = true)
+    private String businessRegistrationNumberHash;
 
     @Column(nullable = false)
     private String businessLicenseUrl;
@@ -45,16 +53,21 @@ public class HostProfile {
     @Column(nullable = false)
     private Bank bank;
 
+    // 정산 계좌번호: 금융 민감정보 → 암호화 저장
+    @Convert(converter = CryptoConverter.class)
     @Column(nullable = false)
     private String settlementAccountNumber;
 
-    @Column(length = 20, nullable = false)
+    // 예금주(개인정보) → 암호화 저장 (암호문 길이 고려로 length 제한 제거)
+    @Convert(converter = CryptoConverter.class)
+    @Column(nullable = false)
     private String accountHolder;
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
-    @Column(name = "user_id", nullable = false, updatable = false)
+    // 한 사용자당 호스트 프로필 1개 → DB 유니크 제약으로 동시성(TOCTOU) 중복 방지
+    @Column(name = "user_id", nullable = false, updatable = false, unique = true)
     private Long userId;
 }

@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
@@ -41,7 +42,8 @@ public class ReservationConcurrencyTest {
     private UserRepository userRepository;
     @Autowired
     private ReservationRepository reservationRepository;
-
+    @Autowired
+    private IdentityVerificationRepository identityVerificationRepository;
 
     private Long spaceId;
     private List<Long> guestIds;
@@ -92,6 +94,7 @@ public class ReservationConcurrencyTest {
     void tearDown() {
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
+        identityVerificationRepository.deleteAll();
         userRepository.deleteAll();
     }
 
