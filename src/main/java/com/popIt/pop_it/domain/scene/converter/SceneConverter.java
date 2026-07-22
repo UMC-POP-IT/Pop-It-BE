@@ -40,7 +40,7 @@ public class SceneConverter {
                 .modelUrl(scene.getModelUrl())
                 .isDefault(scene.getIsDefault())
                 .camera(camera)
-                // TODO:hotspots는 후속 이슈 완료 전까지 Controller/Service에서 빈 리스트로 채움
+                .hotspots(List.of()) // TODO: Hotspot 도메인 구현 후 실제 목록으로 교체
                 .build();
     }
 

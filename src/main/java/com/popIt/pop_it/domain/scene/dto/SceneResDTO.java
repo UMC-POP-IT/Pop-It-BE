@@ -37,8 +37,8 @@ public class SceneResDTO {
             String name,
             String modelUrl,
             Boolean isDefault,
-            Camera camera
-            // TODO: hotspots는 후속 이슈(Hotspot 도메인) 완료 전까지 빈 리스트로
+            Camera camera,
+            List<Object> hotspots // TODO: Hotspot 도메인 구현 후 List<HotspotResDTO.Summary>로 교체
     ) {
     }
 
