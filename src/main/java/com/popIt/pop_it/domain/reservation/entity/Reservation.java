@@ -1,11 +1,15 @@
 package com.popIt.pop_it.domain.reservation.entity;
 
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
+import com.popIt.pop_it.domain.reservation.exception.ReservationException;
+import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -48,6 +52,9 @@ public class Reservation {
     private Long insuranceFee; // 보험료
 
     @Column(nullable = false)
+    private Long platformFee; // 플랫폼 수수료
+
+    @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액
 
     @Column
@@ -61,6 +68,11 @@ public class Reservation {
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
+
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
@@ -97,6 +109,14 @@ public class Reservation {
         this.status = ReservationStatus.IN_USE;
     }
 
+    //계약 완료 기록
+    public void markContractCompleted() {
+        if (this.status != ReservationStatus.APPROVED) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        this.status = ReservationStatus.CONTRACT_COMPLETED;
+    }
+
     //퇴실 증빙 제출 시간 기록
     public void markCheckoutSubmitted() {
         this.checkoutSubmittedAt = LocalDateTime.now();
@@ -111,5 +131,15 @@ public class Reservation {
     //퇴실 완료
     public void completeCheckout() {
         this.status = ReservationStatus.CHECKOUT_COMPLETED;
+    }
+
+    // 기간 계산 (시작일/종료일 모두 포함)
+    public long getPeriod() {
+        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
+    }
+
+    // 호스트의 총 금액
+    public Long getHostTotalPrice() {
+        return rentalFee - platformFee;
     }
 }

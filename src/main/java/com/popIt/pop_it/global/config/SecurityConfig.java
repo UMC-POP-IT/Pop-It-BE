@@ -48,7 +48,10 @@ public class SecurityConfig {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/api/v1/auth/reissue",
-            "/api/v1/payments/webhook"
+            "/api/v1/payments/webhook",
+            "/api/v1/auth/reissue",
+            "/api/v1/facilities",
+            "/actuator/health"
     };
 
     private final String[] publicAPI = {

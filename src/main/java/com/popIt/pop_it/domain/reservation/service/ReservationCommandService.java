@@ -20,6 +20,8 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.PessimisticLockingFailureException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -46,9 +48,13 @@ public class ReservationCommandService {
 
     //예약 요청
     public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
-        Space space = spaceRepository.findById(request.spaceId())
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
-
+        Space space;
+        try {
+            space = spaceRepository.findByIdForUpdate(request.spaceId())
+                    .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_ALREADY_TAKEN);
+        }
         User guest = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
@@ -108,29 +114,39 @@ public class ReservationCommandService {
 
     //예약 승인(호스트)
     public ReservationResDTO.StatusChange approveReservation(Long reservationId, Long hostId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
-        validateHost(reservation, hostId);
-        validateModifiable(reservation);
+            validateHost(reservation, hostId);
+            validateModifiable(reservation);
 
-        reservation.approve();
-        // TODO: Contract 도메인에 "계약(서명대기) 생성" 요청 필요 - 인터페이스 확정되면 연동
+            reservation.approve();
+            reservationRepository.saveAndFlush(reservation);
+            // TODO: Contract 도메인에 "계약(서명대기) 생성" 요청 필요 - 인터페이스 확정되면 연동
 
-        return ReservationConverter.toStatusChange(reservation);
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
+        }
     }
 
     //예약 거절(호스트)
     public ReservationResDTO.StatusChange rejectReservation(Long reservationId, Long hostId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
-        validateHost(reservation, hostId);
-        validateModifiable(reservation);
+            validateHost(reservation, hostId);
+            validateModifiable(reservation);
 
-        reservation.reject();
+            reservation.reject();
+            reservationRepository.saveAndFlush(reservation);
 
-        return ReservationConverter.toStatusChange(reservation);
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
+        }
     }
 
     //유효한 호스트인지
@@ -149,16 +165,21 @@ public class ReservationCommandService {
 
     //예약 취소(게스트)
     public ReservationResDTO.StatusChange cancelByGuest(Long reservationId, Long guestId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
-        validateGuest(reservation, guestId);
-        validateGuestCancelable(reservation);
+            validateGuest(reservation, guestId);
+            validateGuestCancelable(reservation);
 
-        reservation.cancel();
-        // 결제 전 상태(PENDING/APPROVED)에서만 오는 경로라 환불 로직은 없음
+            reservation.cancel();
+            reservationRepository.saveAndFlush(reservation);
+            // 결제 전 상태(PENDING/APPROVED)에서만 오는 경로라 환불 로직은 없음
 
-        return ReservationConverter.toStatusChange(reservation);
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
+        }
     }
 
     //유효한 게스트가 맞는지
@@ -180,83 +201,129 @@ public class ReservationCommandService {
     public ReservationResDTO.StatusChange submitCheckout(
             Long reservationId, Long guestId, ReservationReqDTO.Checkout request
     ) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
-        validateGuest(reservation, guestId);
-        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            validateGuest(reservation, guestId);
+            if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+            // 이미 유효한 제출이 있고(호스트가 아직 거절하지 않음) 대기 중이면 재제출 불가
+            if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
+            }
+            if (request.photoUrls() == null || request.photoUrls().isEmpty()) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
+            }
+
+            List<CheckoutImage> images = IntStream.range(0, request.photoUrls().size())
+                    .mapToObj(i -> CheckoutImage.builder()
+                            .checkoutImageUrl(request.photoUrls().get(i))
+                            .sortOrder(i)
+                            .reservation(reservation)
+                            .build())
+                    .toList();
+            checkoutImageRepository.saveAll(images);
+
+            reservation.markCheckoutSubmitted();
+            reservationRepository.saveAndFlush(reservation);
+
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
         }
-        // 이미 유효한 제출이 있고(호스트가 아직 거절하지 않음) 대기 중이면 재제출 불가
-        if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
-        }
-        if (request.photoUrls() == null || request.photoUrls().isEmpty()) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
-        }
-
-        List<CheckoutImage> images = IntStream.range(0, request.photoUrls().size())
-                .mapToObj(i -> CheckoutImage.builder()
-                        .checkoutImageUrl(request.photoUrls().get(i))
-                        .sortOrder(i)
-                        .reservation(reservation)
-                        .build())
-                .toList();
-        checkoutImageRepository.saveAll(images);
-
-        reservation.markCheckoutSubmitted();
-
-        return ReservationConverter.toStatusChange(reservation);
     }
 
     //퇴실 승인(호스트) - 유효한 제출이 존재하고 거절 상태가 아닐 때만 승인 가능
     public ReservationResDTO.StatusChange approveCheckout(Long reservationId, Long hostId) {
-        Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
-
-        validateHost(reservation, hostId);
-        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
-        }
-        if (reservation.getCheckoutRejected()) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
-        }
-        if (reservation.getCheckoutSubmittedAt() == null) {
-            // 증빙 미제출 상태에서는 수동 승인 불가 - 24시간 경과 시 스케줄러가 자동 처리
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
-        }
-
-        reservation.completeCheckout();
-
         try {
-            paymentService.settleByReservation(reservationId);
-        } catch (ProjectException e) {
-            // 정산 일부 실패는 퇴실 승인 자체를 막지 않음
-            // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
-            log.warn("퇴실 승인 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
-        }
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
-        return ReservationConverter.toStatusChange(reservation);
+            validateHost(reservation, hostId);
+            if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+            if (reservation.getCheckoutRejected()) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+            if (reservation.getCheckoutSubmittedAt() == null) {
+                // 증빙 미제출 상태에서는 수동 승인 불가 - 24시간 경과 시 스케줄러가 자동 처리
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+
+            reservation.completeCheckout();
+            reservationRepository.saveAndFlush(reservation);
+            reservation.completeCheckout();
+
+            try {
+                paymentService.settleByReservation(reservationId);
+            } catch (ProjectException e) {
+                // 정산 일부 실패는 퇴실 승인 자체를 막지 않음
+                // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
+                log.warn("퇴실 승인 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
+            }
+
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
+        }
     }
 
     //퇴실 거절(호스트) - 게스트에게 재인증 요청, 반복 거절 가능
     public ReservationResDTO.StatusChange rejectCheckout(Long reservationId, Long hostId) {
+        try {
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+            validateHost(reservation, hostId);
+            if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+            if (reservation.getCheckoutSubmittedAt() == null) {
+                // 아직 제출된 증빙 자체가 없는데 거절할 수는 없음
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+
+            checkoutImageRepository.deleteAllByReservationId(reservationId);
+            reservation.rejectCheckout();
+            reservationRepository.saveAndFlush(reservation);
+            // TODO: Notification 도메인 - 게스트에게 재인증 요청 알림 발송
+
+            return ReservationConverter.toStatusChange(reservation);
+        } catch (ObjectOptimisticLockingFailureException e) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_CONCURRENT_MODIFICATION);
+        }
+    }
+
+    // ===== 스케줄러 전용 - 예약 1건당 독립 트랜잭션으로 처리해 낙관적 락 충돌이 다른 건에 영향 없게 함 =====
+
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void startUsageForSchedule(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.CONTRACT_COMPLETED) return; // 이미 처리됨
+        reservation.startUsage();
+        reservationRepository.saveAndFlush(reservation);
+    }
 
-        validateHost(reservation, hostId);
-        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
-        }
-        if (reservation.getCheckoutSubmittedAt() == null) {
-            // 아직 제출된 증빙 자체가 없는데 거절할 수는 없음
-            throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
-        }
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void completeUsageForSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.IN_USE) return;
+        reservation.completeUsage();
+        reservationRepository.saveAndFlush(reservation);
+    }
 
-        checkoutImageRepository.deleteAllByReservationId(reservationId);
-        reservation.rejectCheckout();
-        // TODO: Notification 도메인 - 게스트에게 재인증 요청 알림 발송
-
-        return ReservationConverter.toStatusChange(reservation);
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void completeCheckoutForSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) return;
+        if (reservation.getCheckoutRejected()) return; // 조회~처리 사이 호스트가 거절했으면 자동승인 스킵
+        reservation.completeCheckout();
+        reservationRepository.saveAndFlush(reservation);
     }
 }

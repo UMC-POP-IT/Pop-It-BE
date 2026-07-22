@@ -60,4 +60,8 @@ public class User {
     public void clearRefreshToken() {
         this.refreshToken = null;
     }
+
+    public void switchToHost() {
+        this.currentMode = UserMode.HOST;
+    }
 }

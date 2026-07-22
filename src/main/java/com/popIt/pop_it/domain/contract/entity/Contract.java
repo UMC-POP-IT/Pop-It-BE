@@ -25,7 +25,7 @@ public class Contract {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     @Builder.Default
-    private ContractStatus status = ContractStatus.PENDING_SIGNATURE; // 계약 상태 (기본값: 서명대기)
+    private ContractStatus status = ContractStatus.HOST_SIGNATURE_PENDING; // 계약 상태 (기본값: 호스트서명대기)
 
     @Column(length = 255)
     private String hostSignatureUrl; // 호스트 서명 URL
@@ -37,9 +37,22 @@ public class Contract {
 
     private LocalDateTime guestSignedAt; // 게스트 서명 일시
 
+    /**
+     * 전자서명 시 필요한 해시값
+     */
+    private String hostSignerCiHash; // 호스트 본인인증 ci 해시
+    private String guestSignerCiHash; // 게스트 본인인증 ci 해시
+    private String hostSignatureImgHash; // 호스트 서명 이미지 위변조 검증
+    private String guestSignatureImgHash; // 게스트 서명 이미지 위변조 검증
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
+
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
 
     @Column(nullable = false)
     private Long rentalFee; // 임대료 (계약 체결 시점 확정 금액)
@@ -56,6 +69,23 @@ public class Contract {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
+
+    // 호스트 서명: 호스트 서명 정보 업데이트
+    public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash, String hostSignatureImgHash) {
+        this.status = status;
+        this.hostSignatureUrl = hostSignatureUrl;
+        this.hostSignedAt = LocalDateTime.now();
+        this.hostSignerCiHash = hostSignerCiHash;
+        this.hostSignatureImgHash = hostSignatureImgHash;
+    }
+    // 게스트 서명: 게스트 서명 정보 업데이트
+    public void signByGuest(ContractStatus status, String guestSignatureUrl, String guestSignerCiHash, String guestSignatureImgHash) {
+        this.status = status;
+        this.guestSignatureUrl = guestSignatureUrl;
+        this.guestSignedAt = LocalDateTime.now();
+        this.guestSignerCiHash = guestSignerCiHash;
+        this.guestSignatureImgHash = guestSignatureImgHash;
+    }
 
     public void markAsCompleted() {
         this.status = ContractStatus.COMPLETED;
