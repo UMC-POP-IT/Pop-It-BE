@@ -7,6 +7,12 @@ import java.util.List;
 public class SpaceResDTO {
 
     @Builder
+    public record CreateResult(
+            Long spaceId,
+            String buildingName
+    ) {}
+
+    @Builder
     public record AiRecommendedSpace(
             Long spaceId,
             String buildingName,
