@@ -27,6 +27,7 @@ services:
         condition: service_healthy       # MySQL이 준비된 뒤에 앱 기동
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx512m"       # t3.micro용 힙 제한 (재빌드 없이 튜닝 가능)
+      SPRING_PROFILES_ACTIVE: prod        # EC2 배포 전용이라 prod로 고정
       DDL_AUTO: ${DDL_AUTO}
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
@@ -42,6 +43,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
       AWS_REGION: ${AWS_REGION}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
     networks:
       - popit-net
 
