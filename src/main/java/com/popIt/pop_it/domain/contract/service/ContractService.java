@@ -13,8 +13,10 @@ import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.exception.ReservationException;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
+import com.popIt.pop_it.domain.upload.enums.UploadType;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
+import com.popIt.pop_it.global.config.AwsProperties;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -30,6 +32,7 @@ public class ContractService {
     private final ReservationRepository reservationRepository;
     private final IdentityVerificationService identityVerificationService;
     private final S3ObjectHasher s3ObjectHasher;
+    private final AwsProperties awsProperties;
 
     public ContractResDTO.ContractInfoRes getContractInfo(User user, Long reservationId) {
 
@@ -60,8 +63,10 @@ public class ContractService {
         String ciHash = identityVerificationService.getVerifiedCiHash(user)
                 .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_SIGNER_NOT_VERIFIED));
 
-        // 서명 이미지 해시 생성
-        String signatureImgHash = s3ObjectHasher.hash(dto.signatureUrl());
+        // 서명 이미지 해시 생성 - 업로드 API가 발급한 버킷·본인 소유 key prefix에 속하는 객체만 허용
+        String expectedBucket = awsProperties.s3().bucket();
+        String expectedKeyPrefix = UploadType.CONTRACT_SIGNATURE.getPath() + "/" + user.getUserId() + "/";
+        String signatureImgHash = s3ObjectHasher.hash(dto.signatureUrl(), expectedBucket, expectedKeyPrefix);
 
         // 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));

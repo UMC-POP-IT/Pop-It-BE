@@ -127,7 +127,7 @@ public class ContractSignatureTest {
                     User signer = invocation.getArgument(0);
                     return Optional.of(signer.getUserId().equals(hostId) ? HOST_CI_HASH : GUEST_CI_HASH);
                 });
-        when(s3ObjectHasher.hash(anyString())).thenReturn(IMAGE_HASH);
+        when(s3ObjectHasher.hash(anyString(), anyString(), anyString())).thenReturn(IMAGE_HASH);
     }
 
     @Test

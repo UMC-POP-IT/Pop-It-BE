@@ -140,7 +140,7 @@ class ContractSignatureConcurrencyTest {
 
         // 본인인증/이미지 해시는 이 테스트의 관심사가 아니므로 항상 성공하는 값으로 고정
         when(identityVerificationService.getVerifiedCiHash(any(User.class))).thenReturn(Optional.of("ci-hash"));
-        when(s3ObjectHasher.hash(anyString())).thenReturn("image-hash");
+        when(s3ObjectHasher.hash(anyString(), anyString(), anyString())).thenReturn("image-hash");
     }
 
     @AfterEach
