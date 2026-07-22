@@ -130,6 +130,7 @@ public class SpaceReqDTO {
                     example = "[\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg\"]"
             )
             @NotEmpty
+            @Size(min = 3, max = 10)
             List<@NotBlank String> imageUrls
     ) {}
 }
