@@ -11,7 +11,10 @@ public enum UploadType {
     SPACE_IMAGE("space", BucketType.GENERAL),
 
     // 호스트 서류(통장 사본, 사업자등록증): 민감서류 전용 프라이빗 버킷
-    HOST_DOCUMENT("host-document", BucketType.HOST_DOCUMENT);
+    HOST_DOCUMENT("host-document", BucketType.HOST_DOCUMENT),
+
+    // 계약 전자서명 이미지: 일반 버킷
+    CONTRACT_SIGNATURE("signature", BucketType.GENERAL);
 
     private final String path;
     private final BucketType bucketType;

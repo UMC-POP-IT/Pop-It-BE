@@ -20,6 +20,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -66,6 +67,7 @@ public class IdentityVerificationService {
 
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneIdentityVerification.VerifiedCustomer customer = response.verifiedCustomer();
+        // ciHash 생성
         String ciHash = HashUtil.sha256(customer.ci());
 
         // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우
@@ -118,5 +120,10 @@ public class IdentityVerificationService {
         IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user);
 
         return IdentityVerificationConverter.toVerify(verifiedUser);
+    }
+
+    // Contract에서 본인인증 여부 조회 시 필요
+    public Optional<String> getVerifiedCiHash(User user) {
+        return identityVerificationRepository.findCiHashByUser(user);
     }
 }
