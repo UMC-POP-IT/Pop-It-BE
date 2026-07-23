@@ -107,4 +107,5 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findAllByStatusAndEndDateBefore(ReservationStatus status, LocalDate date);
     List<Reservation> findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtBefore(ReservationStatus status, LocalDateTime cutoff);
     List<Reservation> findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNullAndEndDateLessThanEqual(ReservationStatus status, LocalDate cutoffDate);
+    List<Reservation> findAllByStatusAndCheckoutRejectedTrueAndCheckoutRejectedAtBefore(ReservationStatus status, LocalDateTime cutoff);
 }

@@ -294,7 +294,6 @@ public class ReservationCommandService {
             checkoutImageRepository.deleteAllByReservationId(reservationId);
             reservation.rejectCheckout();
             reservationRepository.saveAndFlush(reservation);
-            // TODO: Notification 도메인 - 게스트에게 재인증 요청 알림 발송
 
             return ReservationConverter.toStatusChange(reservation);
         } catch (ObjectOptimisticLockingFailureException e) {
@@ -337,6 +336,26 @@ public class ReservationCommandService {
             // 정산 일부 실패는 퇴실 자동 승인 자체를 막지 않음
             // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
             log.warn("퇴실 자동 승인 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
+        }
+    }
+
+    // 퇴실 거절 후 게스트 재제출 없이 24h 경과 - 거절 시각 기준 자동승인
+    // (checkoutRejected=true 건 전용. 그 사이 게스트가 재제출했으면(=false로 전환) 스킵하고,
+    //  해당 건은 재제출 시각 기준 24h로 completeCheckoutForSchedule 쪽 큐에서 별도로 처리됨)
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void completeCheckoutForRejectedSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) return;
+        if (!reservation.getCheckoutRejected()) return; // 조회~처리 사이 게스트가 재제출했으면 스킵
+
+        reservation.completeCheckout();
+        reservationRepository.saveAndFlush(reservation);
+
+        try {
+            paymentService.settleByReservation(reservationId);
+        } catch (ProjectException e) {
+            log.warn("퇴실 자동 승인(거절 후 재제출 타임아웃) 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
         }
     }
 }
