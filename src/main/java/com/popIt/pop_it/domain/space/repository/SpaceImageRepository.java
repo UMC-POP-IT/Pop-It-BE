@@ -19,4 +19,12 @@ public interface SpaceImageRepository extends JpaRepository<SpaceImage, Long> {
         """)
     List<SpaceImage> findThumbnailsBySpaceIds(@Param("spaceIds") List<Long> spaceIds);
 
+    // 공간 상세 조회용 - 노출 순서(sortOrder)대로 이미지 URL만 조회
+    @Query("""
+        select si.imageUrl 
+        from SpaceImage si
+        where si.space.id = :spaceId
+        order by si.sortOrder asc
+        """)
+    List<String> findImageUrlsBySpaceId(@Param("spaceId") Long spaceId);
 }

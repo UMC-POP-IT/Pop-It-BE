@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -52,6 +53,16 @@ public class SecurityConfig {
             "/api/v1/auth/reissue",
             "/api/v1/facilities",
             "/actuator/health"
+    };
+
+    // GET이지만 인증이 필요한 경로 (이래 allowGetUris보다 먼저 평가되어야 함)
+    private final String[] authenticatedGetUris = {
+            "/api/v1/space/my",
+            "/api/v1/space/ai-recommended"
+    };
+
+    private final String[] allowGetUris = {
+            "/api/v1/spaces/*"
     };
 
     private final String[] publicAPI = {
@@ -109,8 +120,10 @@ public class SecurityConfig {
         // 일반 API 체인: JWT 기반 stateless 인증
         http.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(requests -> requests
+                        .requestMatchers(HttpMethod.GET, authenticatedGetUris).authenticated()
                         .requestMatchers(allowUris).permitAll()
                         .requestMatchers(publicAPI).permitAll()
+                        .requestMatchers(HttpMethod.GET, allowGetUris).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
