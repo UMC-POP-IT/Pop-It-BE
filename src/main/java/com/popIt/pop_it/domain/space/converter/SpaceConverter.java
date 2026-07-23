@@ -77,7 +77,7 @@ public class SpaceConverter {
             List<String> imageUrls,
             List<Facility> facilities,
             boolean isMine,
-            boolean isWisilisted,
+            boolean isWishlisted,
             int wishCount
     ) {
         return SpaceResDTO.Detail.builder()
