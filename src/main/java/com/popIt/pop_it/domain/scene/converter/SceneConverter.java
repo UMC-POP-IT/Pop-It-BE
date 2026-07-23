@@ -32,6 +32,8 @@ public class SceneConverter {
                 .target(List.of(scene.getCameraTargetX(), scene.getCameraTargetY(), scene.getCameraTargetZ()))
                 .minDistance(scene.getMinDistance())
                 .maxDistance(scene.getMaxDistance())
+                .minPolarAngle(scene.getMinPolarAngle())
+                .maxPolarAngle(scene.getMaxPolarAngle())
                 .build();
 
         return SceneResDTO.Detail.builder()

@@ -27,7 +27,9 @@ public class SceneResDTO {
             List<Double> position,
             List<Double> target,
             Double minDistance,
-            Double maxDistance
+            Double maxDistance,
+            Double minPolarAngle,
+            Double maxPolarAngle
     ) {
     }
 

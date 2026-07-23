@@ -19,6 +19,8 @@ public class SceneReqDTO {
             @NotNull Double cameraTargetZ,
             @NotNull Double minDistance,
             @NotNull Double maxDistance,
+            @NotNull Double minPolarAngle,
+            @NotNull Double maxPolarAngle,
             List<String> imageUrls, // presigned URL로 업로드 완료한 이미지 URL 목록
             Boolean isDefault // null이면 false로 처리
     ) {
@@ -28,7 +30,18 @@ public class SceneReqDTO {
             String name,
             String modelUrl,
             String thumbnail,
-            Boolean isDefault
+            Boolean isDefault,
+            // 카메라 설정 - modelUrl을 바꿀 때는 함께 보내야 함 (모델마다 크기/형태가 달라 카메라 값이 어긋날 수 있음)
+            Double cameraPositionX,
+            Double cameraPositionY,
+            Double cameraPositionZ,
+            Double cameraTargetX,
+            Double cameraTargetY,
+            Double cameraTargetZ,
+            Double minDistance,
+            Double maxDistance,
+            Double minPolarAngle,
+            Double maxPolarAngle
     ) {
     }
 }

@@ -60,6 +60,12 @@ public class Scene {
     @Column(nullable = false)
     private Double maxDistance;
 
+    @Column(nullable = false)
+    private Double minPolarAngle;
+
+    @Column(nullable = false)
+    private Double maxPolarAngle;
+
     //연관관계 매핑
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
@@ -77,6 +83,23 @@ public class Scene {
         if (name != null) this.name = name;
         if (modelUrl != null) this.modelUrl = modelUrl;
         if (thumbnail != null) this.thumbnail = thumbnail;
+    }
+
+    //카메라 설정 부분 수정 - null인 필드는 기존 값 유지 (modelUrl이 바뀌면 함께 갱신되어야 함)
+    public void updateCamera(Double cameraPositionX, Double cameraPositionY, Double cameraPositionZ,
+                              Double cameraTargetX, Double cameraTargetY, Double cameraTargetZ,
+                              Double minDistance, Double maxDistance,
+                              Double minPolarAngle, Double maxPolarAngle) {
+        if (cameraPositionX != null) this.cameraPositionX = cameraPositionX;
+        if (cameraPositionY != null) this.cameraPositionY = cameraPositionY;
+        if (cameraPositionZ != null) this.cameraPositionZ = cameraPositionZ;
+        if (cameraTargetX != null) this.cameraTargetX = cameraTargetX;
+        if (cameraTargetY != null) this.cameraTargetY = cameraTargetY;
+        if (cameraTargetZ != null) this.cameraTargetZ = cameraTargetZ;
+        if (minDistance != null) this.minDistance = minDistance;
+        if (maxDistance != null) this.maxDistance = maxDistance;
+        if (minPolarAngle != null) this.minPolarAngle = minPolarAngle;
+        if (maxPolarAngle != null) this.maxPolarAngle = maxPolarAngle;
     }
 
     public void markAsDefault() {

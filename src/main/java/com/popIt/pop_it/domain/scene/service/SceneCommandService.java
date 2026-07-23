@@ -54,6 +54,8 @@ public class SceneCommandService {
                 .cameraTargetZ(request.cameraTargetZ())
                 .minDistance(request.minDistance())
                 .maxDistance(request.maxDistance())
+                .minPolarAngle(request.minPolarAngle())
+                .maxPolarAngle(request.maxPolarAngle())
                 .build();
         sceneRepository.save(scene);
 
@@ -70,6 +72,12 @@ public class SceneCommandService {
         validateHost(scene.getSpace(), hostId);
 
         scene.update(request.name(), request.modelUrl(), request.thumbnail());
+        scene.updateCamera(
+                request.cameraPositionX(), request.cameraPositionY(), request.cameraPositionZ(),
+                request.cameraTargetX(), request.cameraTargetY(), request.cameraTargetZ(),
+                request.minDistance(), request.maxDistance(),
+                request.minPolarAngle(), request.maxPolarAngle()
+        );
 
         if (Boolean.TRUE.equals(request.isDefault()) && !scene.getIsDefault()) {
             unmarkExistingDefault(scene.getSpace().getId());
