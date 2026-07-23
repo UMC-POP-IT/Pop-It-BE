@@ -18,6 +18,11 @@ import org.hibernate.annotations.CreationTimestamp;
 @Table(name = "contract")
 public class Contract {
 
+    @Version
+    @Column(nullable = false)
+    @Builder.Default
+    private Long version = 0L;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 계약서 식별자
@@ -37,23 +42,6 @@ public class Contract {
 
     private LocalDateTime guestSignedAt; // 게스트 서명 일시
 
-    /**
-     * 전자서명 시 필요한 해시값
-     */
-    private String hostSignerCiHash; // 호스트 본인인증 ci 해시
-    private String guestSignerCiHash; // 게스트 본인인증 ci 해시
-    private String hostSignatureImgHash; // 호스트 서명 이미지 위변조 검증
-    private String guestSignatureImgHash; // 게스트 서명 이미지 위변조 검증
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt; // 생성일시
-
-    @Version
-    @Column(nullable = false)
-    @Builder.Default
-    private Long version = 0L;
-
     @Column(nullable = false)
     private Long rentalFee; // 임대료 (계약 체결 시점 확정 금액)
 
@@ -65,6 +53,15 @@ public class Contract {
 
     @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액 (계약 체결 시점 확정 금액)
+
+    private String hostSignerCiHash; // 호스트 본인인증 ci Hash
+    private String guestSignerCiHash; // 게스트 본인인증 ci Hash
+    private String hostSignatureImgHash; // 호스트 서명 이미지 Hash
+    private String guestSignatureImgHash; // 게스트 서명 이미지 Hash
+
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt; // 생성일시
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
