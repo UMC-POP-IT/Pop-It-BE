@@ -42,8 +42,9 @@ public class SpaceService {
     public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
 
         // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 공간을 등록할 수 없다.
-        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED));
+        if (!hostProfileRepository.existsByUserId(userId)) {
+            throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);
+        }
 
         // 2. 계약 가능 기간 검증
         if (request.availableStartDate().isAfter(request.availableEndDate())) {
@@ -51,7 +52,7 @@ public class SpaceService {
         }
 
         // 3. 공간 본체 저장 (space.host_id = host_profile.id)
-        Space space = spaceRepository.save(SpaceConverter.toSpace(request, hostProfile.getId()));
+        Space space = spaceRepository.save(SpaceConverter.toSpace(request, userId));
 
         // 4. 공간 사진 저장 - 요청 배열 순서를 sortOrder로 보존
         List<String> imageUrls = request.imageUrls();
