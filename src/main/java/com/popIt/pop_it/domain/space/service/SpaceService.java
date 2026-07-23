@@ -12,7 +12,6 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
-import com.popIt.pop_it.domain.user.entity.HostProfile;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
@@ -101,10 +100,7 @@ public class SpaceService {
         boolean isWishlist = false;
 
         if (userId != null) {
-            isMine = hostProfileRepository.findByUserId(userId)
-                    .map(hostProfile -> hostProfile.getId().equals(space.getHostId()))
-                    .orElse(false);
-
+            isMine = space.getHostId().equals(userId);
             isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
         }
 
@@ -114,11 +110,12 @@ public class SpaceService {
     // 내 공간 목록 조회 (호스트)
     public SpaceResDTO.MyListResult getMySpaces(Long userId, int page, int size) {
         // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 내 공간 자체가 존재 X
-        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED));
+        if (!hostProfileRepository.existsByUserId(userId)) {
+            throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);
+        }
 
         // 2. 내 공간 페이징 조회
-        Page<Space> spacePage = spaceRepository.findAllByHostIdAndDeletedAtIsNullOrderByCreatedAtDesc(hostProfile.getId(), PageRequest.of(page, size));
+        Page<Space> spacePage = spaceRepository.findAllByHostIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, PageRequest.of(page, size));
 
         // 3. 대표 이미지를 한 번의 쿼리로 모아서 조회
         List<Long> spaceIds = spacePage.getContent().stream()
