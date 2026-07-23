@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.scene.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.List;
@@ -42,6 +43,11 @@ public class SceneReqDTO {
             Double maxDistance,
             Double minPolarAngle,
             Double maxPolarAngle
+    ) {
+    }
+
+    public record ImageUpload(
+            @NotEmpty List<@NotBlank String> imageUrls // 프론트가 presigned URL로 이미 업로드 완료한 이미지 URL 목록
     ) {
     }
 }

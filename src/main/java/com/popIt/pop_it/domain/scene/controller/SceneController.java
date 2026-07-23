@@ -47,7 +47,7 @@ public class SceneController {
     }
 
     @Operation(summary = "씬 생성", description = "사전 제작된 3D 모델(.glb)을 씬에 연결하여 생성합니다.<br>"
-            + "사진은 기존 presigned URL 업로드 플로우로 먼저 S3에 올린 뒤, 완료된 URL만 imageUrls로 전달합니다.")
+            + "사진은 presigned URL로 먼저 S3에 올린 뒤, 완료된 URL만 imageUrls로 전달합니다.")
     @PostMapping("/spaces/{spaceId}/scenes")
     public ApiResponse<SceneResDTO.SceneId> createScene(
             @PathVariable Long spaceId,
@@ -57,6 +57,20 @@ public class SceneController {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_CREATED,
                 sceneCommandService.createScene(spaceId, authUser.getUser().getUserId(), request)
+        );
+    }
+
+    @Operation(summary = "씬 사진 등록", description = "프론트가 presigned URL로 이미 S3에 업로드 완료한 이미지 URL 목록을 받아 씬에 등록합니다. (기존 사진 뒤에 이어붙음)")
+    @PostMapping("/spaces/{spaceId}/scenes/{sceneId}/images")
+    public ApiResponse<SceneResDTO.ImageUploadResult> uploadSceneImages(
+            @PathVariable Long spaceId,
+            @PathVariable Long sceneId,
+            @AuthenticationPrincipal AuthUser authUser,
+            @Valid @RequestBody SceneReqDTO.ImageUpload request
+    ) {
+        return ApiResponse.onSuccess(
+                SceneSuccessCode.SCENE_IMAGES_UPLOADED,
+                sceneCommandService.uploadSceneImages(sceneId, authUser.getUser().getUserId(), request.imageUrls())
         );
     }
 

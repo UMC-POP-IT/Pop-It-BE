@@ -59,9 +59,22 @@ public class SceneCommandService {
                 .build();
         sceneRepository.save(scene);
 
-        saveSceneImages(scene, request.imageUrls());
+        saveSceneImages(scene, request.imageUrls(), 0);
 
         return SceneConverter.toSceneId(scene);
+    }
+
+    //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
+    public SceneResDTO.ImageUploadResult uploadSceneImages(Long sceneId, Long hostId, List<String> imageUrls) {
+        Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
+                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+
+        validateHost(scene.getSpace(), hostId);
+
+        int nextSortOrder = sceneImageRepository.findNextSortOrder(sceneId);
+        saveSceneImages(scene, imageUrls, nextSortOrder);
+
+        return SceneConverter.toImageUploadResult(sceneId, imageUrls);
     }
 
     //씬 부분 수정
@@ -108,15 +121,15 @@ public class SceneCommandService {
                 .ifPresent(Scene::unmarkAsDefault);
     }
 
-    //이미지 URL 목록을 순서대로 SceneImage로 저장
-    private void saveSceneImages(Scene scene, List<String> imageUrls) {
+    //이미지 URL 목록을 startOrder부터 이어서 SceneImage로 저장
+    private void saveSceneImages(Scene scene, List<String> imageUrls, int startOrder) {
         if (imageUrls == null || imageUrls.isEmpty()) return;
 
         List<SceneImage> images = IntStream.range(0, imageUrls.size())
                 .mapToObj(i -> SceneImage.builder()
                         .scene(scene)
                         .imageUrl(imageUrls.get(i))
-                        .sortOrder(i)
+                        .sortOrder(startOrder + i)
                         .build())
                 .toList();
         sceneImageRepository.saveAll(images);

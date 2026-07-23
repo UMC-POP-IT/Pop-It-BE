@@ -51,4 +51,11 @@ public class SceneConverter {
                 .sceneId(scene.getId())
                 .build();
     }
+
+    public static SceneResDTO.ImageUploadResult toImageUploadResult(Long sceneId, List<String> imageUrls) {
+        return SceneResDTO.ImageUploadResult.builder()
+                .sceneId(sceneId)
+                .images(imageUrls)
+                .build();
+    }
 }

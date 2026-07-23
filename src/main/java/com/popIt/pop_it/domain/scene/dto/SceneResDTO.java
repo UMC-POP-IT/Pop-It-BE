@@ -49,4 +49,11 @@ public class SceneResDTO {
             Long sceneId
     ) {
     }
+
+    @Builder
+    public record ImageUploadResult(
+            Long sceneId,
+            List<String> images
+    ) {
+    }
 }
