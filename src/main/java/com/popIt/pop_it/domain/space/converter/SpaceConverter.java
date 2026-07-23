@@ -108,7 +108,7 @@ public class SpaceConverter {
                         .toList()
                 )
                 .isMine(isMine)
-                .isWishlisted(isWisilisted)
+                .isWishlisted(isWishlisted)
                 .wishCount(wishCount)
                 .build();
     }
