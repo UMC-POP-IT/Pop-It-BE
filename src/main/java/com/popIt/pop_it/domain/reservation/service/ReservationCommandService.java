@@ -27,6 +27,7 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -342,12 +343,17 @@ public class ReservationCommandService {
     // 퇴실 거절 후 게스트 재제출 없이 24h 경과 - 거절 시각 기준 자동승인
     // (checkoutRejected=true 건 전용. 그 사이 게스트가 재제출했으면(=false로 전환) 스킵하고,
     //  해당 건은 재제출 시각 기준 24h로 completeCheckoutForSchedule 쪽 큐에서 별도로 처리됨)
+    // cutoff를 인자로 받아 조회~처리 사이 재거절 등으로 checkoutRejectedAt이 갱신됐다면 다시 스킵되도록 재검증
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public void completeCheckoutForRejectedSchedule(Long reservationId) {
+    public void completeCheckoutForRejectedSchedule(Long reservationId, LocalDateTime cutoff) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
         if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) return;
         if (!reservation.getCheckoutRejected()) return; // 조회~처리 사이 게스트가 재제출했으면 스킵
+        if (reservation.getCheckoutRejectedAt() == null
+                || !reservation.getCheckoutRejectedAt().isBefore(cutoff)) {
+            return; // 조회~처리 사이 재거절되어 거절 시각이 갱신됐으면(=아직 24h 안 지남) 스킵
+        }
 
         reservation.completeCheckout();
         reservationRepository.saveAndFlush(reservation);

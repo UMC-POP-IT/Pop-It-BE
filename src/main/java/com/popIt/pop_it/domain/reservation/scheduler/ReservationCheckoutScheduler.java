@@ -94,7 +94,7 @@ public class ReservationCheckoutScheduler {
         });
         rejectedTimeout.forEach(r -> {
             try {
-                reservationCommandService.completeCheckoutForRejectedSchedule(r.getId());
+                reservationCommandService.completeCheckoutForRejectedSchedule(r.getId(), cutoff);
                 log.info("퇴실 자동 승인(거절 후 재제출 타임아웃) - reservationId: {}", r.getId());
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.warn("퇴실 자동 승인 중 낙관적 락 충돌 - reservationId: {}", r.getId());
