@@ -16,13 +16,14 @@ public class SpaceConverter {
     private SpaceConverter() {
     }
 
-    public static Space toSpace(SpaceReqDTO.Create request, Long hostId) {
+    public static Space toSpace(SpaceReqDTO.Create request, Long hostId, String dong) {
         return Space.builder()
                 .buildingName(request.buildingName())
                 .registrantType(request.registrantType())
                 .buildingType(request.buildingType())
                 .city(request.city())
                 .district(request.district())
+                .dong(dong)
                 .latitude(request.latitude())
                 .longitude(request.longitude())
                 .roadAddress(request.roadAddress())

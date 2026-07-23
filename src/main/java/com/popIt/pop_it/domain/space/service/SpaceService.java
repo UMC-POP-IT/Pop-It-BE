@@ -36,6 +36,7 @@ public class SpaceService {
     private final FacilityRepository facilityRepository;
     private final HostProfileRepository hostProfileRepository;
     private final WishlistRepository wishlistRepository;
+    private final KakaoLocalService kakaoLocalService;
 
     @Transactional
     public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
@@ -50,8 +51,10 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.INVALID_AVAILABLE_DATE_RANGE);
         }
 
-        // 3. 공간 본체 저장 (space.host_id = host_profile.id)
-        Space space = spaceRepository.save(SpaceConverter.toSpace(request, userId));
+        // 3. 좌표 -> 동 변환 후 공간 본체 저장 (space.host_id = user.id)
+        // 카카오 api 실패 시 dong = null로 저장하고 등록은 정상 진행
+        String dong = kakaoLocalService.resolveDong(request.latitude(), request.longitude()).orElse(null);
+        Space space = spaceRepository.save(SpaceConverter.toSpace(request, userId, dong));
 
         // 4. 공간 사진 저장 - 요청 배열 순서를 sortOrder로 보존
         List<String> imageUrls = request.imageUrls();
