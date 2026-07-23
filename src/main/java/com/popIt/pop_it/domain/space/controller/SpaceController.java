@@ -10,10 +10,13 @@ import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -70,6 +73,77 @@ public class SpaceController {
         SpaceResDTO.CreateResult result = spaceService.createSpace(userId, request);
         return ResponseEntity.status(SpaceSuccessCode.SPACE_CREATED.getStatus())
                 .body(ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result));
+    }
+
+    // 공간 상세 조회
+    @Operation(
+            summary = "공간 상세 조회",
+            description = """
+                    공간 상세 페이지에 필요한 정보를 조회합니다.
+                    - 비로그인 상태에서도 호출할 수 있습니다.
+                    - 로그인 상태로 호출하면 isMine, isWishlisted가 실제 값으로 채워지고,
+                      비로그인 상태에서는 두 값 모두 항상 false로 내려갑니다.
+                    - isMine: 요청자가 이 공간을 등록한 호스트인지 여부. 프론트는 이 값으로 게스트/호스트 화면을 분기합니다.
+                    - wishCount: 로그인 여부와 무관하게 항상 해당 공간의 총 찜 수입니다.
+                    - imageUrls: 등록 시 저장한 노출 순서대로 내려가며, 첫 번째가 대표 이미지입니다.
+                    """
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 상세 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404", description = "존재하지 않거나 삭제된 공간",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/{spaceId}")
+    public ApiResponse<SpaceResDTO.Detail> getSpaceDetail(
+            @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "공간 ID", example = "10")
+            @PathVariable Long spaceId
+    ) {
+        Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
+
+        SpaceResDTO.Detail result = spaceService.getSpaceDetail(userId, spaceId);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
+    }
+
+    @Operation(
+            summary = "내 공간 목록 조회",
+            description = """
+                    호스트모드 - 내 공간 페이지. 로그인한 호스트 본인이 등록한 공간 목록을 조회합니다.
+                    - Authorize에 로그인으로 발급받은 Access Token을 입력하세요.
+                    - 호스트 등록을 완료한 사용자만 호출할 수 있습니다.
+                    - 등록일 최신순으로 정렬되며, 삭제된 공간은 제외됩니다.
+                    - thumbnailUrl: 등록 시 저장한 사진 목록의 첫 번째(대표) 이미지입니다.
+                    - page는 0부터 시작합니다.
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "내 공간 목록 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403", description = "호스트 프로필 미등록",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/my")
+    public ApiResponse<SpaceResDTO.MyListResult> getMySpaces(
+            @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지 크기", example = "4")
+            @RequestParam(defaultValue = "4") @Min(1) @Max(10) int size
+    ) {
+        if (authUser == null || authUser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authUser.getUser().getUserId();
+        SpaceResDTO.MyListResult result = spaceService.getMySpaces(userId, page, size);
+        return ApiResponse.onSuccess(SpaceSuccessCode.MY_PAGE_LIST_FETCHED, result);
     }
 
     // @TODO: AI 맞춤 추천 공간 조회

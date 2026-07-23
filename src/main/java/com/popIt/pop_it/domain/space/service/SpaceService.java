@@ -12,15 +12,19 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
-import com.popIt.pop_it.domain.user.entity.HostProfile;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
+import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -31,13 +35,15 @@ public class SpaceService {
     private final SpaceFacilityRepository spaceFacilityRepository;
     private final FacilityRepository facilityRepository;
     private final HostProfileRepository hostProfileRepository;
+    private final WishlistRepository wishlistRepository;
 
     @Transactional
     public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
 
         // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 공간을 등록할 수 없다.
-        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED));
+        if (!hostProfileRepository.existsByUserId(userId)) {
+            throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);
+        }
 
         // 2. 계약 가능 기간 검증
         if (request.availableStartDate().isAfter(request.availableEndDate())) {
@@ -45,7 +51,7 @@ public class SpaceService {
         }
 
         // 3. 공간 본체 저장 (space.host_id = host_profile.id)
-        Space space = spaceRepository.save(SpaceConverter.toSpace(request, hostProfile.getId()));
+        Space space = spaceRepository.save(SpaceConverter.toSpace(request, userId));
 
         // 4. 공간 사진 저장 - 요청 배열 순서를 sortOrder로 보존
         List<String> imageUrls = request.imageUrls();
@@ -74,5 +80,56 @@ public class SpaceService {
         }
 
         return SpaceConverter.toCreateResult(space);
+    }
+
+    // 공간 상세 조회
+    public SpaceResDTO.Detail getSpaceDetail(Long userId, Long spaceId) {
+        // 1. 공간 조회
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+
+        // 2. 사진, 시설 조회
+        List<String> imageUrls = spaceImageRepository.findImageUrlsBySpaceId(spaceId);
+        List<Facility> facilities = spaceFacilityRepository.findFacilitiesBySpaceId(spaceId);
+
+        // 3. 총 찜 수는 로그인 여부와 상관 없이 항상 나타남
+        int wishCount = (int) wishlistRepository.countBySpaceId(spaceId);
+
+        // 4. isMine, isWishlisted 는 로그인한 경우에만 계산 (비로그인이면 둘 다 false)
+        boolean isMine = false;
+        boolean isWishlist = false;
+
+        if (userId != null) {
+            isMine = space.getHostId().equals(userId);
+            isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
+        }
+
+        return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
+    }
+
+    // 내 공간 목록 조회 (호스트)
+    public SpaceResDTO.MyListResult getMySpaces(Long userId, int page, int size) {
+        // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 내 공간 자체가 존재 X
+        if (!hostProfileRepository.existsByUserId(userId)) {
+            throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);
+        }
+
+        // 2. 내 공간 페이징 조회
+        Page<Space> spacePage = spaceRepository.findAllByHostIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId, PageRequest.of(page, size));
+
+        // 3. 대표 이미지를 한 번의 쿼리로 모아서 조회
+        List<Long> spaceIds = spacePage.getContent().stream()
+                .map(space -> space.getId())
+                .toList();
+
+        Map<Long, String> thumbnailUrlBySpaceId = spaceIds.isEmpty()
+                ? Map.of()
+                : spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getSpace().getId(),
+                        image -> image.getImageUrl(),
+                        (existing, duplicate) -> existing));
+
+        return SpaceConverter.toMyListResult(spacePage, thumbnailUrlBySpaceId);
     }
 }
