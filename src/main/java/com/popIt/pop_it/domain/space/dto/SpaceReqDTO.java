@@ -152,7 +152,7 @@ public class SpaceReqDTO {
                 @Min(0)
                 Integer page,
 
-                @Schema(description = "페이지 크기 (1~50). 기본값은 그리드 레이아웃 4x7 기준", example = "12", defaultValue = "12")
+                @Schema(description = "페이지 크기 (1~50). 기본값은 그리드 레이아웃 4x7 기준", example = "28", defaultValue = "28")
                 @Min(1) @Max(50)
                 Integer size
         ) {
