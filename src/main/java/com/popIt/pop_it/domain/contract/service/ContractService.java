@@ -34,6 +34,13 @@ public class ContractService {
     private final S3ObjectHasher s3ObjectHasher;
     private final AwsProperties awsProperties;
 
+    // 계약 생성
+    @Transactional
+    public void createPendingContract(Reservation reservation) {
+        contractRepository.save(ContractConverter.toPendingContract(reservation));
+    }
+
+    // 계약 예정 정보 조회
     public ContractResDTO.ContractInfoRes getContractInfo(User user, Long reservationId) {
 
         // 예약 조회
@@ -52,6 +59,7 @@ public class ContractService {
 
     }
 
+    // 전자 서명 제출
     @Transactional
     public ContractResDTO.SignatureRes signature(User user, Long reservationId, ContractReqDTO.SignatureReq dto) {
 
