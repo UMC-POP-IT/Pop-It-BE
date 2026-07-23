@@ -11,7 +11,6 @@ public enum SpaceErrorCode implements BaseErrorCode {
 
     INVALID_AVAILABLE_DATE_RANGE(HttpStatus.BAD_REQUEST, "SPACE400_1", "계약 가능 시작일은 종료일보다 늦을 수 없습니다."),
     FACILITY_NOT_FOUND(HttpStatus.BAD_REQUEST, "SPACE400_2", "존재하지 않는 시설이 포함되어 있습니다."),
-    INVALID_PRICE_RANGE(HttpStatus.BAD_REQUEST, "SPACE400_3", "최소 가격은 최대 가격보다 클 수 없습니다."),
     HOST_PROFILE_REQUIRED(HttpStatus.FORBIDDEN, "SPACE403_1", "호스트 권한이 없습니다. 호스트 등록을 먼저 완료해주세요."),
     SPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "SPACE404_1", "해당 공간을 찾을 수 없습니다."),
     ;
