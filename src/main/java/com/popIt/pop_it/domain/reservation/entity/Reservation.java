@@ -74,8 +74,7 @@ public class Reservation {
 
     @Version
     @Column(nullable = false)
-    @Builder.Default
-    private Long version = 0L;
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
