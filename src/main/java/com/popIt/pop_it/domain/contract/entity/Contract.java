@@ -22,8 +22,7 @@ public class Contract {
 
     @Version
     @Column(nullable = false)
-    @Builder.Default
-    private Long version = 0L;
+    private Long version;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
