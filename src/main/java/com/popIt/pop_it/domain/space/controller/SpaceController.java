@@ -15,6 +15,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -131,9 +133,9 @@ public class SpaceController {
     public ApiResponse<SpaceResDTO.MyListResult> getMySpaces(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
             @Parameter(description = "페이지 크기", example = "4")
-            @RequestParam(defaultValue = "4") int size
+            @RequestParam(defaultValue = "4") @Min(1) @Max(10) int size
     ) {
         if (authUser == null || authUser.getUser() == null) {
             throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
