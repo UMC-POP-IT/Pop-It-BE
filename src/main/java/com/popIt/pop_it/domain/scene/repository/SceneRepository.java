@@ -2,11 +2,9 @@ package com.popIt.pop_it.domain.scene.repository;
 
 import com.popIt.pop_it.domain.scene.entity.Scene;
 import jakarta.persistence.LockModeType;
-import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
@@ -28,8 +26,8 @@ public interface SceneRepository extends JpaRepository<Scene, Long> {
     Optional<Scene> findByIdAndNotDeleted(@Param("sceneId") Long sceneId);
 
     // 씬 단건 조회 + 비관적 락 (soft delete 제외) - 동시 사진 등록 시 sortOrder 조회~저장 구간 직렬화용
+    // 즉시실패가 아니라 DB 기본 대기시간만큼 기다렸다가 순차 처리 (둘 다 결국 성공해야 하는 케이스라 예약 도메인과 달리 timeout=0 안 씀)
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")) // 즉시실패
     @Query("select s from Scene s where s.id = :sceneId and s.deletedAt is null")
     Optional<Scene> findByIdForUpdate(@Param("sceneId") Long sceneId);
 

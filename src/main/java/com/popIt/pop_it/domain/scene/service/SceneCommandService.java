@@ -13,7 +13,6 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,15 +65,10 @@ public class SceneCommandService {
     }
 
     //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
-    //비관적 락으로 sortOrder 조회~저장 구간을 직렬화 (동시 등록 시 순번 중복 방지)
+    //비관적 락으로 sortOrder 조회~저장 구간을 직렬화 (동시 등록 시 순번 중복 방지, 즉시실패 없이 순차 대기)
     public SceneResDTO.ImageUploadResult uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
-        Scene scene;
-        try {
-            scene = sceneRepository.findByIdForUpdate(sceneId)
-                    .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
-        } catch (PessimisticLockingFailureException e) {
-            throw new ProjectException(SceneErrorCode.SCENE_IMAGE_UPLOAD_CONFLICT);
-        }
+        Scene scene = sceneRepository.findByIdForUpdate(sceneId)
+                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateSpaceMatch(scene, spaceId);
         validateHost(scene.getSpace(), hostId);
