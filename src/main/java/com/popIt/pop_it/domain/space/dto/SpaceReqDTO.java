@@ -117,13 +117,9 @@ public class SpaceReqDTO {
             @Schema(
                     description = "공간 사진 URL 목록.(최소 3장, 최대 10장) presigned URL 발급(POST /uploads/presigned-url) 후 S3 업로드하고 받은 fileUrl. "
                             + "배열 순서가 노출 순서이며 첫 번째가 대표 이미지입니다.",
-                    example = """
-                        [
-                                "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg",
-                                "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid2.jpg",
-                                "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid3.jpg",
-                        ]
-                        """
+                    example = "[\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg\", "
+                    + "\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid2.jpg\", "
+                    + "\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid3.jpg\"]"
             )
             @NotEmpty
             @Size(min = 3, max = 10)
