@@ -277,7 +277,7 @@ public class ReservationCommandService {
         }
     }
 
-    //퇴실 거절(호스트) - 게스트에게 재인증 요청, 반복 거절 가능
+    //퇴실 거절(호스트) - 게스트에게 재인증 요청. 재제출(checkoutRejected=false) 전까지는 중복 거절 불가
     public ReservationResDTO.StatusChange rejectCheckout(Long reservationId, Long hostId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
@@ -289,6 +289,10 @@ public class ReservationCommandService {
             }
             if (reservation.getCheckoutSubmittedAt() == null) {
                 // 아직 제출된 증빙 자체가 없는데 거절할 수는 없음
+                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+            }
+            if (reservation.getCheckoutRejected()) {
+                // 이미 거절 상태 - 재제출 없는 중복 거절로 24h 타임아웃이 계속 연장되는 것을 방지
                 throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
             }
 

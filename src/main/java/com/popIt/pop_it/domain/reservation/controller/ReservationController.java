@@ -159,7 +159,7 @@ public class ReservationController {
     }
 
     @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
-            + "거절 시 기존 제출 사진은 초기화되며, 반복 거절이 가능합니다. (게스트 재제출 전까지 자동승인 대상에서 제외됩니다.)")
+            + "거절 시 기존 제출 사진은 초기화되며, 게스트가 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
     @PostMapping("/{reservationId}/checkout/reject")
     public ApiResponse<ReservationResDTO.StatusChange> rejectCheckout(
             @PathVariable Long reservationId,
