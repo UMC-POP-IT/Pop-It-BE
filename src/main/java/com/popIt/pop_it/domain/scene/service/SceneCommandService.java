@@ -13,6 +13,7 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -65,10 +66,17 @@ public class SceneCommandService {
     }
 
     //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
-    public SceneResDTO.ImageUploadResult uploadSceneImages(Long sceneId, Long hostId, List<String> imageUrls) {
-        Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
-                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+    //비관적 락으로 sortOrder 조회~저장 구간을 직렬화 (동시 등록 시 순번 중복 방지)
+    public SceneResDTO.ImageUploadResult uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
+        Scene scene;
+        try {
+            scene = sceneRepository.findByIdForUpdate(sceneId)
+                    .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            throw new ProjectException(SceneErrorCode.SCENE_IMAGE_UPLOAD_CONFLICT);
+        }
 
+        validateSpaceMatch(scene, spaceId);
         validateHost(scene.getSpace(), hostId);
 
         int nextSortOrder = sceneImageRepository.findNextSortOrder(sceneId);
@@ -139,6 +147,13 @@ public class SceneCommandService {
     private void validateHost(Space space, Long hostId) {
         if (!space.getHostId().equals(hostId)) {
             throw new ProjectException(SceneErrorCode.SCENE_ACCESS_DENIED);
+        }
+    }
+
+    //경로의 spaceId와 씬이 실제로 속한 공간이 일치하는지 확인 (다른 공간 경로로 씬에 접근하는 것 방지)
+    private void validateSpaceMatch(Scene scene, Long spaceId) {
+        if (!scene.getSpace().getId().equals(spaceId)) {
+            throw new ProjectException(SceneErrorCode.SCENE_NOT_FOUND);
         }
     }
 }

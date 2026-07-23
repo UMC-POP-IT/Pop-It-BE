@@ -1,8 +1,12 @@
 package com.popIt.pop_it.domain.scene.repository;
 
 import com.popIt.pop_it.domain.scene.entity.Scene;
+import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
@@ -22,6 +26,12 @@ public interface SceneRepository extends JpaRepository<Scene, Long> {
     // 씬 단건 조회 (soft delete 제외)
     @Query("select s from Scene s where s.id = :sceneId and s.deletedAt is null")
     Optional<Scene> findByIdAndNotDeleted(@Param("sceneId") Long sceneId);
+
+    // 씬 단건 조회 + 비관적 락 (soft delete 제외) - 동시 사진 등록 시 sortOrder 조회~저장 구간 직렬화용
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")) // 즉시실패
+    @Query("select s from Scene s where s.id = :sceneId and s.deletedAt is null")
+    Optional<Scene> findByIdForUpdate(@Param("sceneId") Long sceneId);
 
     // 공간의 현재 기본 씬 조회 (기본 씬 재지정 시 기존 것 해제용)
     @Query("""

@@ -70,7 +70,7 @@ public class SceneController {
     ) {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_IMAGES_UPLOADED,
-                sceneCommandService.uploadSceneImages(sceneId, authUser.getUser().getUserId(), request.imageUrls())
+                sceneCommandService.uploadSceneImages(spaceId, sceneId, authUser.getUser().getUserId(), request.imageUrls())
         );
     }
 

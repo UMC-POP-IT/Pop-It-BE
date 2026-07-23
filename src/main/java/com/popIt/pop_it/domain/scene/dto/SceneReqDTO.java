@@ -22,7 +22,7 @@ public class SceneReqDTO {
             @NotNull Double maxDistance,
             @NotNull Double minPolarAngle,
             @NotNull Double maxPolarAngle,
-            List<String> imageUrls, // presigned URL로 업로드 완료한 이미지 URL 목록
+            List<@NotBlank String> imageUrls, // presigned URL로 업로드 완료한 이미지 URL 목록
             Boolean isDefault // null이면 false로 처리
     ) {
     }
