@@ -8,8 +8,10 @@ import com.popIt.pop_it.domain.space.entity.SpaceFacility;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import org.springframework.data.domain.Page;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SpaceConverter {
 
@@ -133,5 +135,48 @@ public class SpaceConverter {
                 .currentPage(spacePage.getNumber())
                 .hasNext(spacePage.hasNext())
                 .build();
+    }
+
+    public static SpaceResDTO.SearchResult toSearchResult(
+            Page<Space> spacePage,
+            Map<Long, String> thumbnailUrlBySpaceId,
+            Map<Long, Integer> wishCountBySpaceId,
+            Set<Long> wishlistedSpaceIds
+    ) {
+        List<SpaceResDTO.SearchSpace> spaces = spacePage.getContent().stream()
+                .map(space -> SpaceResDTO.SearchSpace.builder()
+                        .spaceId(space.getId())
+                        .buildingName(space.getBuildingName())
+                        .district(space.getDistrict())
+                        .roadAddress(space.getRoadAddress())
+                        .spaceCategory(space.getSpaceCategory())
+                        .keywords(toKeywords(space))
+                        .displayPrice(space.getPricePerDay())
+                        .thumbnailUrl(thumbnailUrlBySpaceId.get(space.getId()))
+                        .isWishlisted(wishlistedSpaceIds.contains(space.getId()))
+                        .wishCount(wishCountBySpaceId.getOrDefault(space.getId(), 0))
+                        .latitude(space.getLatitude())
+                        .longitude(space.getLongitude())
+                        .build())
+                .toList();
+
+        return SpaceResDTO.SearchResult.builder()
+                .spaces(spaces)
+                .totalCount((int) spacePage.getTotalElements())
+                .currentPage(spacePage.getNumber())
+                .hasNext(spacePage.hasNext())
+                .build();
+    }
+
+    private static List<String> toKeywords(Space space) {
+        List<String> keywords = new ArrayList<>();
+
+        if (space.getDong() != null && !space.getDong().isEmpty()) {
+            keywords.add("#" + space.getDong());
+        }
+
+        keywords.add("#" + space.getSpaceCategory().getDescription());
+
+        return keywords;
     }
 }

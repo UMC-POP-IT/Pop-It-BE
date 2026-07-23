@@ -148,6 +148,66 @@ public class SpaceResDTO {
             Boolean hasNext
     ) {}
 
+    @Schema(description = "공간 탐색 목록 항목")
+    @Builder
+    public record SearchSpace(
+            @Schema(description = "공간 ID", example = "10")
+            Long spaceId,
+
+            @Schema(description = "건물명", example = "신사 어반빌딩")
+            String buildingName,
+
+            @Schema(description = "지역(구)", example = "강남구")
+            String district,
+
+            @Schema(description = "도로명 주소", example = "서울 강남구 역삼동 130-3")
+            String roadAddress,
+
+            @Schema(description = "공간 용도(카테고리). 카드 이미지 우하단 배지에 사용", example = "POPUP_STORE")
+            SpaceCategory spaceCategory,
+
+            @Schema(
+                    description = "카드 하단에 노출할 키워드. (#지역명(동), #공간유형) 순서. "
+                            + "동 정보가 없는 공간은 공간유형 하나만 내려간다.",
+                    example = "[\"#성수동\", \"#팝업스토어\"]"
+            )
+            List<String> keywords,
+
+            @Schema(description = "노출 가격(원). 일 단위 가격", example = "80000")
+            Integer displayPrice,
+
+            @Schema(description = "대표 사진 URL (사진 목록의 첫 번째). 사진이 없으면 null", example = "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg")
+            String thumbnailUrl,
+
+            @Schema(description = "요청자의 찜 여부. 비로그인 시 항상 false", example = "false")
+            Boolean isWishlisted,
+
+            @Schema(description = "해당 공간의 총 찜 수 (로그인 여부와 무관)", example = "20")
+            Integer wishCount,
+
+            @Schema(description = "위도 (지도 뷰 마커용)", example = "37.5012")
+            Double latitude,
+
+            @Schema(description = "경도 (지도 뷰 마커용)", example = "127.0397")
+            Double longitude
+    ) {}
+
+    @Schema(description = "공간 탐색 응답")
+    @Builder
+    public record SearchResult(
+            @Schema(description = "공간 목록")
+            List<SearchSpace> spaces,
+
+            @Schema(description = "필터 조건에 맞는 전체 공간 수 (페이지네이션 계산용)", example = "100")
+            Integer totalCount,
+
+            @Schema(description = "현재 페이지 번호 (0부터 시작)", example = "0")
+            Integer currentPage,
+
+            @Schema(description = "다음 페이지 존재 여부", example = "true")
+            Boolean hasNext
+    ) {}
+
     @Builder
     public record AiRecommendedSpace(
             Long spaceId,
