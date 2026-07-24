@@ -293,7 +293,7 @@ public class ReservationCommandService {
             }
             if (reservation.getCheckoutRejected()) {
                 // 이미 거절 상태 - 재제출 없는 중복 거절로 24h 타임아웃이 계속 연장되는 것을 방지
-                throw new ProjectException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+                throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_REJECTED);
             }
 
             checkoutImageRepository.deleteAllByReservationId(reservationId);
