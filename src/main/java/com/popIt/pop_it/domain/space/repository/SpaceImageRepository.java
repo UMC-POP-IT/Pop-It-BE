@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.space.repository;
 
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,4 +28,9 @@ public interface SpaceImageRepository extends JpaRepository<SpaceImage, Long> {
         order by si.sortOrder asc
         """)
     List<String> findImageUrlsBySpaceId(@Param("spaceId") Long spaceId);
+
+    // 공간 수정 시 사진 전체 교체용 (한 건씩 지우지 않고 delete 쿼리로 한 번에 처리)
+    @Modifying(flushAutomatically = true)
+    @Query("delete from SpaceImage si where si.space.id = :spacdId")
+    void deleteAllBySpaceId(@Param("spaceId") Long spaceId);
 }
