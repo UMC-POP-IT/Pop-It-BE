@@ -65,7 +65,7 @@ class ContractSignatureConcurrencyTest {
     @Autowired
     private CryptoService cryptoService;
 
-    private static final String FIELD_SEPARATOR = ""; // ContractService.buildContentHash와 동일한 구분자
+    private static final String FIELD_SEPARATOR = "\u001F"; // ContractService.buildContentHash와 동일한 구분자
 
     // 실제 PortOne/S3 연동 없이 동시성 로직만 검증하기 위해 외부 연동 지점을 목으로 대체한다.
     @MockitoBean

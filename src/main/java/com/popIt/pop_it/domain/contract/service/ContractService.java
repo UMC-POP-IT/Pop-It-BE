@@ -19,6 +19,7 @@ import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.config.AwsProperties;
 import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -45,34 +46,68 @@ public class ContractService {
             return; // 이미 계약이 생성돼 있으면 아무 것도 안 하고 성공 처리
         }
 
-        contractRepository.save(ContractConverter.toPendingContract(reservation, buildContentHash(reservation)));
+        // 계약 생성 시점엔 Contract 스냅샷이 아직 없으므로 Reservation의 현재 값에서 뽑는다.
+        // (이 시점엔 Reservation과 Contract의 값이 동일함이 보장된다)
+        String contentHash = buildContentHash(
+                reservation.getId(),
+                reservation.getSpace().getId(),
+                reservation.getSpace().getHostId(),
+                reservation.getUser().getUserId(),
+                reservation.getStartDate(),
+                reservation.getEndDate(),
+                reservation.getUsagePurpose(),
+                reservation.getRentalFee(),
+                reservation.getDeposit(),
+                reservation.getInsuranceFee(),
+                reservation.getPlatformFee(),
+                reservation.getTotalPrice()
+        );
+
+        contractRepository.save(ContractConverter.toPendingContract(reservation, contentHash));
     }
 
-    // 계약 내용 무결성 검증 - 서명/결제 진행 전에 호출해, 저장된 contentHash와 현재 Reservation
-    // 상태로 재계산한 해시가 다르면(=계약 체결 이후 내용이 변경됐으면) 처리를 막는다.
+    // 계약 내용 무결성 검증 - 서명/결제 진행 전에 호출해, 저장된 contentHash와 Contract 스냅샷
+    // 컬럼으로 재계산한 해시가 다르면(=계약 체결 이후 Contract 자체가 변조됐으면) 처리를 막는다.
+    // 결제·정산이 실제로 참조하는 값은 Contract 스냅샷이므로, 검증도 반드시 같은 소스(Contract)를 기준으로 해야 한다.
     public void verifyContentIntegrity(Contract contract) {
-        String recomputed = buildContentHash(contract.getReservation());
+        String recomputed = buildContentHash(
+                contract.getReservation().getId(),
+                contract.getReservation().getSpace().getId(),
+                contract.getHostId(),
+                contract.getGuestId(),
+                contract.getStartDate(),
+                contract.getEndDate(),
+                contract.getUsagePurpose(),
+                contract.getRentalFee(),
+                contract.getDeposit(),
+                contract.getInsuranceFee(),
+                contract.getPlatformFee(),
+                contract.getTotalPrice()
+        );
         if (!recomputed.equals(contract.getContentHash())) {
             throw new ContractException(ContractErrorCode.CONTRACT_CONTENT_TAMPERED);
         }
     }
 
-    // 계약 내용 해시(HMAC) 생성 - createPendingContract/verifyContentIntegrity가 동일 로직을 공유해야
-    // 재계산 결과가 어긋나지 않는다.
-    private String buildContentHash(Reservation reservation) {
+    // 계약 내용 해시(HMAC) 생성 - createPendingContract/verifyContentIntegrity가 값의 출처(Reservation/Contract)만
+    // 다르게 넘기고 포맷 로직 자체는 이 메서드 하나만 타도록 공유한다.
+    private String buildContentHash(Long reservationId, Long spaceId, Long hostId, Long guestId,
+                                      LocalDate startDate, LocalDate endDate, String usagePurpose,
+                                      Long rentalFee, Long deposit, Long insuranceFee,
+                                      Long platformFee, Long totalPrice) {
         String payload = String.join(FIELD_SEPARATOR,
-                String.valueOf(reservation.getId()), // 예약 ID
-                String.valueOf(reservation.getSpace().getId()), // 공간 ID
-                String.valueOf(reservation.getSpace().getHostId()), // 호스트 ID
-                String.valueOf(reservation.getUser().getUserId()),  // 게스트 ID
-                reservation.getStartDate().toString(), // LocalDate.toString()은 항상 yyyy-MM-dd 고정 포맷
-                reservation.getEndDate().toString(),
-                reservation.getUsagePurpose(),
-                String.valueOf(reservation.getRentalFee()),
-                String.valueOf(reservation.getDeposit()),
-                String.valueOf(reservation.getInsuranceFee()),
-                String.valueOf(reservation.getPlatformFee()),
-                String.valueOf(reservation.getTotalPrice())
+                String.valueOf(reservationId),
+                String.valueOf(spaceId),
+                String.valueOf(hostId),
+                String.valueOf(guestId),
+                startDate.toString(), // yyyy-MM-dd 고정 포맷
+                endDate.toString(),
+                usagePurpose,
+                String.valueOf(rentalFee),
+                String.valueOf(deposit),
+                String.valueOf(insuranceFee),
+                String.valueOf(platformFee),
+                String.valueOf(totalPrice)
         );
         return cryptoService.hash(payload);
     }

@@ -69,13 +69,13 @@ public class PaymentService {
         Contract contract = contractRepository.findWithReservationAndUserById(contractId)
                 .orElseThrow(() -> new ProjectException(ContractErrorCode.CONTRACT_NOT_FOUND));
 
-        // 결제 전, 계약 체결 이후 내용이 변조되지 않았는지 검증
-        contractService.verifyContentIntegrity(contract);
-
         // 본인인지 확인
         if (!contract.getReservation().getUser().getUserId().equals(userId)) {
             throw new ProjectException(PaymentErrorCode.PAYMENT_FORBIDDEN);
         }
+
+        // 결제 전, 계약 체결 이후 내용이 변조되지 않았는지 검증
+        contractService.verifyContentIntegrity(contract);
 
         // 결제 가능한 상태인지 확인
         if (contract.getStatus() != ContractStatus.PENDING_PAYMENT) {
