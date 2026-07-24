@@ -31,14 +31,18 @@ public class SceneCommandService {
 
     //씬 생성 (사전 제작된 모델 연결)
     public SceneResDTO.SceneId createScene(Long spaceId, Long hostId, SceneReqDTO.Create request) {
-        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
-                .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
+        Space space;
+        try {
+            space = spaceRepository.findByIdAndDeletedAtIsNullForUpdate(spaceId)
+                    .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            throw new SceneException(SceneErrorCode.SCENE_DEFAULT_ASSIGNMENT_CONFLICT);
+        }
 
         validateHost(space, hostId);
 
         boolean isDefault = Boolean.TRUE.equals(request.isDefault());
         if (isDefault) {
-            lockSpaceForDefaultAssignment(spaceId);
             unmarkExistingDefault(spaceId);
         }
 
@@ -67,7 +71,6 @@ public class SceneCommandService {
     }
 
     //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
-    //비관적 락으로 sortOrder 조회~저장 구간을 직렬화 (동시 등록 시 순번 중복 방지, 즉시실패 없이 순차 대기)
     public SceneResDTO.ImageUploadResult uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
         Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
@@ -127,10 +130,9 @@ public class SceneCommandService {
     }
 
     //기본 씬 재지정 구간(기존 해제~새로 지정) 동안 공간 단위로 락을 걸어 직렬화
-    //동시에 같은 spaceId로 isDefault=true 요청이 들어와도 하나만 통과, 나머지는 즉시 충돌 응답
     private void lockSpaceForDefaultAssignment(Long spaceId) {
         try {
-            spaceRepository.findByIdForUpdate(spaceId)
+            spaceRepository.findByIdAndDeletedAtIsNullForUpdate(spaceId)
                     .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
         } catch (PessimisticLockingFailureException e) {
             throw new SceneException(SceneErrorCode.SCENE_DEFAULT_ASSIGNMENT_CONFLICT);
