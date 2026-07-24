@@ -47,6 +47,13 @@ public class Contract {
      * Reservation의 스냅샷 (계약 체결 시점 확정 정보)---------------
      */
     @Column(nullable = false)
+    private Long hostId;
+
+    @Column(nullable = false)
+    private Long guestId;
+
+
+    @Column(nullable = false)
     private LocalDate startDate; // 이용 시작일
 
     @Column(nullable = false)

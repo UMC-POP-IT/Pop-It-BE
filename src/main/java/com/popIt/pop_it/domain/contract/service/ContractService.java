@@ -42,10 +42,12 @@ public class ContractService {
     @Transactional
     public void createPendingContract(Reservation reservation) {
 
-        // 계약 내용 해시 생성
+        // 계약 내용 해시(HMAC) 생성
         String payload = String.join(FIELD_SEPARATOR,
                 String.valueOf(reservation.getId()), // 예약 ID
                 String.valueOf(reservation.getSpace().getId()), // 공간 ID
+                String.valueOf(reservation.getSpace().getHostId()), // 호스트 ID
+                String.valueOf(reservation.getUser().getUserId()),  // 게스트 ID
                 reservation.getStartDate().toString(), // LocalDate.toString()은 항상 yyyy-MM-dd 고정 포맷
                 reservation.getEndDate().toString(),
                 reservation.getUsagePurpose(),
@@ -56,7 +58,6 @@ public class ContractService {
                 String.valueOf(reservation.getTotalPrice())
         );
         String contentHash = cryptoService.hash(payload);
-
 
         contractRepository.save(ContractConverter.toPendingContract(reservation, contentHash));
     }

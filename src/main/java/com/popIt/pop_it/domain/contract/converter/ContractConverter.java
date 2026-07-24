@@ -37,6 +37,8 @@ public class ContractConverter {
     public static Contract toPendingContract(Reservation reservation, String contentHash) {
         return Contract.builder()
                 .reservation(reservation)
+                .hostId(reservation.getSpace().getHostId())
+                .guestId(reservation.getUser().getUserId())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
