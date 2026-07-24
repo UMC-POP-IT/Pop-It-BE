@@ -15,7 +15,7 @@ public class SpaceReqDTO {
 
 
     @Schema(description = "공간 등록 요청")
-    public record Create(
+    public record SpaceCreateReq(
             @Schema(description = "건물명", example = "합정 메세나폴리스")
             @NotBlank
             @Size(max = 20)

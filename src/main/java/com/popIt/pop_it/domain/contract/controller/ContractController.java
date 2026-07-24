@@ -37,10 +37,10 @@ public class ContractController {
     // 전자서명 제출
     @Operation(summary = "전자서명 제출", description = "호스트/게스트가 계약서에 전자 서명합니다. 양측 서명 완료 시 계약이 체결됩니다. ")
     @PostMapping("/signatures")
-    public ApiResponse<ContractResDTO.SignatureRes> signature(
+    public ApiResponse<ContractResDTO.ContractSignatureRes> signature(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long reservationId,
-            @RequestBody @Valid ContractReqDTO.SignatureReq dto
+            @RequestBody @Valid ContractReqDTO.ContractSignatureReq dto
             ) {
         BaseSuccessCode code = ContractSuccessCode.SIGNATURE_SUCCESS;
         return ApiResponse.onSuccess(code, contractService.signature(authUser.getUser(), reservationId, dto));

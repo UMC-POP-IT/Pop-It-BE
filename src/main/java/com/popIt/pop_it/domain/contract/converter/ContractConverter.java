@@ -4,8 +4,8 @@ import com.popIt.pop_it.domain.contract.dto.ContractResDTO;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 
 public class ContractConverter {
-    public static ContractResDTO.GetGuestContractInfoRes toGetGuestContractInfoRes(Reservation reservation) {
-        return ContractResDTO.GetGuestContractInfoRes.builder()
+    public static ContractResDTO.ContractGuestInfoRes toGetGuestContractInfoRes(Reservation reservation) {
+        return ContractResDTO.ContractGuestInfoRes.builder()
                 .spaceName(reservation.getSpace().getBuildingName())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
@@ -17,8 +17,8 @@ public class ContractConverter {
                 .build();
     }
 
-    public static ContractResDTO.GetHostContractInfoRes toGetHostContractInfoRes(Reservation reservation) {
-        return ContractResDTO.GetHostContractInfoRes.builder()
+    public static ContractResDTO.ContractHostInfoRes toGetHostContractInfoRes(Reservation reservation) {
+        return ContractResDTO.ContractHostInfoRes.builder()
                 .spaceName(reservation.getSpace().getBuildingName())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())

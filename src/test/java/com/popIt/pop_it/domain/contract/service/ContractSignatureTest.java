@@ -139,8 +139,8 @@ public class ContractSignatureTest {
     void 호스트_계약_서명() {
         String signatureUrl = "https://signature.example.com/host.png";
 
-        ContractResDTO.SignatureRes result = contractService.signature(
-                host, reservationId, new ContractReqDTO.SignatureReq(signatureUrl)
+        ContractResDTO.ContractSignatureRes result = contractService.signature(
+                host, reservationId, new ContractReqDTO.ContractSignatureReq(signatureUrl)
         );
 
         // 응답: 게스트 서명 대기 상태로 전이, 아직 둘 다 서명된 건 아님
@@ -166,10 +166,10 @@ public class ContractSignatureTest {
         String guestSignatureUrl = "https://signature.example.com/guest.png";
 
         // 전제: 호스트가 먼저 서명해서 GUEST_SIGNATURE_PENDING 상태로 만들어둠
-        contractService.signature(host, reservationId, new ContractReqDTO.SignatureReq(hostSignatureUrl));
+        contractService.signature(host, reservationId, new ContractReqDTO.ContractSignatureReq(hostSignatureUrl));
 
-        ContractResDTO.SignatureRes result = contractService.signature(
-                guest, reservationId, new ContractReqDTO.SignatureReq(guestSignatureUrl)
+        ContractResDTO.ContractSignatureRes result = contractService.signature(
+                guest, reservationId, new ContractReqDTO.ContractSignatureReq(guestSignatureUrl)
         );
 
         // 응답: 완료 상태로 전이, 둘 다 서명됨

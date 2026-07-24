@@ -38,7 +38,7 @@ public class SpaceService {
     private final WishlistRepository wishlistRepository;
 
     @Transactional
-    public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
+    public SpaceResDTO.SpaceCreateRes createSpace(Long userId, SpaceReqDTO.SpaceCreateReq request) {
 
         // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 공간을 등록할 수 없다.
         if (!hostProfileRepository.existsByUserId(userId)) {
@@ -83,7 +83,7 @@ public class SpaceService {
     }
 
     // 공간 상세 조회
-    public SpaceResDTO.Detail getSpaceDetail(Long userId, Long spaceId) {
+    public SpaceResDTO.SpaceDetailRes getSpaceDetail(Long userId, Long spaceId) {
         // 1. 공간 조회
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
@@ -108,7 +108,7 @@ public class SpaceService {
     }
 
     // 내 공간 목록 조회 (호스트)
-    public SpaceResDTO.MyListResult getMySpaces(Long userId, int page, int size) {
+    public SpaceResDTO.MySpaceListRes getMySpaces(Long userId, int page, int size) {
         // 1. 호스트 권한 확인 - 호스트 프로필이 없으면 내 공간 자체가 존재 X
         if (!hostProfileRepository.existsByUserId(userId)) {
             throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);

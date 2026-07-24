@@ -32,16 +32,16 @@ public class UploadService {
             "application/pdf", "pdf"
     );
 
-    public UploadResDTO.PresignedUrlList issuePresignedUrls(Long userId, UploadReqDTO.PresignedUrl request) {
+    public UploadResDTO.PresignedUrlListRes issuePresignedUrls(Long userId, UploadReqDTO.PresignedUrlReq request) {
 
-        List<UploadResDTO.PresignedUrlInfo> uploads = request.files().stream()
+        List<UploadResDTO.PresignedUrlInfoRes> uploads = request.files().stream()
                 .map(file -> issueOne(userId, request.uploadType(), file.contentType()))
                 .toList();
 
-        return new UploadResDTO.PresignedUrlList(uploads);
+        return new UploadResDTO.PresignedUrlListRes(uploads);
     }
 
-    private UploadResDTO.PresignedUrlInfo issueOne(Long userId, UploadType uploadType, String contentType) {
+    private UploadResDTO.PresignedUrlInfoRes issueOne(Long userId, UploadType uploadType, String contentType) {
         String extension = ALLOWED_CONTENT_TYPES.get(contentType);
         if (extension == null) {
             throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
@@ -68,7 +68,7 @@ public class UploadService {
         String presignedUrl = s3Presigner.presignPutObject(presignedRequest).url().toString();
         String fileUrl = "https://%s.s3.%s.amazonaws.com/%s".formatted(bucket, awsProperties.region(), key);
 
-        return new UploadResDTO.PresignedUrlInfo(presignedUrl, fileUrl);
+        return new UploadResDTO.PresignedUrlInfoRes(presignedUrl, fileUrl);
     }
 
     // UploadType.BucketType에 따라 실제 버킷 이름 반환 (새 버킷 추가 시 여기에만 추가)

@@ -100,7 +100,7 @@ public class ReservationConcurrencyTest {
 
     @Test
     void 동시에_같은_기간으로_예약요청하면_한_건만_성공한다() throws InterruptedException {
-        ReservationReqDTO.CreateReq request = new ReservationReqDTO.CreateReq(
+        ReservationReqDTO.ReservationCreateReq request = new ReservationReqDTO.ReservationCreateReq(
                 spaceId, LocalDate.now().plusDays(10), LocalDate.now().plusDays(12), "동시성 테스트"
         );
 

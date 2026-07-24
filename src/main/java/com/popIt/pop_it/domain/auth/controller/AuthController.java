@@ -30,8 +30,8 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public ApiResponse<UserResDTO.Reissue> reissue(
-            @Valid @RequestBody AuthReqDTO.Reissue request
+    public ApiResponse<UserResDTO.TokenReissueRes> reissue(
+            @Valid @RequestBody AuthReqDTO.TokenReissueReq request
     ) {
         return ApiResponse.onSuccess(
                 UserSuccessCode.USER_REISSUE,

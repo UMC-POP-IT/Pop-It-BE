@@ -3,16 +3,16 @@ package com.popIt.pop_it.domain.facility.dto;
 import java.util.List;
 
 public class FacilityResDTO {
-    public record ListResult(
-            List<CategoryGroup> facilities
+    public record FacilityListRes(
+            List<FacilityCategoryGroupRes> facilities
     ) {}
 
-    public record CategoryGroup(
+    public record FacilityCategoryGroupRes(
             String category,
-            List<Item> items
+            List<FacilityItemRes> items
     ) {}
 
-    public record Item(
+    public record FacilityItemRes(
             Long facilityId,
             String name
     ) {}

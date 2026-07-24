@@ -17,8 +17,8 @@ public class FacilityController {
     private final FacilityService facilityService;
 
     @GetMapping
-    public ApiResponse<FacilityResDTO.ListResult> getFacilities() {
-        FacilityResDTO.ListResult result = facilityService.getFacilities();
+    public ApiResponse<FacilityResDTO.FacilityListRes> getFacilities() {
+        FacilityResDTO.FacilityListRes result = facilityService.getFacilities();
         return ApiResponse.onSuccess(FacilitySuccessCode.FACILITY_LIST_FETCHED, result);
     }
 }

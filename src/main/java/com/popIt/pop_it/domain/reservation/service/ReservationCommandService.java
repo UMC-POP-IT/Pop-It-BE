@@ -48,7 +48,7 @@ public class ReservationCommandService {
     private final PaymentService paymentService;
 
     //예약 요청
-    public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
+    public ReservationResDTO.ReservationCreateRes createReservation(Long userId, ReservationReqDTO.ReservationCreateReq request) {
         Space space;
         try {
             space = spaceRepository.findByIdForUpdate(request.spaceId())
@@ -119,7 +119,7 @@ public class ReservationCommandService {
     }
 
     //예약 승인(호스트)
-    public ReservationResDTO.StatusChange approveReservation(Long reservationId, Long hostId) {
+    public ReservationResDTO.ReservationStatusChangeRes approveReservation(Long reservationId, Long hostId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -138,7 +138,7 @@ public class ReservationCommandService {
     }
 
     //예약 거절(호스트)
-    public ReservationResDTO.StatusChange rejectReservation(Long reservationId, Long hostId) {
+    public ReservationResDTO.ReservationStatusChangeRes rejectReservation(Long reservationId, Long hostId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -170,7 +170,7 @@ public class ReservationCommandService {
     }
 
     //예약 취소(게스트)
-    public ReservationResDTO.StatusChange cancelByGuest(Long reservationId, Long guestId) {
+    public ReservationResDTO.ReservationStatusChangeRes cancelByGuest(Long reservationId, Long guestId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -204,8 +204,8 @@ public class ReservationCommandService {
     }
 
     //퇴실 증빙 제출 - 최초 제출 또는 거절 후 재제출만 허용, 사진 최소 1장 필수
-    public ReservationResDTO.StatusChange submitCheckout(
-            Long reservationId, Long guestId, ReservationReqDTO.Checkout request
+    public ReservationResDTO.ReservationStatusChangeRes submitCheckout(
+            Long reservationId, Long guestId, ReservationReqDTO.ReservationCheckoutReq request
     ) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
@@ -242,7 +242,7 @@ public class ReservationCommandService {
     }
 
     //퇴실 승인(호스트) - 유효한 제출이 존재하고 거절 상태가 아닐 때만 승인 가능
-    public ReservationResDTO.StatusChange approveCheckout(Long reservationId, Long hostId) {
+    public ReservationResDTO.ReservationStatusChangeRes approveCheckout(Long reservationId, Long hostId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -277,7 +277,7 @@ public class ReservationCommandService {
     }
 
     //퇴실 거절(호스트) - 게스트에게 재인증 요청, 반복 거절 가능
-    public ReservationResDTO.StatusChange rejectCheckout(Long reservationId, Long hostId) {
+    public ReservationResDTO.ReservationStatusChangeRes rejectCheckout(Long reservationId, Long hostId) {
         try {
             Reservation reservation = reservationRepository.findById(reservationId)
                     .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));

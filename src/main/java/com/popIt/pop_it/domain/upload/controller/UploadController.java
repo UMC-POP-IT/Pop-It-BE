@@ -38,9 +38,9 @@ public class UploadController {
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
-    public ApiResponse<UploadResDTO.PresignedUrlList> issuePresignedUrls(
+    public ApiResponse<UploadResDTO.PresignedUrlListRes> issuePresignedUrls(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody UploadReqDTO.PresignedUrl request
+            @Valid @RequestBody UploadReqDTO.PresignedUrlReq request
     ) {
         // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
         if (authUser == null || authUser.getUser() == null) {
@@ -48,7 +48,7 @@ public class UploadController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        UploadResDTO.PresignedUrlList result = uploadService.issuePresignedUrls(userId, request);
+        UploadResDTO.PresignedUrlListRes result = uploadService.issuePresignedUrls(userId, request);
         return ApiResponse.onSuccess(UploadSuccessCode.PRESIGNED_URL_ISSUED, result);
     }
 }

@@ -42,7 +42,7 @@ public class PaymentService {
     private final HostPayoutClient hostPayoutClient;
 
     @Transactional
-    public PaymentResDTO.Prepare prepare(Long contractId, String idempotencyKey, Long userId) {
+    public PaymentResDTO.PaymentPrepareRes prepare(Long contractId, String idempotencyKey, Long userId) {
 
         // 멱등
         Optional<Payment> existingPayment = paymentRepository.findByIdempotencyKey(idempotencyKey);
@@ -58,7 +58,7 @@ public class PaymentService {
                 case PAID -> throw new ProjectException(PaymentErrorCode.PAYMENT_ALREADY_PAID);
                 case FAILED, EXPIRED -> throw new ProjectException(PaymentErrorCode.PAYMENT_RETRYABLE); // 새 키로 재시도 필요
                 default -> {
-                    return PaymentResDTO.Prepare.of(payment, payment.getContract());
+                    return PaymentResDTO.PaymentPrepareRes.of(payment, payment.getContract());
                 }
             }
         }
@@ -104,7 +104,7 @@ public class PaymentService {
                     .orElseThrow(() -> e);
         }
 
-        return PaymentResDTO.Prepare.of(savedPayment, contract);
+        return PaymentResDTO.PaymentPrepareRes.of(savedPayment, contract);
     }
 
     private String generateOrderId(Long contractId) {
@@ -112,7 +112,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public PaymentResDTO.Confirm confirm(Long paymentId, PaymentReqDTO.Confirm reqDTO, Long userId) {
+    public PaymentResDTO.PaymentConfirmRes confirm(Long paymentId, PaymentReqDTO.PaymentConfirmReq reqDTO, Long userId) {
         Payment payment = paymentRepository.findById(paymentId)
                 .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
 
@@ -123,7 +123,7 @@ public class PaymentService {
 
         // 이미 승인된 결제면 재승인을 시도하지 않고 그대로 반환한다.
         if (payment.getStatus() == PaymentStatus.PAID) {
-            return PaymentResDTO.Confirm.of(payment);
+            return PaymentResDTO.PaymentConfirmRes.of(payment);
         }
 
         // 실패/만료된 결제는 재승인 대상이 아니다 - prepare()에서 새 Idempotency-Key로 다시 준비해야 한다.
@@ -140,7 +140,7 @@ public class PaymentService {
         }
 
         try {
-            PaymentResDTO.TossConfirm tossConfirm =
+            PaymentResDTO.TossConfirmRes tossConfirm =
                     tossPaymentClient.confirm(reqDTO.paymentKey(), reqDTO.orderId(), reqDTO.amount());
 
             payment.markAsPaid(
@@ -169,7 +169,7 @@ public class PaymentService {
             throw e;
         }
 
-        return PaymentResDTO.Confirm.of(payment);
+        return PaymentResDTO.PaymentConfirmRes.of(payment);
     }
 
     // 퇴실 승인 시 예약 ID로 결제를 찾아 정산한다.

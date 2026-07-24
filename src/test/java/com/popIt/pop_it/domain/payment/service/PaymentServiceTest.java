@@ -138,7 +138,7 @@ class PaymentServiceTest {
         given(contractRepository.findWithReservationAndUserById(CONTRACT_ID)).willReturn(Optional.of(contract));
         given(paymentIdempotentSaver.save(any(Payment.class))).willReturn(savedPayment);
 
-        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+        PaymentResDTO.PaymentPrepareRes result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(1L);
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
@@ -162,7 +162,7 @@ class PaymentServiceTest {
         given(paymentRepository.findByContractIdAndStatus(CONTRACT_ID, PaymentStatus.PENDING))
                 .willReturn(Optional.of(concurrentlyCreatedPayment));
 
-        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+        PaymentResDTO.PaymentPrepareRes result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(1L);
         assertThat(result.status()).isEqualTo("PENDING");
@@ -246,7 +246,7 @@ class PaymentServiceTest {
 
         given(paymentRepository.findByIdempotencyKey(IDEMPOTENCY_KEY)).willReturn(Optional.of(existingPayment));
 
-        PaymentResDTO.Prepare result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
+        PaymentResDTO.PaymentPrepareRes result = paymentService.prepare(CONTRACT_ID, IDEMPOTENCY_KEY, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(existingPayment.getId());
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
@@ -284,15 +284,15 @@ class PaymentServiceTest {
     void 결제_승인에_성공한다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
         OffsetDateTime approvedAt = OffsetDateTime.now();
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
         given(tossPaymentClient.confirm("paymentKey-1", "ORDER_1_abc", 155_000L))
-                .willReturn(new PaymentResDTO.TossConfirm(
+                .willReturn(new PaymentResDTO.TossConfirmRes(
                         "paymentKey-1", "ORDER_1_abc", "카드", "DONE", 155_000L, approvedAt));
 
-        PaymentResDTO.Confirm result = paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID);
+        PaymentResDTO.PaymentConfirmRes result = paymentService.confirm(PAYMENT_ID, reqDTO, USER_ID);
 
         assertThat(result.paymentId()).isEqualTo(payment.getId());
         assertThat(result.orderId()).isEqualTo("ORDER_1_abc");
@@ -305,7 +305,7 @@ class PaymentServiceTest {
 
     @Test
     void 결제를_찾을_수_없으면_승인_예외() {
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.empty());
 
@@ -319,7 +319,7 @@ class PaymentServiceTest {
     void 본인_결제가_아니면_승인_예외() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -333,7 +333,7 @@ class PaymentServiceTest {
     void 실패한_결제는_재승인_대상이_아니다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.FAILED, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -348,7 +348,7 @@ class PaymentServiceTest {
     void 만료된_결제는_재승인_대상이_아니다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.EXPIRED, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -363,7 +363,7 @@ class PaymentServiceTest {
     void 요청한_주문번호가_다르면_승인_예외() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_다른값", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_다른값", 155_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -377,7 +377,7 @@ class PaymentServiceTest {
     void 요청한_금액이_계약_금액과_다르면_승인_예외() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 1_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 1_000L);
 
         given(paymentRepository.findById(PAYMENT_ID)).willReturn(Optional.of(payment));
 
@@ -391,7 +391,7 @@ class PaymentServiceTest {
     void 토스_승인_실패시_결제가_실패_처리되고_예외가_전파된다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
         TossErrorCode tossErrorCode = new TossErrorCode(
                 HttpStatus.BAD_REQUEST, "INVALID_CARD_NUMBER", "카드번호를 다시 확인해주세요.");
 
@@ -410,7 +410,7 @@ class PaymentServiceTest {
     void 동시_confirm_요청_중_하나가_이미_PAID로_커밋했으면_실패_기록이_덮어쓰지_않는다() {
         Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
         Payment payment = paymentOf(contract, PaymentStatus.PENDING, "ORDER_1_abc");
-        PaymentReqDTO.Confirm reqDTO = new PaymentReqDTO.Confirm("paymentKey-1", "ORDER_1_abc", 155_000L);
+        PaymentReqDTO.PaymentConfirmReq reqDTO = new PaymentReqDTO.PaymentConfirmReq("paymentKey-1", "ORDER_1_abc", 155_000L);
         TossErrorCode tossErrorCode = new TossErrorCode(
                 HttpStatus.BAD_REQUEST, "ALREADY_PROCESSED_PAYMENT", "이미 처리된 결제입니다.");
 
