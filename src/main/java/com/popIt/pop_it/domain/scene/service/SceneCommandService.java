@@ -13,6 +13,7 @@ import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,13 +31,14 @@ public class SceneCommandService {
 
     //씬 생성 (사전 제작된 모델 연결)
     public SceneResDTO.SceneId createScene(Long spaceId, Long hostId, SceneReqDTO.Create request) {
-        Space space = spaceRepository.findById(spaceId)
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
                 .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
 
         validateHost(space, hostId);
 
         boolean isDefault = Boolean.TRUE.equals(request.isDefault());
         if (isDefault) {
+            lockSpaceForDefaultAssignment(spaceId);
             unmarkExistingDefault(spaceId);
         }
 
@@ -95,6 +97,7 @@ public class SceneCommandService {
         );
 
         if (Boolean.TRUE.equals(request.isDefault()) && !scene.getIsDefault()) {
+            lockSpaceForDefaultAssignment(scene.getSpace().getId());
             unmarkExistingDefault(scene.getSpace().getId());
             scene.markAsDefault();
         } else if (Boolean.FALSE.equals(request.isDefault()) && scene.getIsDefault()) {
@@ -121,6 +124,17 @@ public class SceneCommandService {
     private void unmarkExistingDefault(Long spaceId) {
         sceneRepository.findDefaultBySpaceId(spaceId)
                 .ifPresent(Scene::unmarkAsDefault);
+    }
+
+    //기본 씬 재지정 구간(기존 해제~새로 지정) 동안 공간 단위로 락을 걸어 직렬화
+    //동시에 같은 spaceId로 isDefault=true 요청이 들어와도 하나만 통과, 나머지는 즉시 충돌 응답
+    private void lockSpaceForDefaultAssignment(Long spaceId) {
+        try {
+            spaceRepository.findByIdForUpdate(spaceId)
+                    .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            throw new SceneException(SceneErrorCode.SCENE_DEFAULT_ASSIGNMENT_CONFLICT);
+        }
     }
 
     //이미지 URL 목록을 startOrder부터 이어서 SceneImage로 저장

@@ -21,7 +21,7 @@ public class SceneQueryService {
 
     //공간의 방(씬) 목록 조회
     public SceneResDTO.SceneList getScenes(Long spaceId) {
-        if (!spaceRepository.existsById(spaceId)) {
+        if (!spaceRepository.existsByIdAndDeletedAtIsNull(spaceId)) {
             throw new SceneException(SpaceErrorCode.SPACE_NOT_FOUND);
         }
 

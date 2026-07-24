@@ -23,6 +23,9 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
     // 소프트 삭제된 공간은 조회 대상에서 제외
     Optional<Space> findByIdAndDeletedAtIsNull(Long id);
 
+    // 소프트 삭제된 공간은 존재 여부 확인 대상에서 제외
+    boolean existsByIdAndDeletedAtIsNull(Long id);
+
     // 내 공간 목록 조회
     Page<Space> findAllByHostIdAndDeletedAtIsNullOrderByCreatedAtDesc(Long hostId, Pageable pageable);
 }

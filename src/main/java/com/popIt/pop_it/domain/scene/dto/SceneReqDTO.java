@@ -33,7 +33,7 @@ public class SceneReqDTO {
             @URL String modelUrl,
             @URL String thumbnail,
             Boolean isDefault,
-            // 카메라 설정 - modelUrl을 바꿀 때는 함께 보내야 함 (모델마다 크기/형태가 달라 카메라 값이 어긋날 수 있음)
+            // 카메라 설정
             Double cameraPositionX,
             Double cameraPositionY,
             Double cameraPositionZ,
