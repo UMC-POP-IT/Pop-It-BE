@@ -121,21 +121,9 @@ public class ContractSignatureTest {
                 .build());
         reservationId = reservation.getId();
 
-        contractRepository.save(Contract.builder()
-                .status(ContractStatus.HOST_SIGNATURE_PENDING)
-                .hostId(hostId)
-                .guestId(guestId)
-                .startDate(reservationStartDate)
-                .endDate(reservationEndDate)
-                .usagePurpose(usagePurpose)
-                .rentalFee(200_000L)
-                .deposit(1_000_000L)
-                .insuranceFee(10_000L)
-                .platformFee(20_000L)
-                .totalPrice(1_210_000L)
-                .contentHash("test-content-hash")
-                .reservation(reservation)
-                .build());
+        // 실제 생성 경로(contentHash 계산 포함)를 그대로 태워서, verifyContentIntegrity가
+        // 통과할 수 있는 진짜 해시가 저장되도록 한다.
+        contractService.createPendingContract(reservation);
 
         // 본인인증은 완료된 상태를 기본값으로 두고, 이미지 해시는 S3를 실제로 호출하지 않도록 고정값을 반환
         when(identityVerificationService.getVerifiedCiHash(any(User.class)))

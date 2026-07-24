@@ -13,6 +13,7 @@ import static org.mockito.Mockito.verify;
 import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.contract.service.ContractService;
 import com.popIt.pop_it.domain.payment.client.HostPayoutClient;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.dto.PaymentReqDTO;
@@ -48,6 +49,9 @@ class PaymentServiceTest {
 
     @Mock
     private ContractRepository contractRepository;
+
+    @Mock
+    private ContractService contractService;
 
     @Mock
     private PaymentIdempotentSaver paymentIdempotentSaver;
