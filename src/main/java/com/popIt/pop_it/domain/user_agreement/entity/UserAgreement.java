@@ -35,4 +35,10 @@ public class UserAgreement {
 
     @Column(name = "term_id", nullable = false, updatable = false)
     private Long termId;
+
+    // 이미 동의 이력이 있는 약관을 다시 요청받았을 때 동의 여부/시각을 갱신 (upsert의 update 경로)
+    public void updateAgreement(boolean isAgreed, LocalDateTime agreedAt) {
+        this.isAgreed = isAgreed;
+        this.agreedAt = agreedAt;
+    }
 }
