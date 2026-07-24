@@ -62,7 +62,9 @@ public class SecurityConfig {
     };
 
     private final String[] allowGetUris = {
-            "/api/v1/spaces/*"
+            "/api/v1/spaces/*",
+            "/api/v1/spaces/{spaceId:[0-9]+}/scenes",
+            "/api/v1/scenes/{sceneId:[0-9]+}"
     };
 
     private final String[] publicAPI = {
@@ -123,7 +125,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, authenticatedGetUris).authenticated()
                         .requestMatchers(allowUris).permitAll()
                         .requestMatchers(publicAPI).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/spaces/*/scenes", "/api/v1/scenes/*").permitAll()
                         .requestMatchers(HttpMethod.GET, allowGetUris).permitAll()
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session

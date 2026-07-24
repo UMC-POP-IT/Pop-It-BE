@@ -5,13 +5,13 @@ import com.popIt.pop_it.domain.scene.dto.SceneReqDTO;
 import com.popIt.pop_it.domain.scene.dto.SceneResDTO;
 import com.popIt.pop_it.domain.scene.entity.Scene;
 import com.popIt.pop_it.domain.scene.entity.SceneImage;
+import com.popIt.pop_it.domain.scene.exception.SceneException;
 import com.popIt.pop_it.domain.scene.exception.code.SceneErrorCode;
 import com.popIt.pop_it.domain.scene.repository.SceneImageRepository;
 import com.popIt.pop_it.domain.scene.repository.SceneRepository;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
-import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +31,7 @@ public class SceneCommandService {
     //씬 생성 (사전 제작된 모델 연결)
     public SceneResDTO.SceneId createScene(Long spaceId, Long hostId, SceneReqDTO.Create request) {
         Space space = spaceRepository.findById(spaceId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+                .orElseThrow(() -> new SceneException(SpaceErrorCode.SPACE_NOT_FOUND));
 
         validateHost(space, hostId);
 
@@ -68,7 +68,7 @@ public class SceneCommandService {
     //비관적 락으로 sortOrder 조회~저장 구간을 직렬화 (동시 등록 시 순번 중복 방지, 즉시실패 없이 순차 대기)
     public SceneResDTO.ImageUploadResult uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
         Scene scene = sceneRepository.findByIdForUpdate(sceneId)
-                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+                .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateSpaceMatch(scene, spaceId);
         validateHost(scene.getSpace(), hostId);
@@ -82,7 +82,7 @@ public class SceneCommandService {
     //씬 부분 수정
     public SceneResDTO.SceneId updateScene(Long sceneId, Long hostId, SceneReqDTO.Update request) {
         Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
-                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+                .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateHost(scene.getSpace(), hostId);
 
@@ -107,7 +107,7 @@ public class SceneCommandService {
     //씬 삭제 (soft delete)
     public void deleteScene(Long sceneId, Long hostId) {
         Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
-                .orElseThrow(() -> new ProjectException(SceneErrorCode.SCENE_NOT_FOUND));
+                .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateHost(scene.getSpace(), hostId);
 
@@ -140,14 +140,14 @@ public class SceneCommandService {
     //본인 소유 공간인지 확인
     private void validateHost(Space space, Long hostId) {
         if (!space.getHostId().equals(hostId)) {
-            throw new ProjectException(SceneErrorCode.SCENE_ACCESS_DENIED);
+            throw new SceneException(SceneErrorCode.SCENE_ACCESS_DENIED);
         }
     }
 
     //경로의 spaceId와 씬이 실제로 속한 공간이 일치하는지 확인 (다른 공간 경로로 씬에 접근하는 것 방지)
     private void validateSpaceMatch(Scene scene, Long spaceId) {
         if (!scene.getSpace().getId().equals(spaceId)) {
-            throw new ProjectException(SceneErrorCode.SCENE_NOT_FOUND);
+            throw new SceneException(SceneErrorCode.SCENE_NOT_FOUND);
         }
     }
 }
