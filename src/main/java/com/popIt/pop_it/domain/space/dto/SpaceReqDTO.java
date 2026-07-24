@@ -166,4 +166,101 @@ public class SpaceReqDTO {
                         }
                 }
         }
+
+        @Schema(description = "공간 수정 요청 (전달한 필드만 반영, 생략하면 기존 값 유지)")
+        public record Update(
+                @Schema(description = "건물명", example = "합정 메세나폴리스")
+                @Size(min = 1, max = 20)
+                String buildingName,
+
+                @Schema(description = "등록자 유형 (OWNER만 지원)", example = "OWNER")
+                RegistrantType registrantType,
+
+                @Schema(description = "건물 유형", example = "LARGE_OFFICE")
+                BuildingType buildingType,
+
+                @Schema(description = "시", example = "서울특별시")
+                @Size(min = 1, max = 50)
+                String city,
+
+                @Schema(description = "구", example = "마포구")
+                @Size(min = 1, max = 50)
+                String district,
+
+                @Schema(description = "도로명 주소 (다음 우편번호 위젯 결과)", example = "서울특별시 마포구 합정동 130-3")
+                @Size(min = 1)
+                String roadAddress,
+
+                @Schema(description = "상세 주소", example = "302동 302호")
+                @Size(min = 1, max = 30)
+                String addressDetail,
+
+                @Schema(description = "위도", example = "37.5012")
+                @DecimalMin(value = "-90.0")
+                @DecimalMax(value = "90.0")
+                Double latitude,
+
+                @Schema(description = "경도", example = "127.0397")
+                @DecimalMin(value = "-180.0")
+                @DecimalMax(value = "180.0")
+                Double longitude,
+
+                @Schema(description = "보증금", example = "4500000")
+                @PositiveOrZero
+                Long deposit,
+
+                @Schema(description = "일 단위 가격", example = "90000")
+                @Positive
+                Integer pricePerDay,
+
+                @Schema(description = "계약 가능 시작일 (yyyy-MM-dd)", example = "2026-06-01")
+                LocalDate availableStartDate,
+
+                @Schema(description = "계약 가능 종료일 (yyyy-MM-dd). 시작일보다 빠를 수 없음", example = "2026-12-31")
+                LocalDate availableEndDate,
+
+                @Schema(description = "공간 용도(카테고리)", example = "POPUP_STORE")
+                SpaceCategory spaceCategory,
+
+                @Schema(description = "공간 구조 유형", example = "OPEN_HALL")
+                SpaceType spaceType,
+
+                @Schema(description = "전용 면적", example = "66.0")
+                @Positive
+                Double exclusiveArea,
+
+                @Schema(description = "층 종류", example = "GENERAL_FLOOR")
+                FloorType floorType,
+
+                @Schema(description = "층수", example = "2", nullable = true)
+                Integer floorNumber,
+
+                @Schema(description = "주차 가능 여부", example = "true")
+                Boolean parkingAvailable,
+
+                @Schema(description = "공간 소개 (최대 1000자)", example = "홍대, 합정 중심지에 위치한 공간입니다.")
+                @Size(min = 1, max = 1000)
+                String description,
+
+                @Schema(
+                        description = "시설 ID 목록 (GET /api/v1/facilities 응답의 facilityId). "
+                                + "배열을 보내면 기존 시설을 전부 지우고 이 목록으로 교체합니다. "
+                                + "빈 배열([])을 보내면 시설이 전부 해제되고, 생략하면 기존 시설이 유지됩니다.",
+                        example = "[1, 3, 5]",
+                        nullable = true
+                )
+                List<Long> facilityIds,
+
+                @Schema(
+                        description = "공간 사진 URL 목록 (최소 3장, 최대 10장). "
+                                + "배열을 보내면 기존 사진을 전부 지우고 이 목록으로 교체하며, 배열 순서가 그대로 노출 순서가 됩니다. "
+                                + "생략하면 기존 사진이 유지됩니다.",
+                        example = "[\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg\", "
+                                + "\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid2.jpg\", "
+                                + "\"https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid3.jpg\"]",
+                        nullable = true
+                )
+                @Size(min = 3, max = 10)
+                List<@NotBlank String> imageUrls
+        ) {}
 }

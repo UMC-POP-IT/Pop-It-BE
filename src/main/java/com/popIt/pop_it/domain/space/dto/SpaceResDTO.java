@@ -208,6 +208,13 @@ public class SpaceResDTO {
             Boolean hasNext
     ) {}
 
+    @Schema(description = "공간 수정 응답")
+    @Builder
+    public record UpdateResult(
+            @Schema(description = "수정된 공간 ID", example = "10")
+            Long spaceId
+    ) {}
+
     @Builder
     public record AiRecommendedSpace(
             Long spaceId,
