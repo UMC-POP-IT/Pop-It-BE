@@ -88,6 +88,7 @@ public class ContractSignatureTest {
                 .latitude(37.5)
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
+                .addressDetail("101동 101호")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
                 .availableStartDate(LocalDate.now())
@@ -101,11 +102,15 @@ public class ContractSignatureTest {
                 .hostId(hostId)
                 .build());
 
+        LocalDate reservationStartDate = LocalDate.now().plusDays(10);
+        LocalDate reservationEndDate = LocalDate.now().plusDays(12);
+        String usagePurpose = "계약 서명 테스트";
+
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .status(ReservationStatus.APPROVED) // 계약 단계 전제 상태
-                .startDate(LocalDate.now().plusDays(10))
-                .endDate(LocalDate.now().plusDays(12))
-                .usagePurpose("계약 서명 테스트")
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
@@ -118,10 +123,17 @@ public class ContractSignatureTest {
 
         contractRepository.save(Contract.builder()
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .hostId(hostId)
+                .guestId(guestId)
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash("test-content-hash")
                 .reservation(reservation)
                 .build());
 

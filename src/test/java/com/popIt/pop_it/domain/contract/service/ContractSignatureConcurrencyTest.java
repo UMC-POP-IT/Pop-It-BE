@@ -103,6 +103,7 @@ class ContractSignatureConcurrencyTest {
                 .latitude(37.5)
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
+                .addressDetail("101동 101호")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
                 .availableStartDate(LocalDate.now())
@@ -117,11 +118,15 @@ class ContractSignatureConcurrencyTest {
                 .build());
         spaceId = space.getId();
 
+        LocalDate reservationStartDate = LocalDate.now().plusDays(10);
+        LocalDate reservationEndDate = LocalDate.now().plusDays(12);
+        String usagePurpose = "동시성 테스트";
+
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .status(ReservationStatus.APPROVED)
-                .startDate(LocalDate.now().plusDays(10))
-                .endDate(LocalDate.now().plusDays(12))
-                .usagePurpose("동시성 테스트")
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
@@ -134,10 +139,17 @@ class ContractSignatureConcurrencyTest {
 
         Contract contract = contractRepository.save(Contract.builder()
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .hostId(hostId)
+                .guestId(guestId)
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash("test-content-hash")
                 .reservation(reservation)
                 .build());
         contractId = contract.getId();
@@ -180,10 +192,17 @@ class ContractSignatureConcurrencyTest {
         Contract stale = Contract.builder()
                 .id(contractId)
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .hostId(hostId)
+                .guestId(guestId)
+                .startDate(reservation.getStartDate())
+                .endDate(reservation.getEndDate())
+                .usagePurpose(reservation.getUsagePurpose())
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash("test-content-hash")
                 .reservation(reservation)
                 .version(0L)
                 .build();
