@@ -45,7 +45,21 @@ public class ContractService {
             return; // 이미 계약이 생성돼 있으면 아무 것도 안 하고 성공 처리
         }
 
-        // 계약 내용 해시(HMAC) 생성
+        contractRepository.save(ContractConverter.toPendingContract(reservation, buildContentHash(reservation)));
+    }
+
+    // 계약 내용 무결성 검증 - 서명/결제 진행 전에 호출해, 저장된 contentHash와 현재 Reservation
+    // 상태로 재계산한 해시가 다르면(=계약 체결 이후 내용이 변경됐으면) 처리를 막는다.
+    public void verifyContentIntegrity(Contract contract) {
+        String recomputed = buildContentHash(contract.getReservation());
+        if (!recomputed.equals(contract.getContentHash())) {
+            throw new ContractException(ContractErrorCode.CONTRACT_CONTENT_TAMPERED);
+        }
+    }
+
+    // 계약 내용 해시(HMAC) 생성 - createPendingContract/verifyContentIntegrity가 동일 로직을 공유해야
+    // 재계산 결과가 어긋나지 않는다.
+    private String buildContentHash(Reservation reservation) {
         String payload = String.join(FIELD_SEPARATOR,
                 String.valueOf(reservation.getId()), // 예약 ID
                 String.valueOf(reservation.getSpace().getId()), // 공간 ID
@@ -60,9 +74,7 @@ public class ContractService {
                 String.valueOf(reservation.getPlatformFee()),
                 String.valueOf(reservation.getTotalPrice())
         );
-        String contentHash = cryptoService.hash(payload);
-
-        contractRepository.save(ContractConverter.toPendingContract(reservation, contentHash));
+        return cryptoService.hash(payload);
     }
 
     // 계약 예정 정보 조회
@@ -103,6 +115,9 @@ public class ContractService {
 
         // 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+        // 서명 전, 계약 체결 이후 내용이 변조되지 않았는지 검증
+        verifyContentIntegrity(contract);
 
         // 서명 이미지 저장
         // 호스트가 먼저 서명하고 나서 게스트 서명 가능 -> 계약 COMPLETE

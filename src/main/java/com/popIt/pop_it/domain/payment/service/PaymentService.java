@@ -4,6 +4,7 @@ import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.contract.exception.code.ContractErrorCode;
 import com.popIt.pop_it.domain.contract.repository.ContractRepository;
+import com.popIt.pop_it.domain.contract.service.ContractService;
 import com.popIt.pop_it.domain.payment.client.HostPayoutClient;
 import com.popIt.pop_it.domain.payment.client.TossPaymentClient;
 import com.popIt.pop_it.domain.payment.converter.PaymentConverter;
@@ -36,6 +37,7 @@ public class PaymentService {
 
     private final PaymentRepository paymentRepository;
     private final ContractRepository contractRepository;
+    private final ContractService contractService;
     private final PaymentIdempotentSaver paymentIdempotentSaver;
     private final PaymentSettlementRecorder paymentSettlementRecorder;
     private final TossPaymentClient tossPaymentClient;
@@ -66,6 +68,9 @@ public class PaymentService {
         // 계약 검증
         Contract contract = contractRepository.findWithReservationAndUserById(contractId)
                 .orElseThrow(() -> new ProjectException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+        // 결제 전, 계약 체결 이후 내용이 변조되지 않았는지 검증
+        contractService.verifyContentIntegrity(contract);
 
         // 본인인지 확인
         if (!contract.getReservation().getUser().getUserId().equals(userId)) {
