@@ -17,6 +17,7 @@ import com.popIt.pop_it.domain.upload.enums.UploadType;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.config.AwsProperties;
+import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
@@ -28,16 +29,36 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ContractService {
 
+    private static final String FIELD_SEPARATOR = "\u001F"; // usagePurpose 등 자유 텍스트와 구분자 충돌 방지용 제어문자
+
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
     private final IdentityVerificationService identityVerificationService;
     private final S3ObjectHasher s3ObjectHasher;
     private final AwsProperties awsProperties;
+    private final CryptoService cryptoService;
 
     // 계약 생성
     @Transactional
     public void createPendingContract(Reservation reservation) {
-        contractRepository.save(ContractConverter.toPendingContract(reservation));
+
+        // 계약 내용 해시 생성
+        String payload = String.join(FIELD_SEPARATOR,
+                String.valueOf(reservation.getId()), // 예약 ID
+                String.valueOf(reservation.getSpace().getId()), // 공간 ID
+                reservation.getStartDate().toString(), // LocalDate.toString()은 항상 yyyy-MM-dd 고정 포맷
+                reservation.getEndDate().toString(),
+                reservation.getUsagePurpose(),
+                String.valueOf(reservation.getRentalFee()),
+                String.valueOf(reservation.getDeposit()),
+                String.valueOf(reservation.getInsuranceFee()),
+                String.valueOf(reservation.getPlatformFee()),
+                String.valueOf(reservation.getTotalPrice())
+        );
+        String contentHash = cryptoService.hash(payload);
+
+
+        contractRepository.save(ContractConverter.toPendingContract(reservation, contentHash));
     }
 
     // 계약 예정 정보 조회
