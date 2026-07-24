@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.user.service;
 
 import com.popIt.pop_it.domain.user.converter.HostConverter;
+import com.popIt.pop_it.domain.user.dto.HostProfileResponse;
 import com.popIt.pop_it.domain.user.dto.HostRegisterRequest;
 import com.popIt.pop_it.domain.user.dto.HostRegisterResponse;
 import com.popIt.pop_it.domain.user.entity.HostProfile;
@@ -54,5 +55,13 @@ public class HostServiceImpl implements HostService {
         user.switchToHost();
 
         return HostConverter.toRegisterResponse(hostProfile);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HostProfileResponse getMyProfile(Long userId) {
+        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ProjectException(HostErrorCode.HOST_PROFILE_NOT_FOUND));
+        return HostConverter.toProfileResponse(hostProfile);
     }
 }
