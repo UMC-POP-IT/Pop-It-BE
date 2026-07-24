@@ -41,6 +41,9 @@ public class ContractService {
     // 계약 생성
     @Transactional
     public void createPendingContract(Reservation reservation) {
+        if (contractRepository.findByReservation_Id(reservation.getId()).isPresent()) {
+            return; // 이미 계약이 생성돼 있으면 아무 것도 안 하고 성공 처리
+        }
 
         // 계약 내용 해시(HMAC) 생성
         String payload = String.join(FIELD_SEPARATOR,
