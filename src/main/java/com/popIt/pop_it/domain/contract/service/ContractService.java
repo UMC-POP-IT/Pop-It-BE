@@ -34,7 +34,7 @@ public class ContractService {
     private final S3ObjectHasher s3ObjectHasher;
     private final AwsProperties awsProperties;
 
-    public ContractResDTO.ContractInfoRes getContractInfo(User user, Long reservationId) {
+    public ContractResDTO.ContractPaymentInfoRes getContractPaymentInfo(User user, Long reservationId) {
 
         // 예약 조회
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -42,12 +42,16 @@ public class ContractService {
         // 사용자의 예약인지 검사
         validateUserReservation(user, reservation);
 
-        // 결제 정보 조회 (예약 정보 조회)
+        // 계약 조회
+        Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+        // 결제/입금 정보 조회 (예약 정보 조회)
+        // @TODO: 예약 승인 시 계약 데이터가 채워지므로, 예약 기반이 아닌 계약 엔티티 기반 정보 조회로 바꿔야합니다.
         UserMode currentMode = user.getCurrentMode();
         if (currentMode == UserMode.GUEST) {
-            return ContractConverter.toGetGuestContractInfoRes(reservation);
+            return ContractConverter.toGetGuestContractPaymentInfoRes(contract, reservation);
         } else {
-            return ContractConverter.toGetHostContractInfoRes(reservation);
+            return ContractConverter.toGetHostContractPaymentInfoRes(contract, reservation);
         }
 
     }
@@ -126,5 +130,20 @@ public class ContractService {
         if (!authorizedRole) {
             throw new ReservationException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
         }
+    }
+
+    public ContractResDTO.ContractPaymentInfoRes getContractInfo(User user, Long reservationId) {
+        // 예약 조회 (권한 검증용)
+        Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        // 사용자의 예약인지 검사
+        validateUserReservation(user, reservation);
+
+        // 계약 조회
+        Contract contract = contractRepository.findByReservation_Id(reservationId)
+                .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+        // 계약 정보 조회
+        return ContractConverter.toGetContractInfoRes(contract, reservation);
     }
 }

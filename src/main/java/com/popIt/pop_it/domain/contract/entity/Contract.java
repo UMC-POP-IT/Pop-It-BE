@@ -4,6 +4,8 @@ import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -89,5 +91,10 @@ public class Contract {
 
     public void markAsCompleted() {
         this.status = ContractStatus.COMPLETED;
+    }
+
+    // 기간 계산 (시작일/종료일 모두 포함)
+    public long getPeriod() {
+        return ChronoUnit.DAYS.between(startDate, endDate) + 1;
     }
 }

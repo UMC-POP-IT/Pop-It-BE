@@ -7,7 +7,7 @@ import java.time.LocalDate;
 
 public class ContractResDTO {
     @Builder
-    public record GetGuestContractInfoRes (
+    public record GetGuestContractPaymentInfoRes(
             String spaceName,
             LocalDate startDate,
             LocalDate endDate,
@@ -16,10 +16,10 @@ public class ContractResDTO {
             Long deposit,
             Long insuranceFee,
             Long totalPrice
-    ) implements ContractInfoRes {}
+    ) implements ContractPaymentInfoRes {}
 
     @Builder
-    public record GetHostContractInfoRes (
+    public record GetHostContractPaymentInfoRes(
             String spaceName,
             LocalDate startDate,
             LocalDate endDate,
@@ -27,7 +27,7 @@ public class ContractResDTO {
             Long rentalFee,
             Long platformFee,
             Long totalPrice
-    ) implements ContractInfoRes {}
+    ) implements ContractPaymentInfoRes {}
 
     @Builder
     public record SignatureRes (
@@ -35,8 +35,18 @@ public class ContractResDTO {
             Boolean bothSigned
     ){}
 
-    public sealed interface ContractInfoRes permits GetGuestContractInfoRes, GetHostContractInfoRes {
+    public sealed interface ContractPaymentInfoRes permits GetGuestContractPaymentInfoRes, GetHostContractPaymentInfoRes {
     }
 
-
+    @Builder
+    public record GetContractInfoRes(
+            String spaceName,
+            String roadAddress,
+            LocalDate startDate,
+            LocalDate endDate,
+            Long period,
+            Long rentalFee,
+            Long deposit,
+            Long insuranceFee
+    ) {}
 }
