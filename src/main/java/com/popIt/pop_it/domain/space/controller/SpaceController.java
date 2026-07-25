@@ -252,7 +252,7 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @DeleteMapping("/{spaceId}")
-    public ApiResponse<SpaceResDTO.DeleteResult> deleteSpace(
+    public ApiResponse<SpaceResDTO.SpaceDeleteRes> deleteSpace(
             @AuthenticationPrincipal AuthUser authuser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
@@ -262,7 +262,7 @@ public class SpaceController {
         }
 
         Long userId = authuser.getUser().getUserId();
-        SpaceResDTO.DeleteResult result = spaceService.deleteSpace(userId, spaceId);
+        SpaceResDTO.SpaceDeleteRes result = spaceService.deleteSpace(userId, spaceId);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
     }
 

@@ -299,7 +299,7 @@ public class SpaceService {
 
     // 공간 삭제 (소프트 삭제)
     @Transactional
-    public SpaceResDTO.DeleteResult deleteSpace(Long userId, Long spaceId) {
+    public SpaceResDTO.SpaceDeleteRes deleteSpace(Long userId, Long spaceId) {
 
         // 1. 공간 조회, 소유권 확인
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)

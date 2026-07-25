@@ -217,7 +217,7 @@ public class SpaceResDTO {
 
     @Schema(description = "공간 삭제 응답")
     @Builder
-    public record DeleteResult(
+    public record SpaceDeleteRes(
             @Schema(description = "삭제된 공간 ID", example = "10")
             Long spaceId
     ) {}
