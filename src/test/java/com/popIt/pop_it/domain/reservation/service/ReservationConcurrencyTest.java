@@ -67,6 +67,7 @@ public class ReservationConcurrencyTest {
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
                 .addressDetail("101호")
+                .dong("합정동")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
                 .availableStartDate(LocalDate.now())
