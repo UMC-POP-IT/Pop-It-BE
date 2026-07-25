@@ -214,7 +214,7 @@ public class SpaceController {
                     responseCode = "404", description = "존재하지 않거나 이미 삭제된 공간",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/{spaceId}")
+    @PatchMapping("/{spaceId}")
     public ApiResponse<SpaceResDTO.UpdateResult> updateSpace(
             @AuthenticationPrincipal AuthUser authuser,
             @Parameter(description = "공간 ID", example = "10")

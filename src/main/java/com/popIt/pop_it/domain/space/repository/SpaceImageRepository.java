@@ -31,6 +31,6 @@ public interface SpaceImageRepository extends JpaRepository<SpaceImage, Long> {
 
     // 공간 수정 시 사진 전체 교체용 (한 건씩 지우지 않고 delete 쿼리로 한 번에 처리)
     @Modifying(flushAutomatically = true)
-    @Query("delete from SpaceImage si where si.space.id = :spacdId")
+    @Query("delete from SpaceImage si where si.space.id = :spaceId")
     void deleteAllBySpaceId(@Param("spaceId") Long spaceId);
 }
