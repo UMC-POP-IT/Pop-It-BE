@@ -210,7 +210,7 @@ public class SpaceResDTO {
 
     @Schema(description = "공간 수정 응답")
     @Builder
-    public record UpdateResult(
+    public record SpaceUpdateRes(
             @Schema(description = "수정된 공간 ID", example = "10")
             Long spaceId
     ) {}

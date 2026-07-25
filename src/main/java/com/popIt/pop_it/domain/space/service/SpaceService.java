@@ -202,7 +202,7 @@ public class SpaceService {
 
     // 공간 수정 (전달된 필드만 반영, 리스트는 전체 교체)
     @Transactional
-    public SpaceResDTO.UpdateResult updateSpace(Long userId, Long spaceId, SpaceReqDTO.SpaceUpdateReq request) {
+    public SpaceResDTO.SpaceUpdateRes updateSpace(Long userId, Long spaceId, SpaceReqDTO.SpaceUpdateReq request) {
         // 1. 공간 조회, 소유권 확인
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));

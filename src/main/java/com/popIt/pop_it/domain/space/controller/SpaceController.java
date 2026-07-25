@@ -215,7 +215,7 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PatchMapping("/{spaceId}")
-    public ApiResponse<SpaceResDTO.UpdateResult> updateSpace(
+    public ApiResponse<SpaceResDTO.SpaceUpdateRes> updateSpace(
             @AuthenticationPrincipal AuthUser authuser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId,
@@ -226,7 +226,7 @@ public class SpaceController {
         }
 
         Long userId = authuser.getUser().getUserId();
-        SpaceResDTO.UpdateResult result = spaceService.updateSpace(userId, spaceId, request);
+        SpaceResDTO.SpaceUpdateRes result = spaceService.updateSpace(userId, spaceId, request);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_UPDATED, result);
     }
 
