@@ -59,7 +59,6 @@ public class ContractService {
                 reservation.getRentalFee(),
                 reservation.getDeposit(),
                 reservation.getInsuranceFee(),
-                reservation.getPlatformFee(),
                 reservation.getTotalPrice()
         );
 
@@ -81,7 +80,6 @@ public class ContractService {
                 contract.getRentalFee(),
                 contract.getDeposit(),
                 contract.getInsuranceFee(),
-                contract.getPlatformFee(),
                 contract.getTotalPrice()
         );
         if (!recomputed.equals(contract.getContentHash())) {
@@ -94,7 +92,7 @@ public class ContractService {
     private String buildContentHash(Long reservationId, Long spaceId, Long hostId, Long guestId,
                                       LocalDate startDate, LocalDate endDate, String usagePurpose,
                                       Long rentalFee, Long deposit, Long insuranceFee,
-                                      Long platformFee, Long totalPrice) {
+                                      Long totalPrice) {
         String payload = String.join(FIELD_SEPARATOR,
                 String.valueOf(reservationId),
                 String.valueOf(spaceId),
@@ -106,7 +104,6 @@ public class ContractService {
                 String.valueOf(rentalFee),
                 String.valueOf(deposit),
                 String.valueOf(insuranceFee),
-                String.valueOf(platformFee),
                 String.valueOf(totalPrice)
         );
         return cryptoService.hash(payload);
