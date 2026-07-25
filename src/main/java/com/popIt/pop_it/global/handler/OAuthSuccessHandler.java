@@ -49,9 +49,23 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
         // 로그인 시작 시 OAuthChallengeCaptureFilter가 세션에 저장해둔 challenge를 꺼내
         // 발급 코드에 바인딩 -> exchange 시 verifier 검증 없이는 code만으로 토큰 교환 불가
         HttpSession session = request.getSession(false);
-        String challenge = session != null
-                ? (String) session.getAttribute(OAuthChallengeCaptureFilter.CHALLENGE_SESSION_KEY)
-                : null;
+        String challenge = null;
+        if (session != null) {
+            challenge = (String) session.getAttribute(OAuthChallengeCaptureFilter.CHALLENGE_SESSION_KEY);
+            // 성공 처리 즉시 제거 -> 동일 세션의 다음 로그인 시도에 이번 challenge가 재사용되는 것을 방지
+            session.removeAttribute(OAuthChallengeCaptureFilter.CHALLENGE_SESSION_KEY);
+        }
+
+        // challenge가 없으면 어차피 exchange에서 항상 실패하는 무효한 code이므로,
+        // 아예 발급하지 않고 프론트에 에러 상태로 리다이렉트한다 (PKCE 필수 정책)
+        if (challenge == null || challenge.isBlank()) {
+            String errorRedirectUrl = UriComponentsBuilder.fromUriString(frontendUrl)
+                    .queryParam("error", "missing_challenge")
+                    .build()
+                    .toUriString();
+            response.sendRedirect(errorRedirectUrl);
+            return;
+        }
 
         String code = oAuthCodeStore.issue(accessToken, refreshToken, challenge);
 

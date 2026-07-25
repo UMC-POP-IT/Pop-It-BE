@@ -33,7 +33,9 @@ public class OAuthCodeStore {
     private final Map<String, Entry> store = new ConcurrentHashMap<>();
 
     /**
-     * @param challenge 로그인 시작 시 프론트가 넘긴 값 (SHA256(verifier)를 base64url로 인코딩한 것). null이면 검증 없이 발급(하위 호환).
+     * @param challenge 로그인 시작 시 프론트가 넘긴 값 (SHA256(verifier)를 base64url로 인코딩한 것).
+     *                  이 값이 없으면 exchange가 항상 실패하므로, 호출부(OAuthSuccessHandler)에서
+     *                  challenge가 없을 땐 아예 issue()를 호출하지 않고 별도로 처리한다(PKCE 필수 정책).
      */
     public String issue(String accessToken, String refreshToken, String challenge) {
         cleanupExpired();

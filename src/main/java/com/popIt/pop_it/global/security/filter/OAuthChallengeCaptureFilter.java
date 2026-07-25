@@ -26,11 +26,14 @@ public class OAuthChallengeCaptureFilter extends OncePerRequestFilter {
             FilterChain filterChain
     ) throws ServletException, IOException {
         String uri = request.getRequestURI();
-        // 로그인 "시작" 요청에서만 캡처 (콜백 경로는 제외)
+        // 로그인 "시작" 요청에서만 처리 (콜백 경로는 제외)
         if (uri.startsWith("/api/v1/auth/oauth/") && !uri.contains("/callback/")) {
+            HttpSession session = request.getSession(true);
+            // 이전 로그인 시도의 challenge가 남아있다가 이번 시도에 잘못 재사용되는 것을 방지
+            session.removeAttribute(CHALLENGE_SESSION_KEY);
+
             String challenge = request.getParameter("challenge");
             if (challenge != null && !challenge.isBlank()) {
-                HttpSession session = request.getSession(true);
                 session.setAttribute(CHALLENGE_SESSION_KEY, challenge);
             }
         }
