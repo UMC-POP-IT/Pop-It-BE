@@ -71,7 +71,7 @@ public class ContractService {
     public void verifyContentIntegrity(Contract contract) {
         String recomputed = buildContentHash(
                 contract.getReservation().getId(),
-                contract.getReservation().getSpace().getId(),
+                contract.getSpaceId(),
                 contract.getHostId(),
                 contract.getGuestId(),
                 contract.getStartDate(),

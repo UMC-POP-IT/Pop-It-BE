@@ -52,6 +52,9 @@ public class Contract {
     @Column(nullable = false)
     private Long guestId;
 
+    @Column(nullable = false)
+    private Long spaceId;
+
 
     @Column(nullable = false)
     private LocalDate startDate; // 이용 시작일

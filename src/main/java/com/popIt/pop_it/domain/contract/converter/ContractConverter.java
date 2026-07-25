@@ -39,6 +39,7 @@ public class ContractConverter {
                 .reservation(reservation)
                 .hostId(reservation.getSpace().getHostId())
                 .guestId(reservation.getUser().getUserId())
+                .spaceId(reservation.getSpace().getId())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
