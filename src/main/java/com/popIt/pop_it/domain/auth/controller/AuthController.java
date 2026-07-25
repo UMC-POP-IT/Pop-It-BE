@@ -38,4 +38,14 @@ public class AuthController {
                 authService.reissue(request.refreshToken())
         );
     }
+
+    @PostMapping("/exchange")
+    public ApiResponse<UserResDTO.Login> exchange(
+            @Valid @RequestBody AuthReqDTO.Exchange request
+    ) {
+        return ApiResponse.onSuccess(
+                UserSuccessCode.USER_LOGIN,
+                authService.exchange(request.code())
+        );
+    }
 }
