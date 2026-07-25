@@ -168,7 +168,7 @@ public class SpaceReqDTO {
         }
 
         @Schema(description = "공간 수정 요청 (전달한 필드만 반영, 생략하면 기존 값 유지)")
-        public record Update(
+        public record SpaceUpdateReq(
                 @Schema(description = "건물명", example = "합정 메세나폴리스")
                 @Size(min = 1, max = 20)
                 String buildingName,

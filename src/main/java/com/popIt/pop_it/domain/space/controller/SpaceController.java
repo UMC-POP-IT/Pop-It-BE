@@ -219,7 +219,7 @@ public class SpaceController {
             @AuthenticationPrincipal AuthUser authuser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId,
-            @Valid @RequestBody SpaceReqDTO.Update request
+            @Valid @RequestBody SpaceReqDTO.SpaceUpdateReq request
     ) {
         if (authuser == null || authuser.getUser() == null) {
             throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
