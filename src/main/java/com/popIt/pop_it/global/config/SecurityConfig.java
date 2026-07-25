@@ -5,10 +5,12 @@ import com.popIt.pop_it.global.exception.CustomAccessDenied;
 import com.popIt.pop_it.global.exception.CustomEntryPoint;
 import com.popIt.pop_it.global.handler.OAuthSuccessHandler;
 import com.popIt.pop_it.global.security.filter.JwtAuthFilter;
+import com.popIt.pop_it.global.security.oauth.OAuthCodeStore;
 import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,6 +24,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @EnableWebSecurity
 @Configuration
@@ -32,6 +39,10 @@ public class SecurityConfig {
     private final CustomUserDetailsService customUserDetailsService;
     private final CustomOAuthService customOAuthService;
     private final UserRepository userRepository;
+    private final OAuthCodeStore oAuthCodeStore;
+
+    @Value("${app.frontend-url}")
+    private String frontendUrl;
 
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
@@ -40,7 +51,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuthSuccessHandler oAuthSuccessHandler() {
-        return new OAuthSuccessHandler(jwtUtil, userRepository);
+        return new OAuthSuccessHandler(jwtUtil, userRepository, oAuthCodeStore);
     }
 
     private final String[] allowUris = {
@@ -49,6 +60,7 @@ public class SecurityConfig {
             "/swagger-resources/**",
             "/v3/api-docs/**",
             "/api/v1/auth/reissue",
+            "/api/v1/auth/exchange",
             "/api/v1/payments/webhook",
             "/api/v1/auth/reissue",
             "/api/v1/facilities",
@@ -121,6 +133,7 @@ public class SecurityConfig {
     public SecurityFilterChain apiSecurityFilterChain(HttpSecurity http) throws Exception {
         // 일반 API 체인: JWT 기반 stateless 인증
         http.csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(requests -> requests
                         .requestMatchers(HttpMethod.GET, authenticatedGetUris).authenticated()
                         .requestMatchers(allowUris).permitAll()
@@ -135,6 +148,19 @@ public class SecurityConfig {
                         .authenticationEntryPoint(customEntryPoint()));
 
         return http.build();
+    }
+
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of(frontendUrl, "http://localhost:3000"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean
