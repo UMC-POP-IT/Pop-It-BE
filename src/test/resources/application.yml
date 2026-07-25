@@ -38,3 +38,7 @@ cloud:
     s3:
       bucket: test-bucket
       host-document-bucket: test-host-document-bucket
+
+kakao:
+  local:
+    rest-api-key: test-kakao-rest-api-key

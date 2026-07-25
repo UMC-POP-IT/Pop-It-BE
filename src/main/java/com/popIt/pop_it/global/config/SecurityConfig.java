@@ -57,11 +57,12 @@ public class SecurityConfig {
 
     // GET이지만 인증이 필요한 경로 (이래 allowGetUris보다 먼저 평가되어야 함)
     private final String[] authenticatedGetUris = {
-            "/api/v1/space/my",
-            "/api/v1/space/ai-recommended"
+            "/api/v1/spaces/my",
+            "/api/v1/spaces/ai-recommended"
     };
 
     private final String[] allowGetUris = {
+            "/api/v1/spaces",
             "/api/v1/spaces/*",
             "/api/v1/spaces/{spaceId:[0-9]+}/scenes",
             "/api/v1/scenes/{sceneId:[0-9]+}"
