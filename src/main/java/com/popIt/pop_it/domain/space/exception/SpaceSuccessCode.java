@@ -15,6 +15,7 @@ public enum SpaceSuccessCode implements BaseSuccessCode {
     SPACE_SEARCH_FETCHED(HttpStatus.OK, "SPACE200_3", "공간 탐색에 성공했습니다."),
     SPACE_UPDATED(HttpStatus.OK, "SPACE200_4", "공간 수정에 성공했습니다."),
     AI_RECOMMENDED_SPACE_LIST(HttpStatus.OK, "SPACE200_5", "AI 맞춤 추천 공간 조회에 성공했습니다."),
+    SPACE_DELETED(HttpStatus.OK, "SPACE200_6", "공간 삭제에 성공했습니다."),
     ;
 
     private final HttpStatus status;
