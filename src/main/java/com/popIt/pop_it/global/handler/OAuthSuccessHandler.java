@@ -52,7 +52,7 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
         userRepository.save(domainUser);
 
         // 응답 통일 객체 래핑
-        ApiResponse<UserResDTO.LoginRes> responseBody = ApiResponse.onSuccess(
+        ApiResponse<UserResDTO.UserLoginRes> responseBody = ApiResponse.onSuccess(
                 code,
                 UserConverter.toLogin(accessToken, refreshToken)
         );
