@@ -215,6 +215,13 @@ public class SpaceResDTO {
             Long spaceId
     ) {}
 
+    @Schema(description = "공간 삭제 응답")
+    @Builder
+    public record DeleteResult(
+            @Schema(description = "삭제된 공간 ID", example = "10")
+            Long spaceId
+    ) {}
+
     @Builder
     public record AiRecommendedSpace(
             Long spaceId,

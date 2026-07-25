@@ -185,4 +185,10 @@ public class SpaceConverter {
                 .spaceId(space.getId())
                 .build();
     }
+
+    public static SpaceResDTO.DeleteResult toDeleteResult(Space space) {
+        return SpaceResDTO.DeleteResult.builder()
+                .spaceId(space.getId())
+                .build();
+    }
 }
