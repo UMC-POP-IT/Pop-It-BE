@@ -192,6 +192,44 @@ public class SpaceController {
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_SEARCH_FETCHED, result);
     }
 
+    @Operation(
+            summary = "공간 수정",
+            description = "호스트모드 - 등록한 공간의 정보를 수정합니다. 등록 시 입력한 모든 항목을 수정할 수 있습니다. ",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "형식 오류/잘못된 enum 값, 계약 가능 기간 오류, 위도·경도 미쌍, 존재하지 않는 시설 포함",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403", description = "본인이 등록한 공간이 아님",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404", description = "존재하지 않거나 이미 삭제된 공간",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @PostMapping("/{spaceId}")
+    public ApiResponse<SpaceResDTO.UpdateResult> updateSpace(
+            @AuthenticationPrincipal AuthUser authuser,
+            @Parameter(description = "공간 ID", example = "10")
+            @PathVariable Long spaceId,
+            @Valid @RequestBody SpaceReqDTO.Update request
+    ) {
+        if (authuser == null || authuser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authuser.getUser().getUserId();
+        SpaceResDTO.UpdateResult result = spaceService.updateSpace(userId, spaceId, request);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_UPDATED, result);
+    }
+
     // @TODO: AI 맞춤 추천 공간 조회
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")

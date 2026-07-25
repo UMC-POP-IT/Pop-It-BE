@@ -23,6 +23,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -185,6 +186,103 @@ public class SpaceService {
                 : Set.copyOf(wishlistRepository.findWishlistedSpaceIds(userId, spaceIds));
 
         return SpaceConverter.toSearchResult(spacePage, thumbnailUrlBySpaceId, wishCountBySpaceId, wishlistedSpaceIds);
+    }
+
+    // 공간 수정 (전달된 필드만 반영, 리스트는 전체 교체)
+    @Transactional
+    public SpaceResDTO.UpdateResult updateSpace(Long userId, Long spaceId, SpaceReqDTO.Update request) {
+        // 1. 공간 조회, 소유권 확인
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+
+        if (!space.getHostId().equals(userId)) {
+            throw new ProjectException(SpaceErrorCode.NOT_SPACE_OWNER);
+        }
+
+        // 2. 좌표는 위도, 경도를 한 세트로만 수정 가능
+        boolean hasLatitude = request.latitude() != null;
+        boolean hasLongitude = request.longitude() != null;
+
+        if (hasLatitude != hasLongitude) {
+            throw new ProjectException(SpaceErrorCode.INVALID_COORDINATE_PAIR);
+        }
+
+        // 3. 계약 가능 기간은 요청값 + 기존값을 합친 최종 상태로 검증
+        LocalDate startDate = (request.availableStartDate() != null)
+                ? request.availableStartDate()
+                : space.getAvailableStartDate();
+        LocalDate endDate = (request.availableEndDate() != null)
+                ? request.availableEndDate()
+                : space.getAvailableEndDate();
+
+        if (startDate.isAfter(endDate)) {
+            throw new ProjectException(SpaceErrorCode.INVALID_AVAILABLE_DATE_RANGE);
+        }
+
+        // 4. 교체할 시설을 먼저 검증 (지우고 나서 실패하는 상황을 만들지 않도록 삭제보다 앞에 둠)
+        List<Facility> facilities = null;
+        if (request.facilityIds() != null) {
+            List<Long> distinctIds = request.facilityIds().stream().distinct().toList();
+            facilities = distinctIds.isEmpty() ? List.of() : facilityRepository.findAllById(distinctIds);
+
+            if (distinctIds.size() != facilities.size()) {
+                throw new ProjectException(SpaceErrorCode.FACILITY_NOT_FOUND);
+            }
+        }
+
+        // 5. 좌표가 바뀌면 동도 다시 계산
+        String dong = hasLatitude
+                ? kakaoLocalService.resolveDong(request.latitude(), request.longitude()).orElse(null)
+                : null;
+
+        // 6. 공간 본체 수정
+        space.update(
+                request.buildingName(),
+                request.registrantType(),
+                request.buildingType(),
+                request.city(),
+                request.district(),
+                request.roadAddress(),
+                request.addressDetail(),
+                request.deposit(),
+                request.pricePerDay(),
+                request.availableStartDate(),
+                request.availableEndDate(),
+                request.spaceCategory(),
+                request.spaceType(),
+                request.exclusiveArea(),
+                request.parkingAvailable(),
+                request.description()
+        );
+        space.updateLocation(request.latitude(), request.longitude(), dong);
+        space.updateFloorInfo(request.floorType(), request.floorNumber());
+
+        // 7. 시설 전체 교체 (요청에 facilityIds가 있는 경우에만)
+        if (facilities != null) {
+            spaceFacilityRepository.deleteAllBySpaceId(spaceId);
+
+            if (!facilities.isEmpty()) {
+                spaceFacilityRepository.saveAll(facilities.stream()
+                        .map(facility -> SpaceConverter.toSpaceFacility(space, facility))
+                        .toList());
+            }
+        }
+
+        // 8. 사진 전체 교체 (요청 배열 순서를 sortOrder로 다시 부여)
+        if (request.imageUrls() != null) {
+            spaceImageRepository.deleteAllBySpaceId(spaceId);
+
+            List<String> imageUrls = request.imageUrls();
+            List<SpaceImage> images = new ArrayList<>();
+
+            for (int i = 0; i < imageUrls.size(); i++) {
+                images.add(SpaceConverter.toSpaceImage(space, imageUrls.get(i), i));
+            }
+
+            spaceImageRepository.saveAll(images);
+        }
+
+        return SpaceConverter.toUpdateResult(space);
     }
 
     // 검색어와 공간 용도(카테고리)의 한글 이름 대조 예) "팝업" -> POPUP_STORE
