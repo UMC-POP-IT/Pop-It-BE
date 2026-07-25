@@ -75,6 +75,7 @@ public class ReservationOptimisticLockTest {
                 .latitude(37.5)
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
+                .addressDetail("101호")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
                 .availableStartDate(LocalDate.now())
