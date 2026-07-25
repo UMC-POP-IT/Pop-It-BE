@@ -36,9 +36,10 @@ public class AuthService {
     /**
      * OAuth 로그인 성공 후 발급된 1회용 코드를 실제 토큰으로 교환한다.
      * 코드는 조회 즉시 폐기되므로 재사용이 불가능하다(1회성).
+     * verifier가 로그인 시작 시 바인딩된 challenge와 일치해야만 교환이 성립한다(PKCE 유사 검증).
      */
-    public UserResDTO.Login exchange(String code) {
-        OAuthCodeStore.TokenPair tokenPair = oAuthCodeStore.consume(code);
+    public UserResDTO.Login exchange(String code, String verifier) {
+        OAuthCodeStore.TokenPair tokenPair = oAuthCodeStore.consume(code, verifier);
         if (tokenPair == null) {
             throw new ProjectException(GeneralErrorCode.BAD_REQUEST);
         }

@@ -4,11 +4,13 @@ import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import com.popIt.pop_it.global.security.entity.OAuthUser;
+import com.popIt.pop_it.global.security.filter.OAuthChallengeCaptureFilter;
 import com.popIt.pop_it.global.security.oauth.OAuthCodeStore;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -44,9 +46,14 @@ public class OAuthSuccessHandler implements AuthenticationSuccessHandler {
         domainUser.updateRefreshToken(refreshToken);
         userRepository.save(domainUser);
 
-        // 토큰을 URL에 직접 노출하지 않기 위해 1회용 코드로 교환해서 전달
-        // 프론트는 이 code를 /api/v1/auth/exchange 로 보내 실제 토큰을 받는다
-        String code = oAuthCodeStore.issue(accessToken, refreshToken);
+        // 로그인 시작 시 OAuthChallengeCaptureFilter가 세션에 저장해둔 challenge를 꺼내
+        // 발급 코드에 바인딩 -> exchange 시 verifier 검증 없이는 code만으로 토큰 교환 불가
+        HttpSession session = request.getSession(false);
+        String challenge = session != null
+                ? (String) session.getAttribute(OAuthChallengeCaptureFilter.CHALLENGE_SESSION_KEY)
+                : null;
+
+        String code = oAuthCodeStore.issue(accessToken, refreshToken, challenge);
 
         String redirectUrl = UriComponentsBuilder.fromUriString(frontendUrl)
                 .queryParam("code", code)

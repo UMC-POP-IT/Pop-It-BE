@@ -11,6 +11,8 @@ public class AuthReqDTO {
 
     public record Exchange(
             @NotBlank(message = "code는 필수입니다.")
-            String code
+            String code,
+            @NotBlank(message = "verifier는 필수입니다.")
+            String verifier
     ) {}
 }

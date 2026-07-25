@@ -45,7 +45,7 @@ public class AuthController {
     ) {
         return ApiResponse.onSuccess(
                 UserSuccessCode.USER_LOGIN,
-                authService.exchange(request.code())
+                authService.exchange(request.code(), request.verifier())
         );
     }
 }

@@ -5,6 +5,7 @@ import com.popIt.pop_it.global.exception.CustomAccessDenied;
 import com.popIt.pop_it.global.exception.CustomEntryPoint;
 import com.popIt.pop_it.global.handler.OAuthSuccessHandler;
 import com.popIt.pop_it.global.security.filter.JwtAuthFilter;
+import com.popIt.pop_it.global.security.filter.OAuthChallengeCaptureFilter;
 import com.popIt.pop_it.global.security.oauth.OAuthCodeStore;
 import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
@@ -24,6 +25,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -52,6 +54,11 @@ public class SecurityConfig {
     @Bean
     public OAuthSuccessHandler oAuthSuccessHandler() {
         return new OAuthSuccessHandler(jwtUtil, userRepository, oAuthCodeStore);
+    }
+
+    @Bean
+    public OAuthChallengeCaptureFilter oAuthChallengeCaptureFilter() {
+        return new OAuthChallengeCaptureFilter();
     }
 
     private final String[] allowUris = {
@@ -106,6 +113,7 @@ public class SecurityConfig {
                         .anyRequest().permitAll())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
+                .addFilterBefore(oAuthChallengeCaptureFilter(), OAuth2AuthorizationRequestRedirectFilter.class)
                 .oauth2Login(oauth -> oauth
                         // 로그인 시작: /api/v1/auth/oauth/{registrationId}
                         .authorizationEndpoint(auth -> auth
