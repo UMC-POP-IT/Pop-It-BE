@@ -172,4 +172,9 @@ public class Space {
     private static <T> T orKeep(T requested, T current) {
         return (requested != null) ? requested : current;
     }
+
+    // 소프트 삭제 (공간 삭제 시 행을 지우지 않고 deletedAt에만 기록)
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
