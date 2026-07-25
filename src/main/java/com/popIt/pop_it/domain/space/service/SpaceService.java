@@ -2,6 +2,8 @@ package com.popIt.pop_it.domain.space.service;
 
 import com.popIt.pop_it.domain.facility.entity.Facility;
 import com.popIt.pop_it.domain.facility.repository.FacilityRepository;
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
+import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.space.converter.SpaceConverter;
 import com.popIt.pop_it.domain.space.dto.SpaceReqDTO;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
@@ -38,6 +40,16 @@ public class SpaceService {
     private final HostProfileRepository hostProfileRepository;
     private final WishlistRepository wishlistRepository;
     private final KakaoLocalService kakaoLocalService;
+    private final ReservationRepository reservationRepository;
+
+    // 공간 삭제를 막아야하는 예약 상태
+    private static final List<ReservationStatus> BLOCKING_RESERVATION_STATUSES = List.of(
+            ReservationStatus.PENDING_APPROVAL,
+            ReservationStatus.APPROVED,
+            ReservationStatus.CONTRACT_COMPLETED,
+            ReservationStatus.IN_USE,
+            ReservationStatus.USAGE_COMPLETED
+    );
 
     @Transactional
     public SpaceResDTO.CreateResult createSpace(Long userId, SpaceReqDTO.Create request) {
@@ -284,6 +296,30 @@ public class SpaceService {
 
         return SpaceConverter.toUpdateResult(space);
     }
+
+    // 공간 삭제 (소프트 삭제)
+    @Transactional
+    public SpaceResDTO.DeleteResult deleteSpace(Long userId, Long spaceId) {
+
+        // 1. 공간 조회, 소유권 확인
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+
+        if (!space.getHostId().equals(userId)) {
+            throw new ProjectException(SpaceErrorCode.NOT_SPACE_OWNER);
+        }
+
+        // 2. 종료되지 않은 예약인 경우 삭제 불가능
+        if (reservationRepository.existsBySpaceIdAndStatusIn(spaceId, BLOCKING_RESERVATION_STATUSES)) {
+            throw new ProjectException(SpaceErrorCode.SPACE_HAS_ACTIVE_RESERVATION);
+        }
+
+        // 3. 행을 지우지 않고 deleteAt만 기록 (soft delete)
+        space.softDelete();
+
+        return SpaceConverter.toDeleteResult(space);
+    }
+
 
     // 검색어와 공간 용도(카테고리)의 한글 이름 대조 예) "팝업" -> POPUP_STORE
     private static SpaceCategory matchCategory(String keyword) {
