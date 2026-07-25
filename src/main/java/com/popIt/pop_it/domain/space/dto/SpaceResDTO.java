@@ -150,7 +150,7 @@ public class SpaceResDTO {
 
     @Schema(description = "공간 탐색 목록 항목")
     @Builder
-    public record SearchSpace(
+    public record SpaceSearchRes(
             @Schema(description = "공간 ID", example = "10")
             Long spaceId,
 
@@ -194,9 +194,9 @@ public class SpaceResDTO {
 
     @Schema(description = "공간 탐색 응답")
     @Builder
-    public record SearchResult(
+    public record SpaceSearchListRes(
             @Schema(description = "공간 목록")
-            List<SearchSpace> spaces,
+            List<SpaceSearchRes> spaces,
 
             @Schema(description = "필터 조건에 맞는 전체 공간 수 (페이지네이션 계산용)", example = "100")
             Integer totalCount,

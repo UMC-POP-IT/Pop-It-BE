@@ -137,14 +137,14 @@ public class SpaceConverter {
                 .build();
     }
 
-    public static SpaceResDTO.SearchResult toSearchResult(
+    public static SpaceResDTO.SpaceSearchListRes toSearchResult(
             Page<Space> spacePage,
             Map<Long, String> thumbnailUrlBySpaceId,
             Map<Long, Integer> wishCountBySpaceId,
             Set<Long> wishlistedSpaceIds
     ) {
-        List<SpaceResDTO.SearchSpace> spaces = spacePage.getContent().stream()
-                .map(space -> SpaceResDTO.SearchSpace.builder()
+        List<SpaceResDTO.SpaceSearchRes> spaces = spacePage.getContent().stream()
+                .map(space -> SpaceResDTO.SpaceSearchRes.builder()
                         .spaceId(space.getId())
                         .buildingName(space.getBuildingName())
                         .district(space.getDistrict())
@@ -160,7 +160,7 @@ public class SpaceConverter {
                         .build())
                 .toList();
 
-        return SpaceResDTO.SearchResult.builder()
+        return SpaceResDTO.SpaceSearchListRes.builder()
                 .spaces(spaces)
                 .totalCount((int) spacePage.getTotalElements())
                 .currentPage(spacePage.getNumber())

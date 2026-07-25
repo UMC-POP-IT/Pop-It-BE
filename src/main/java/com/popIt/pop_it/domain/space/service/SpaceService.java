@@ -136,7 +136,7 @@ public class SpaceService {
         return SpaceConverter.toMyListResult(spacePage, thumbnailUrlBySpaceId);
     }
 
-    public SpaceResDTO.SearchResult searchSpaces(Long userId, SpaceReqDTO.Search request) {
+    public SpaceResDTO.SpaceSearchListRes searchSpaces(Long userId, SpaceReqDTO.SpaceSearchReq request) {
 
         // 1. 빈 문자열은 필터 미적용으로 취급
         String keyword = blankToNull(request.keyword());

@@ -126,7 +126,7 @@ public class SpaceReqDTO {
         ) {}
 
         @Schema(description = "공간 탐색 요청 (쿼리 파라미터)")
-        public record Search(
+        public record SpaceSearchReq(
                 @Schema(
                         description = "통합 검색어. 공간명 / 지역 이름(구·동·도로명 주소) / 정보(공간 용도·구조 유형)를 부분 일치로 검색합니다. "
                                 + "예: \"성수\", \"강남구\", \"팝업스토어\", \"오픈형 홀\"",
@@ -156,7 +156,7 @@ public class SpaceReqDTO {
                 @Min(1) @Max(50)
                 Integer size
         ) {
-                public Search {
+                public SpaceSearchReq {
                         if (page == null) {
                                 page = 0;
                         }

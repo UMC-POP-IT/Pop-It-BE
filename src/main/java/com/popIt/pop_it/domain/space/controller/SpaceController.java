@@ -182,13 +182,13 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping
-    public ApiResponse<SpaceResDTO.SearchResult> searchSpaces(
+    public ApiResponse<SpaceResDTO.SpaceSearchListRes> searchSpaces(
             @AuthenticationPrincipal AuthUser authUser,
-            @ParameterObject @Valid @ModelAttribute SpaceReqDTO.Search request
+            @ParameterObject @Valid @ModelAttribute SpaceReqDTO.SpaceSearchReq request
     ) {
         Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
 
-        SpaceResDTO.SearchResult result = spaceService.searchSpaces(userId, request);
+        SpaceResDTO.SpaceSearchListRes result = spaceService.searchSpaces(userId, request);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_SEARCH_FETCHED, result);
     }
 
