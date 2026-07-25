@@ -14,7 +14,10 @@ public enum UploadType {
     HOST_DOCUMENT("host-document", BucketType.HOST_DOCUMENT),
 
     // 계약 전자서명 이미지: 일반 버킷
-    CONTRACT_SIGNATURE("signature", BucketType.GENERAL);
+    CONTRACT_SIGNATURE("signature", BucketType.GENERAL),
+
+    // 3D 큐레이션 씬(방) 사진: 일반 버킷 (프론트가 presigned URL로 S3에 직접 업로드, 서버는 완료된 URL만 등록)
+    SCENE_IMAGE("scene", BucketType.GENERAL);
 
     private final String path;
     private final BucketType bucketType;
