@@ -33,8 +33,9 @@ public class WishlistServiceImpl implements WishlistService {
         }
 
         // 찜하지 않은 상태면 등록
+        // saveAndFlush로 INSERT를 즉시 실행 → 유니크 충돌이 커밋까지 지연되지 않고 try 블록 안에서 잡힘
         try {
-            wishlistRepository.save(WishlistConverter.toEntity(userId, spaceId));
+            wishlistRepository.saveAndFlush(WishlistConverter.toEntity(userId, spaceId));
         } catch (DataIntegrityViolationException e) {
             // 동시 요청으로 선검사를 함께 통과한 경우, (user_id, space_id) 유니크 제약이 최종 방어선 → 이미 등록된 것으로 간주
             return WishlistConverter.toToggle(spaceId, true);
