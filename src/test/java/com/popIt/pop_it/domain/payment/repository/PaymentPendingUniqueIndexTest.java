@@ -153,6 +153,7 @@ class PaymentPendingUniqueIndexTest {
                 .status(ContractStatus.COMPLETED)
                 .hostId(host.getUserId())
                 .guestId(guest.getUserId())
+                .spaceId(space.getId())
                 .startDate(reservationStartDate)
                 .endDate(reservationEndDate)
                 .usagePurpose(usagePurpose)

@@ -155,7 +155,7 @@ class ContractSignatureConcurrencyTest {
                 reservationStartDate.toString(),
                 reservationEndDate.toString(),
                 usagePurpose,
-                "200000", "1000000", "10000", "20000", "1210000"
+                "200000", "1000000", "10000", "1210000"
         );
         String contentHash = cryptoService.hash(payload);
 
@@ -163,6 +163,7 @@ class ContractSignatureConcurrencyTest {
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
                 .hostId(hostId)
                 .guestId(guestId)
+                .spaceId(spaceId)
                 .startDate(reservationStartDate)
                 .endDate(reservationEndDate)
                 .usagePurpose(usagePurpose)
@@ -216,6 +217,7 @@ class ContractSignatureConcurrencyTest {
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
                 .hostId(hostId)
                 .guestId(guestId)
+                .spaceId(spaceId)
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
