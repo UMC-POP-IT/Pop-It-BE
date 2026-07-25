@@ -9,7 +9,6 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -18,8 +17,11 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final SpaceRepository spaceRepository;
 
+    // @Transactional을 두지 않는다: 각 repository 호출을 독립 트랜잭션으로 실행해야
+    // saveAndFlush의 유니크 충돌(DataIntegrityViolationException)이 바깥 트랜잭션을
+    // rollback-only로 오염시키지 않고 아래 catch로 깔끔하게 전파된다.
+    // (toggle은 delete 또는 save 중 하나만 실행하는 단일 쓰기라 하나의 트랜잭션이 필요 없음)
     @Override
-    @Transactional
     public WishlistResDTO.Toggle toggle(Long userId, Long spaceId) {
         // 존재하지 않거나 삭제된 공간은 찜할 수 없음
         if (spaceRepository.findByIdAndDeletedAtIsNull(spaceId).isEmpty()) {
