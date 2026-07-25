@@ -17,10 +17,9 @@ public class KakaoLocalService {
 
     private final RestClient kakaoLocalRestClient;
 
-    // "성수동1가" -> "성수동"
-    private static final Pattern DONG_WITH_GA = Pattern.compile("^(.+동)\\d+가$");
-    // "역삼1동", "성수1가제1동" -> "역삼동", "성수동"
-    private static final Pattern DONG_WITH_NUMBER = Pattern.compile("^([가-힣]+?)\\d.*동$");
+    // 번지, 차수 표기를 상권 느낌의 동 이름으로 다듬기
+    // "성수동1가" -> "성수동" / "역삼1동" -> "역삼동" / "종로1가" -> "종로동"
+    private static final Pattern DONG_PREFIX = Pattern.compile("^([가-힣]+?)\\d.*$");
 
     public Optional<String> resolveDong(Double latitude, Double longitude) {
         if (latitude == null || longitude == null) {
@@ -62,14 +61,10 @@ public class KakaoLocalService {
             return null;
         }
 
-        Matcher getMatcher = DONG_WITH_GA.matcher(rawName);
-        if (getMatcher.matches()) {
-            return getMatcher.group(1);
-        }
-
-        Matcher numberMatch = DONG_WITH_NUMBER.matcher(rawName);
-        if (numberMatch.matches()) {
-            return numberMatch.group(1) + "동";
+        Matcher matcher = DONG_PREFIX.matcher(rawName);
+        if (matcher.matches()) {
+            String prefix = matcher.group(1); // 숫자 앞 한글 추출 (성수동, 역삼, 종로)
+            return prefix.endsWith("동") ? prefix : prefix + "동";
         }
 
         return rawName;
