@@ -35,4 +35,9 @@ public class UserActivity {
 
     @Column(name = "space_id", nullable = false)
     private Long spaceId;
+
+    public void recordView() {
+        this.viewCount += 1;
+        this.lastViewedAt = LocalDateTime.now();
+    }
 }
