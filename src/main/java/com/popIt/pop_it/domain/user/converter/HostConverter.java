@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.user.converter;
 
+import com.popIt.pop_it.domain.user.dto.HostProfileResponse;
 import com.popIt.pop_it.domain.user.dto.HostRegisterRequest;
 import com.popIt.pop_it.domain.user.dto.HostRegisterResponse;
 import com.popIt.pop_it.domain.user.entity.HostProfile;
@@ -26,5 +27,22 @@ public class HostConverter {
 
     public static HostRegisterResponse toRegisterResponse(HostProfile hostProfile) {
         return new HostRegisterResponse(hostProfile.getId(), hostProfile.getCreatedAt());
+    }
+
+    public static HostProfileResponse toProfileResponse(HostProfile hostProfile) {
+        return new HostProfileResponse(
+                hostProfile.getId(),
+                hostProfile.getTaxationType(),
+                hostProfile.getBusinessRegistrationNumber(),
+                hostProfile.getBusinessLicenseUrl(),
+                hostProfile.getBusinessName(),
+                hostProfile.getBusinessAddress(),
+                hostProfile.getBankbookCopyUrl(),
+                hostProfile.getBank(),
+                hostProfile.getSettlementAccountNumber(),
+                hostProfile.getAccountHolder(),
+                hostProfile.getCreatedAt(),
+                hostProfile.getUserId()
+        );
     }
 }
