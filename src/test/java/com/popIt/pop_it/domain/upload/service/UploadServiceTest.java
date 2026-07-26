@@ -21,7 +21,7 @@ class UploadServiceTest {
     private UploadReqDTO.PresignedUrlReq request(UploadType type) {
         return new UploadReqDTO.PresignedUrlReq(
                 type,
-                List.of(new UploadReqDTO.FileInfoReq("image/png"))
+                List.of(new UploadReqDTO.UploadFileInfoReq("image/png"))
         );
     }
 

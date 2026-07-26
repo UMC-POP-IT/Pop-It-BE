@@ -14,10 +14,10 @@ public class UploadReqDTO {
 
     public record PresignedUrlReq(
             @NotNull UploadType uploadType,
-            @NotEmpty @Size(max = 10, message = "한 번에 최대 10개의 파일만 업로드할 수 있습니다.") @Valid List<FileInfoReq> files
+            @NotEmpty @Size(max = 10, message = "한 번에 최대 10개의 파일만 업로드할 수 있습니다.") @Valid List<UploadFileInfoReq> files
     ) {}
 
-    public record FileInfoReq(
+    public record UploadFileInfoReq(
             @NotBlank
             @Schema(description = "파일 MIME 타입", allowableValues = {"image/jpeg", "image/png", "application/pdf"})
             String contentType

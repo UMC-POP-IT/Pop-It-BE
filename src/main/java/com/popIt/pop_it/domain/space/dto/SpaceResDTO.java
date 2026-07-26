@@ -226,7 +226,7 @@ public class SpaceResDTO {
     ) {}
 
     @Builder
-    public record AiRecommendedSpaceList(
+    public record AiRecommendedSpaceListRes(
             List<AiRecommendedSpaceRes> spaces,
             Boolean hasNext,
             String nextCursor

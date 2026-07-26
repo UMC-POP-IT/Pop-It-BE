@@ -196,7 +196,7 @@ public class SpaceController {
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")
     @GetMapping("/ai-recommended")
-    public ApiResponse<SpaceResDTO.AiRecommendedSpaceList> getAiRecommendedSpaces(
+    public ApiResponse<SpaceResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
@@ -219,7 +219,7 @@ public class SpaceController {
                 .isWishlisted(false)
                 .build();
 
-        SpaceResDTO.AiRecommendedSpaceList result = SpaceResDTO.AiRecommendedSpaceList.builder()
+        SpaceResDTO.AiRecommendedSpaceListRes result = SpaceResDTO.AiRecommendedSpaceListRes.builder()
                 .spaces(List.of(space))
                 .hasNext(false)
                 .nextCursor(null)
