@@ -27,14 +27,14 @@ public class KakaoLocalService {
         }
 
         try {
-            KakaoLocalResDTO.RegionCode response = kakaoLocalRestClient.get()
+            KakaoLocalResDTO.KakaoLocalRegionCodeRes response = kakaoLocalRestClient.get()
                     .uri(urlBuilder -> urlBuilder
                             .path("/v2/local/geo/coord2regioncode.json")
                             .queryParam("x", longitude)
                             .queryParam("y", latitude)
                             .build())
                     .retrieve()
-                    .body(KakaoLocalResDTO.RegionCode.class);
+                    .body(KakaoLocalResDTO.KakaoLocalRegionCodeRes.class);
 
             if (response == null || response.documents() == null || response.documents().isEmpty()) {
                 return Optional.empty();

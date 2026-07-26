@@ -18,10 +18,10 @@ class UploadServiceTest {
     @Autowired
     UploadService uploadService;
 
-    private UploadReqDTO.PresignedUrl request(UploadType type) {
-        return new UploadReqDTO.PresignedUrl(
+    private UploadReqDTO.PresignedUrlReq request(UploadType type) {
+        return new UploadReqDTO.PresignedUrlReq(
                 type,
-                List.of(new UploadReqDTO.FileInfo("image/png"))
+                List.of(new UploadReqDTO.UploadFileInfoReq("image/png"))
         );
     }
 
@@ -30,9 +30,9 @@ class UploadServiceTest {
     @Test
     @DisplayName("호스트 서류는 민감서류 전용 버킷의 유저별 경로로 presigned URL이 발급된다")
     void hostDocument_routesToHostBucket() {
-        UploadResDTO.PresignedUrlList result = uploadService.issuePresignedUrls(USER_ID, request(UploadType.HOST_DOCUMENT));
+        UploadResDTO.PresignedUrlListRes result = uploadService.issuePresignedUrls(USER_ID, request(UploadType.HOST_DOCUMENT));
 
-        UploadResDTO.PresignedUrlInfo info = result.uploads().get(0);
+        UploadResDTO.PresignedUrlInfoRes info = result.uploads().get(0);
         // test/resources/application.yml의 host-document-bucket = test-host-document-bucket
         assertThat(info.fileUrl()).contains("test-host-document-bucket");
         // 유저별 경로: host-document/{userId}/...
@@ -43,9 +43,9 @@ class UploadServiceTest {
     @Test
     @DisplayName("공간 이미지는 일반 버킷의 유저별 경로로 presigned URL이 발급된다")
     void spaceImage_routesToGeneralBucket() {
-        UploadResDTO.PresignedUrlList result = uploadService.issuePresignedUrls(USER_ID, request(UploadType.SPACE_IMAGE));
+        UploadResDTO.PresignedUrlListRes result = uploadService.issuePresignedUrls(USER_ID, request(UploadType.SPACE_IMAGE));
 
-        UploadResDTO.PresignedUrlInfo info = result.uploads().get(0);
+        UploadResDTO.PresignedUrlInfoRes info = result.uploads().get(0);
         // test/resources/application.yml의 bucket = test-bucket
         assertThat(info.fileUrl()).contains("test-bucket");
         assertThat(info.fileUrl()).contains("/space/" + USER_ID + "/");

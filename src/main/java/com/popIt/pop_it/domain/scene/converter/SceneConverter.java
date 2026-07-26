@@ -54,8 +54,8 @@ public class SceneConverter {
                 .build();
     }
 
-    public static SceneResDTO.SceneImageUploadRes toImageUploadResult(Long sceneId, List<String> imageUrls) {
-        return SceneResDTO.SceneImageUploadRes.builder()
+    public static SceneResDTO.ImageUploadResultRes toImageUploadResult(Long sceneId, List<String> imageUrls) {
+        return SceneResDTO.ImageUploadResultRes.builder()
                 .sceneId(sceneId)
                 .images(imageUrls)
                 .build();

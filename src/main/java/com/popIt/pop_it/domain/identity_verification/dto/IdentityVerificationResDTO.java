@@ -6,18 +6,16 @@ import lombok.Builder;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Map;
 
 public class IdentityVerificationResDTO {
-
     @Builder
-    public record Verify (
+    public record IdentityVerificationVerifyRes(
             Boolean isVerified,
             LocalDateTime verifiedAt
     ){}
 
     @Builder
-    public record PortOneIdentityVerification (
+    public record PortOneSuccessRes(
             @JsonProperty("id") String identityVerificationId,
             String status,
             Instant verifiedAt,
@@ -35,7 +33,7 @@ public class IdentityVerificationResDTO {
     }
 
     @Builder
-    public record PortOneError (
+    public record PortOneErrorRes(
             String type,
             String message
     ) {}

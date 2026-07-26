@@ -73,7 +73,7 @@ public class SceneCommandService {
     }
 
     //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
-    public SceneResDTO.SceneImageUploadRes uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
+    public SceneResDTO.ImageUploadResultRes uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
         Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 

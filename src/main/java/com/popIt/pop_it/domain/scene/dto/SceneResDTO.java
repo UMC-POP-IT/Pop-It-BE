@@ -52,7 +52,7 @@ public class SceneResDTO {
     }
 
     @Builder
-    public record SceneImageUploadRes(
+    public record ImageUploadResultRes(
             Long sceneId,
             List<String> images
     ) {

@@ -18,7 +18,7 @@ public class SpaceConverter {
     private SpaceConverter() {
     }
 
-    public static Space toSpace(SpaceReqDTO.Create request, Long hostId, String dong) {
+    public static Space toSpace(SpaceReqDTO.SpaceCreateReq request, Long hostId, String dong) {
         return Space.builder()
                 .buildingName(request.buildingName())
                 .registrantType(request.registrantType())
@@ -60,22 +60,22 @@ public class SpaceConverter {
                 .build();
     }
 
-    public static SpaceResDTO.CreateResult toCreateResult(Space space) {
-        return SpaceResDTO.CreateResult.builder()
+    public static SpaceResDTO.SpaceCreateRes toCreateResult(Space space) {
+        return SpaceResDTO.SpaceCreateRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .build();
     }
 
-    public static SpaceResDTO.FacilityItem toFacilityItem(Facility facility) {
-        return new SpaceResDTO.FacilityItem(
+    public static SpaceResDTO.SpaceFacilityItemRes toFacilityItem(Facility facility) {
+        return new SpaceResDTO.SpaceFacilityItemRes(
                 facility.getId(),
                 facility.getCategory(),
                 facility.getName().getDescription()
         );
     }
 
-    public static SpaceResDTO.Detail toDetail(
+    public static SpaceResDTO.SpaceDetailRes toDetail(
             Space space,
             List<String> imageUrls,
             List<Facility> facilities,
@@ -83,7 +83,7 @@ public class SpaceConverter {
             boolean isWishlisted,
             int wishCount
     ) {
-        return SpaceResDTO.Detail.builder()
+        return SpaceResDTO.SpaceDetailRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .registrantType(space.getRegistrantType())
@@ -116,12 +116,12 @@ public class SpaceConverter {
                 .build();
     }
 
-    public static SpaceResDTO.MyListResult toMyListResult(
+    public static SpaceResDTO.MySpaceListRes toMyListResult(
             Page<Space> spacePage,
             Map<Long, String> thumbnailUrlBySpaceId
     ) {
-        List<SpaceResDTO.MySpace> spaces = spacePage.getContent().stream()
-                .map(space -> SpaceResDTO.MySpace.builder()
+        List<SpaceResDTO.MySpaceRes> spaces = spacePage.getContent().stream()
+                .map(space -> SpaceResDTO.MySpaceRes.builder()
                         .spaceId(space.getId())
                         .buildingName(space.getBuildingName())
                         .thumbnailUrl(thumbnailUrlBySpaceId.get(space.getId()))
@@ -129,7 +129,7 @@ public class SpaceConverter {
                         .build())
                 .toList();
 
-        return SpaceResDTO.MyListResult.builder()
+        return SpaceResDTO.MySpaceListRes.builder()
                 .spaces(spaces)
                 .totalCount((int) spacePage.getTotalElements())
                 .currentPage(spacePage.getNumber())
@@ -178,5 +178,17 @@ public class SpaceConverter {
         keywords.add("#" + space.getSpaceCategory().getDescription());
 
         return keywords;
+    }
+
+    public static SpaceResDTO.SpaceUpdateRes toUpdateResult(Space space) {
+        return SpaceResDTO.SpaceUpdateRes.builder()
+                .spaceId(space.getId())
+                .build();
+    }
+
+    public static SpaceResDTO.SpaceDeleteRes toDeleteResult(Space space) {
+        return SpaceResDTO.SpaceDeleteRes.builder()
+                .spaceId(space.getId())
+                .build();
     }
 }

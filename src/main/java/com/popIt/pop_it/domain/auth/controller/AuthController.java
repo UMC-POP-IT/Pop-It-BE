@@ -30,12 +30,22 @@ public class AuthController {
     }
 
     @PostMapping("/reissue")
-    public ApiResponse<UserResDTO.Reissue> reissue(
-            @Valid @RequestBody AuthReqDTO.Reissue request
+    public ApiResponse<UserResDTO.TokenReissueRes> reissue(
+            @Valid @RequestBody AuthReqDTO.TokenReissueReq request
     ) {
         return ApiResponse.onSuccess(
                 UserSuccessCode.USER_REISSUE,
                 authService.reissue(request.refreshToken())
+        );
+    }
+
+    @PostMapping("/exchange")
+    public ApiResponse<UserResDTO.UserLoginRes> exchange(
+            @Valid @RequestBody AuthReqDTO.Exchange request
+    ) {
+        return ApiResponse.onSuccess(
+                UserSuccessCode.USER_LOGIN,
+                authService.exchange(request.code(), request.verifier())
         );
     }
 }

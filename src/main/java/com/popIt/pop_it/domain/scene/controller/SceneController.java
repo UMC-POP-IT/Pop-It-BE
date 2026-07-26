@@ -61,7 +61,7 @@ public class SceneController {
 
     @Operation(summary = "씬 사진 등록", description = "프론트가 presigned URL로 이미 S3에 업로드 완료한 이미지 URL 목록을 받아 씬에 등록합니다. (기존 사진 뒤에 이어붙음)")
     @PostMapping("/spaces/{spaceId}/scenes/{sceneId}/images")
-    public ApiResponse<SceneResDTO.SceneImageUploadRes> uploadSceneImages(
+    public ApiResponse<SceneResDTO.ImageUploadResultRes> uploadSceneImages(
             @PathVariable Long spaceId,
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,

@@ -132,11 +132,15 @@ class PaymentPendingUniqueIndexTest {
                 .hostId(host.getUserId())
                 .build());
 
+        LocalDate reservationStartDate = LocalDate.now().plusDays(10);
+        LocalDate reservationEndDate = LocalDate.now().plusDays(12);
+        String usagePurpose = "유니크 인덱스 테스트";
+
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .status(ReservationStatus.APPROVED)
-                .startDate(LocalDate.now().plusDays(10))
-                .endDate(LocalDate.now().plusDays(12))
-                .usagePurpose("유니크 인덱스 테스트")
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
@@ -148,10 +152,18 @@ class PaymentPendingUniqueIndexTest {
 
         return contractRepository.save(Contract.builder()
                 .status(ContractStatus.COMPLETED)
+                .hostId(host.getUserId())
+                .guestId(guest.getUserId())
+                .spaceId(space.getId())
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash("test-content-hash")
                 .reservation(reservation)
                 .build());
     }

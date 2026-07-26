@@ -11,7 +11,7 @@ import lombok.Builder;
 public class PaymentResDTO {
 
     @Builder
-    public record Prepare(
+    public record PaymentPrepareRes(
             @Schema(description = "결제 식별자", example = "1")
             Long paymentId,
 
@@ -36,8 +36,8 @@ public class PaymentResDTO {
             @Schema(description = "결제 상태", example = "PENDING")
             String status
     ) {
-        public static Prepare of(Payment payment, Contract contract) {
-            return Prepare.builder()
+        public static PaymentPrepareRes of(Payment payment, Contract contract) {
+            return PaymentPrepareRes.builder()
                     .paymentId(payment.getId())
                     .orderId(payment.getOrderId())
                     .orderName(contract.getReservation().getSpace().getBuildingName())
@@ -51,7 +51,7 @@ public class PaymentResDTO {
     }
 
     @Builder
-    public record Confirm(
+    public record PaymentConfirmRes(
             @Schema(description = "결제 식별자", example = "1")
             Long paymentId,
 
@@ -67,8 +67,8 @@ public class PaymentResDTO {
             @Schema(description = "결제 승인 일시", example = "2026-07-16T13:45:00")
             LocalDateTime paidAt
     ) {
-        public static Confirm of(Payment payment) {
-            return Confirm.builder()
+        public static PaymentConfirmRes of(Payment payment) {
+            return PaymentConfirmRes.builder()
                     .paymentId(payment.getId())
                     .orderId(payment.getOrderId())
                     .method(payment.getMethod() != null ? payment.getMethod().name() : null)
@@ -79,7 +79,7 @@ public class PaymentResDTO {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record TossConfirm(
+    public record TossConfirmRes(
             String paymentKey,
             String orderId,
             String method, // 카드, 간편결제, 휴대폰, 계좌이체, 문화상품권, 도서문화상품권, 게임문화상품권 (가상계좌 사용X)
@@ -90,7 +90,7 @@ public class PaymentResDTO {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record TossCancel(
+    public record TossCancelRes(
             String paymentKey,
             String orderId,
             String status // CANCELED, PARTIAL_CANCELED 등
@@ -98,7 +98,7 @@ public class PaymentResDTO {
     }
 
     // 토스페이먼츠 API 실패 응답 바디 (예: ALREADY_PROCESSED_PAYMENT, INVALID_CARD_NUMBER 등)
-    public record TossError(
+    public record TossErrorRes(
             String code,
             String message
     ) {

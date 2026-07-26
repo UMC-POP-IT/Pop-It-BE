@@ -10,7 +10,7 @@ import java.util.Map;
 public class ReservationResDTO {
 
     @Builder
-    public record Summary(
+    public record ReservationSummaryRes(
             // 목록 조회용 (게스트: /me, 호스트: /host)
             Long reservationId,
             ReservationStatus status,
@@ -20,28 +20,28 @@ public class ReservationResDTO {
             String usagePurpose, // 호스트 목록에 노출
             Long totalPrice,
             Boolean isPhotoVerified, // true: 인증 완료, false: 인증 필요
-            SpaceSummary space,
+            ReservationSpaceSummaryRes space,
             // 호스트 목록에서만 필요 (게스트 목록에선 null)
-            GuestSummary guest
+            ReservationGuestSummaryRes guest
     ) {
     }
 
     @Builder
-    public record PagedSummary(
-            List<Summary> reservations,
+    public record ReservationPagedSummaryRes(
+            List<ReservationSummaryRes> reservations,
             Boolean hasNext,
             String nextCursor
     ) {
     }
 
     @Builder
-    public record StatusCounts(
+    public record ReservationStatusCountsRes(
             Map<ReservationStatus, Long> countsByStatus
     ) {
     }
 
     @Builder
-    public record SpaceSummary(
+    public record ReservationSpaceSummaryRes(
             Long spaceId,
             String buildingName,
             String address,
@@ -50,14 +50,14 @@ public class ReservationResDTO {
     }
 
     @Builder
-    public record GuestSummary(
+    public record ReservationGuestSummaryRes(
             Long userId,
             String nickname
     ) {
     }
 
     @Builder
-    public record CreateRes(
+    public record ReservationCreateRes(
             Long reservationId,
             ReservationStatus status,
             String statusDescription,
@@ -69,7 +69,7 @@ public class ReservationResDTO {
     }
 
     @Builder
-    public record StatusChange(
+    public record ReservationStatusChangeRes(
             Long reservationId,
             ReservationStatus status,
             String statusDescription
@@ -77,20 +77,20 @@ public class ReservationResDTO {
     }
 
     @Builder
-    public record UnavailableDates(
-            List<DateRange> unavailableDates
+    public record ReservationUnavailableDatesRes(
+            List<ReservationDateRangeRes> unavailableDates
     ) {
     }
 
     @Builder
-    public record DateRange(
+    public record ReservationDateRangeRes(
             LocalDate startDate,
             LocalDate endDate
     ) {
     }
 
     @Builder
-    public record CheckoutImages(
+    public record ReservationCheckoutImagesRes(
             List<String> photoUrls
     ) {
     }

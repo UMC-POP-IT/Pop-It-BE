@@ -61,9 +61,9 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<SpaceResDTO.CreateResult>> createSpace(
+    public ResponseEntity<ApiResponse<SpaceResDTO.SpaceCreateRes>> createSpace(
             @AuthenticationPrincipal  AuthUser authUser,
-            @Valid @RequestBody SpaceReqDTO.Create request
+            @Valid @RequestBody SpaceReqDTO.SpaceCreateReq request
     ) {
         // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
         if (authUser == null || authUser.getUser() == null) {
@@ -71,7 +71,7 @@ public class SpaceController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        SpaceResDTO.CreateResult result = spaceService.createSpace(userId, request);
+        SpaceResDTO.SpaceCreateRes result = spaceService.createSpace(userId, request);
         return ResponseEntity.status(SpaceSuccessCode.SPACE_CREATED.getStatus())
                 .body(ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result));
     }
@@ -97,14 +97,14 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping("/{spaceId}")
-    public ApiResponse<SpaceResDTO.Detail> getSpaceDetail(
+    public ApiResponse<SpaceResDTO.SpaceDetailRes> getSpaceDetail(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
     ) {
         Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
 
-        SpaceResDTO.Detail result = spaceService.getSpaceDetail(userId, spaceId);
+        SpaceResDTO.SpaceDetailRes result = spaceService.getSpaceDetail(userId, spaceId);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
@@ -131,7 +131,7 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping("/my")
-    public ApiResponse<SpaceResDTO.MyListResult> getMySpaces(
+    public ApiResponse<SpaceResDTO.MySpaceListRes> getMySpaces(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -143,7 +143,7 @@ public class SpaceController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        SpaceResDTO.MyListResult result = spaceService.getMySpaces(userId, page, size);
+        SpaceResDTO.MySpaceListRes result = spaceService.getMySpaces(userId, page, size);
         return ApiResponse.onSuccess(SpaceSuccessCode.MY_PAGE_LIST_FETCHED, result);
     }
 
@@ -192,18 +192,92 @@ public class SpaceController {
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_SEARCH_FETCHED, result);
     }
 
+    @Operation(
+            summary = "공간 수정",
+            description = "호스트모드 - 등록한 공간의 정보를 수정합니다. 등록 시 입력한 모든 항목을 수정할 수 있습니다. ",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 수정 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "형식 오류/잘못된 enum 값, 계약 가능 기간 오류, 위도·경도 미쌍, 존재하지 않는 시설 포함",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403", description = "본인이 등록한 공간이 아님",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404", description = "존재하지 않거나 이미 삭제된 공간",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @PatchMapping("/{spaceId}")
+    public ApiResponse<SpaceResDTO.SpaceUpdateRes> updateSpace(
+            @AuthenticationPrincipal AuthUser authuser,
+            @Parameter(description = "공간 ID", example = "10")
+            @PathVariable Long spaceId,
+            @Valid @RequestBody SpaceReqDTO.SpaceUpdateReq request
+    ) {
+        if (authuser == null || authuser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authuser.getUser().getUserId();
+        SpaceResDTO.SpaceUpdateRes result = spaceService.updateSpace(userId, spaceId, request);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_UPDATED, result);
+    }
+
+    @Operation(
+            summary = "공간 삭제",
+            description = "호스트모드 - 등록한 공간을 삭제합니다. (소프트 삭제)",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 삭제 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400", description = "진행 중인 예약이 있어 삭제 불가",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "403", description = "본인이 등록한 공간이 아님",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404", description = "존재하지 않거나 이미 삭제된 공간",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @DeleteMapping("/{spaceId}")
+    public ApiResponse<SpaceResDTO.SpaceDeleteRes> deleteSpace(
+            @AuthenticationPrincipal AuthUser authuser,
+            @Parameter(description = "공간 ID", example = "10")
+            @PathVariable Long spaceId
+    ) {
+        if (authuser == null || authuser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authuser.getUser().getUserId();
+        SpaceResDTO.SpaceDeleteRes result = spaceService.deleteSpace(userId, spaceId);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
+    }
+
     // @TODO: AI 맞춤 추천 공간 조회
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")
     @GetMapping("/ai-recommended")
-    public ApiResponse<SpaceResDTO.AiRecommendedSpaceList> getAiRecommendedSpaces(
+    public ApiResponse<SpaceResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
         BaseSuccessCode code = SpaceSuccessCode.AI_RECOMMENDED_SPACE_LIST;
 
-        SpaceResDTO.AiRecommendedSpace space = SpaceResDTO.AiRecommendedSpace.builder()
+        SpaceResDTO.AiRecommendedSpaceRes space = SpaceResDTO.AiRecommendedSpaceRes.builder()
                 .spaceId(15L)
                 .buildingName("홍대 팝업 스튜디오")
                 .tag("이전에 찜한 공간과 비슷해요")
@@ -219,7 +293,7 @@ public class SpaceController {
                 .isWishlisted(false)
                 .build();
 
-        SpaceResDTO.AiRecommendedSpaceList result = SpaceResDTO.AiRecommendedSpaceList.builder()
+        SpaceResDTO.AiRecommendedSpaceListRes result = SpaceResDTO.AiRecommendedSpaceListRes.builder()
                 .spaces(List.of(space))
                 .hasNext(false)
                 .nextCursor(null)
