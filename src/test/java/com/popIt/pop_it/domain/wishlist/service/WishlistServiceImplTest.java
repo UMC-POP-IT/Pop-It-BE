@@ -40,7 +40,7 @@ class WishlistServiceImplTest {
         given(spaceRepository.findByIdAndDeletedAtIsNull(spaceId)).willReturn(Optional.of(Space.builder().id(spaceId).build()));
         given(wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)).willReturn(false);
 
-        WishlistResDTO.Toggle result = wishlistService.toggle(userId, spaceId);
+        WishlistResDTO.WishlistToggleRes result = wishlistService.toggle(userId, spaceId);
 
         assertThat(result.isWishlisted()).isTrue();
         verify(userVectorService).recomputeUserVector(userId);
@@ -53,7 +53,7 @@ class WishlistServiceImplTest {
         given(spaceRepository.findByIdAndDeletedAtIsNull(spaceId)).willReturn(Optional.of(Space.builder().id(spaceId).build()));
         given(wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)).willReturn(true);
 
-        WishlistResDTO.Toggle result = wishlistService.toggle(userId, spaceId);
+        WishlistResDTO.WishlistToggleRes result = wishlistService.toggle(userId, spaceId);
 
         assertThat(result.isWishlisted()).isFalse();
         verify(userVectorService).recomputeUserVector(userId);
@@ -81,7 +81,7 @@ class WishlistServiceImplTest {
         given(wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)).willReturn(false);
         willThrow(new IllegalStateException("redis down")).given(userVectorService).recomputeUserVector(userId);
 
-        WishlistResDTO.Toggle result = wishlistService.toggle(userId, spaceId);
+        WishlistResDTO.WishlistToggleRes result = wishlistService.toggle(userId, spaceId);
 
         assertThat(result.isWishlisted()).isTrue();
     }

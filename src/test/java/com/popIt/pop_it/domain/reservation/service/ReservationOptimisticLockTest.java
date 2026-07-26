@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
@@ -44,6 +45,8 @@ public class ReservationOptimisticLockTest {
     private UserRepository userRepository;
     @Autowired
     private IdentityVerificationRepository identityVerificationRepository;
+    @Autowired
+    private ContractRepository contractRepository;
 
 
     private Long reservationId;
@@ -108,6 +111,9 @@ public class ReservationOptimisticLockTest {
 
     @AfterEach
     void tearDown() {
+        // 같은_예약을_동시에_승인시도하면_한_건만_성공한다()가 실제 승인 플로우를 타면서
+        // 계약(Contract)까지 만들어지므로, 예약을 지우기 전에 그 계약부터 정리해야 FK 위반이 안 난다.
+        contractRepository.findByReservation_Id(reservationId).ifPresent(contractRepository::delete);
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
         identityVerificationRepository.deleteAll();

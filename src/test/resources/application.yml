@@ -42,3 +42,6 @@ cloud:
 kakao:
   local:
     rest-api-key: test-kakao-rest-api-key
+
+app:
+  frontend-url: http://localhost:5173
