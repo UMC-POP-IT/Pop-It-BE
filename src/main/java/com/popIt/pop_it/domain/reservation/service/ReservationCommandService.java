@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.contract.service.ContractService;
 import com.popIt.pop_it.domain.payment.service.PaymentService;
 import com.popIt.pop_it.domain.reservation.converter.ReservationConverter;
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
@@ -46,6 +47,7 @@ public class ReservationCommandService {
     private final SpaceRepository spaceRepository;
     private final UserRepository userRepository;
     private final PaymentService paymentService;
+    private final ContractService contractService;
 
     //예약 요청
     public ReservationResDTO.CreateRes createReservation(Long userId, ReservationReqDTO.CreateReq request) {
@@ -129,7 +131,7 @@ public class ReservationCommandService {
 
             reservation.approve();
             reservationRepository.saveAndFlush(reservation);
-            // TODO: Contract 도메인에 "계약(서명대기) 생성" 요청 필요 - 인터페이스 확정되면 연동
+            contractService.createPendingContract(reservation); // 예약 승인 -> 계약 생성
 
             return ReservationConverter.toStatusChange(reservation);
         } catch (ObjectOptimisticLockingFailureException e) {

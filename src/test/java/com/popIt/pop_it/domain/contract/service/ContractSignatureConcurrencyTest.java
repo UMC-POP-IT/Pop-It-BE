@@ -18,6 +18,7 @@ import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user.repository.UserRepository;
+import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
 import java.time.LocalDate;
 import java.util.List;
@@ -61,6 +62,10 @@ class ContractSignatureConcurrencyTest {
     private ContractRepository contractRepository;
     @Autowired
     private ContractService contractService;
+    @Autowired
+    private CryptoService cryptoService;
+
+    private static final String FIELD_SEPARATOR = "\u001F"; // ContractService.buildContentHash와 동일한 구분자
 
     // 실제 PortOne/S3 연동 없이 동시성 로직만 검증하기 위해 외부 연동 지점을 목으로 대체한다.
     @MockitoBean
@@ -119,11 +124,15 @@ class ContractSignatureConcurrencyTest {
                 .build());
         spaceId = space.getId();
 
+        LocalDate reservationStartDate = LocalDate.now().plusDays(10);
+        LocalDate reservationEndDate = LocalDate.now().plusDays(12);
+        String usagePurpose = "동시성 테스트";
+
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .status(ReservationStatus.APPROVED)
-                .startDate(LocalDate.now().plusDays(10))
-                .endDate(LocalDate.now().plusDays(12))
-                .usagePurpose("동시성 테스트")
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
@@ -134,12 +143,37 @@ class ContractSignatureConcurrencyTest {
                 .build());
         reservationId = reservation.getId();
 
+        // 이 테스트는 클래스 레벨 @Transactional을 안 쓰기 때문에(각 스레드가 독립된 트랜잭션을 가져야 해서),
+        // save() 직후의 reservation을 그대로 contractService.createPendingContract()에 넘기면
+        // reservation.getSpace()가 세션이 닫힌 lazy 프록시라 LazyInitializationException이 난다.
+        // 그래서 아직 세션이 열려있는 동안 확보해둔 space/guest 값으로 직접 payload를 만들어
+        // ContractService.buildContentHash와 동일한 방식으로 진짜 해시를 계산한다.
+        String payload = String.join(FIELD_SEPARATOR,
+                String.valueOf(reservation.getId()),
+                String.valueOf(spaceId),
+                String.valueOf(hostId),
+                String.valueOf(guestId),
+                reservationStartDate.toString(),
+                reservationEndDate.toString(),
+                usagePurpose,
+                "200000", "1000000", "10000", "1210000"
+        );
+        String contentHash = cryptoService.hash(payload);
+
         Contract contract = contractRepository.save(Contract.builder()
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .hostId(hostId)
+                .guestId(guestId)
+                .spaceId(spaceId)
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash(contentHash)
                 .reservation(reservation)
                 .build());
         contractId = contract.getId();
@@ -182,10 +216,18 @@ class ContractSignatureConcurrencyTest {
         Contract stale = Contract.builder()
                 .id(contractId)
                 .status(ContractStatus.HOST_SIGNATURE_PENDING)
+                .hostId(hostId)
+                .guestId(guestId)
+                .spaceId(spaceId)
+                .startDate(reservation.getStartDate())
+                .endDate(reservation.getEndDate())
+                .usagePurpose(reservation.getUsagePurpose())
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
+                .platformFee(20_000L)
                 .totalPrice(1_210_000L)
+                .contentHash("test-content-hash")
                 .reservation(reservation)
                 .version(0L)
                 .build();
