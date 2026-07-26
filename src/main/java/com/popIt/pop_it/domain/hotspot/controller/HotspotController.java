@@ -3,7 +3,7 @@ package com.popIt.pop_it.domain.hotspot.controller;
 import com.popIt.pop_it.domain.hotspot.dto.HotspotReqDTO;
 import com.popIt.pop_it.domain.hotspot.dto.HotspotResDTO;
 import com.popIt.pop_it.domain.hotspot.exception.code.HotspotSuccessCode;
-import com.popIt.pop_it.domain.hotspot.service.HotspotCommandService;
+import com.popIt.pop_it.domain.hotspot.service.HotspotService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class HotspotController {
 
-    private final HotspotCommandService hotspotCommandService;
+    private final HotspotService hotspotService;
 
     @Operation(summary = "핫스팟 생성", description = "씬 위에 핫스팟을 추가합니다. type이 INFO면 description 필수, LINK면 targetSceneId 필수입니다.")
     @PostMapping("/scenes/{sceneId}/hotspots")
@@ -30,7 +30,7 @@ public class HotspotController {
     ) {
         return ApiResponse.onSuccess(
                 HotspotSuccessCode.HOTSPOT_CREATED,
-                hotspotCommandService.createHotspot(sceneId, authUser.getUser().getUserId(), request)
+                hotspotService.createHotspot(sceneId, authUser.getUser().getUserId(), request)
         );
     }
 
@@ -43,7 +43,7 @@ public class HotspotController {
     ) {
         return ApiResponse.onSuccess(
                 HotspotSuccessCode.HOTSPOT_UPDATED,
-                hotspotCommandService.updateHotspot(hotspotId, authUser.getUser().getUserId(), request)
+                hotspotService.updateHotspot(hotspotId, authUser.getUser().getUserId(), request)
         );
     }
 
@@ -53,7 +53,7 @@ public class HotspotController {
             @PathVariable Long hotspotId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
-        hotspotCommandService.deleteHotspot(hotspotId, authUser.getUser().getUserId());
+        hotspotService.deleteHotspot(hotspotId, authUser.getUser().getUserId());
         return ApiResponse.onSuccess(HotspotSuccessCode.HOTSPOT_DELETED, null);
     }
 }

@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Transactional
-public class HotspotCommandService {
+public class HotspotService {
 
     private final HotspotRepository hotspotRepository;
     private final SceneRepository sceneRepository;
