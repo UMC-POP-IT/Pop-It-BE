@@ -1,8 +1,9 @@
 package com.popIt.pop_it.domain.user.service;
 
 import com.popIt.pop_it.domain.user.converter.HostConverter;
-import com.popIt.pop_it.domain.user.dto.HostRegisterRequest;
-import com.popIt.pop_it.domain.user.dto.HostRegisterResponse;
+import com.popIt.pop_it.domain.user.dto.HostProfileRes;
+import com.popIt.pop_it.domain.user.dto.HostRegisterReq;
+import com.popIt.pop_it.domain.user.dto.HostRegisterRes;
 import com.popIt.pop_it.domain.user.entity.HostProfile;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.exception.code.HostErrorCode;
@@ -26,7 +27,7 @@ public class HostServiceImpl implements HostService {
 
     @Override
     @Transactional
-    public HostRegisterResponse register(Long userId, HostRegisterRequest request) {
+    public HostRegisterRes register(Long userId, HostRegisterReq request) {
         // 한 사용자당 호스트 프로필은 1개만 허용 → 중복 등록 선검사(빠른 실패 + 친절한 응답)
         if (hostProfileRepository.existsByUserId(userId)) {
             throw new ProjectException(HostErrorCode.HOST_PROFILE_ALREADY_EXISTS);
@@ -54,5 +55,13 @@ public class HostServiceImpl implements HostService {
         user.switchToHost();
 
         return HostConverter.toRegisterResponse(hostProfile);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public HostProfileRes getMyProfile(Long userId) {
+        HostProfile hostProfile = hostProfileRepository.findByUserId(userId)
+                .orElseThrow(() -> new ProjectException(HostErrorCode.HOST_PROFILE_NOT_FOUND));
+        return HostConverter.toProfileResponse(hostProfile);
     }
 }

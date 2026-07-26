@@ -8,12 +8,12 @@ import java.util.List;
 public class KakaoLocalResDTO {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record RegionCode(
-            List<Document> documents
+    public record KakaoLocalRegionCodeRes(
+            List<KakaoLocalDocumentRes> documents
     ) {}
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Document(
+    public record KakaoLocalDocumentRes(
             @JsonProperty("region_type") String regionType,
             @JsonProperty("region_1depth_name") String region1DepthName,
             @JsonProperty("region_2depth_name") String region2DepthName,

@@ -17,7 +17,7 @@ public class FacilityService {
 
     private final FacilityRepository facilityRepository;
 
-    public FacilityResDTO.ListResult getFacilities() {
+    public FacilityResDTO.FacilityListRes getFacilities() {
         List<Facility> facilities = facilityRepository.findAllByOrderByIdAsc();
         return FacilityConverter.toListResult(facilities);
     }

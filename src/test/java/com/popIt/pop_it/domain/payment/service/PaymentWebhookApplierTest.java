@@ -45,8 +45,8 @@ class PaymentWebhookApplierTest {
                 .build();
     }
 
-    private PaymentResDTO.TossConfirm tossConfirmOf(String status) {
-        return new PaymentResDTO.TossConfirm(
+    private PaymentResDTO.TossConfirmRes tossConfirmOf(String status) {
+        return new PaymentResDTO.TossConfirmRes(
                 PAYMENT_KEY, ORDER_ID, "카드", status, 155_000L, OffsetDateTime.now());
     }
 

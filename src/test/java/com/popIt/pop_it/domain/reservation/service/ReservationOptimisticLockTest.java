@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.reservation.service;
 
+import com.popIt.pop_it.domain.contract.repository.ContractRepository;
 import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
@@ -44,6 +45,8 @@ public class ReservationOptimisticLockTest {
     private UserRepository userRepository;
     @Autowired
     private IdentityVerificationRepository identityVerificationRepository;
+    @Autowired
+    private ContractRepository contractRepository;
 
 
     private Long reservationId;
@@ -108,6 +111,7 @@ public class ReservationOptimisticLockTest {
 
     @AfterEach
     void tearDown() {
+        contractRepository.deleteAll(); // 예약 승인 시 생성되는 계약을 먼저 지워야 FK 제약 없이 예약 삭제 가능
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
         identityVerificationRepository.deleteAll();

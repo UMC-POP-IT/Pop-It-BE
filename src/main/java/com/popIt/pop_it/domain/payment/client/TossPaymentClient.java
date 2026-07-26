@@ -45,8 +45,8 @@ public class TossPaymentClient {
                 .build();
     }
 
-    public PaymentResDTO.TossConfirm confirm(String paymentKey, String orderId, Long amount) {
-        return post("/confirm", new ConfirmRequest(paymentKey, orderId, amount), PaymentResDTO.TossConfirm.class);
+    public PaymentResDTO.TossConfirmRes confirm(String paymentKey, String orderId, Long amount) {
+        return post("/confirm", new ConfirmRequest(paymentKey, orderId, amount), PaymentResDTO.TossConfirmRes.class);
     }
 
     /**
@@ -57,7 +57,7 @@ public class TossPaymentClient {
      *
      * @see <a href="https://docs.tosspayments.com/reference/error-codes#결제-취소">결제 취소 에러코드 전체 목록</a>
      */
-    public PaymentResDTO.TossCancel cancelPartial(
+    public PaymentResDTO.TossCancelRes cancelPartial(
             String paymentKey, Long cancelAmount, String cancelReason, String idempotencyKey) {
         return execute(() -> restClient.post()
                 .uri("/{paymentKey}/cancel", paymentKey)
@@ -65,18 +65,18 @@ public class TossPaymentClient {
                 .header("Idempotency-Key", idempotencyKey)
                 .body(new CancelRequest(cancelAmount, cancelReason))
                 .retrieve()
-                .body(PaymentResDTO.TossCancel.class));
+                .body(PaymentResDTO.TossCancelRes.class));
     }
 
     /**
      * 결제 단건 조회. 웹훅 payload는 서명 검증이 없으므로, 웹훅이 알려준 paymentKey로
      * 이 API를 호출해 실제 결제 상태를 재확인한 뒤에만 그 결과를 신뢰해야 한다.
      */
-    public PaymentResDTO.TossConfirm getPayment(String paymentKey) {
+    public PaymentResDTO.TossConfirmRes getPayment(String paymentKey) {
         return execute(() -> restClient.get()
                 .uri("/{paymentKey}", paymentKey)
                 .retrieve()
-                .body(PaymentResDTO.TossConfirm.class));
+                .body(PaymentResDTO.TossConfirmRes.class));
     }
 
     private <T> T post(String uriTemplate, Object requestBody, Class<T> responseType, Object... uriVariables) {
@@ -92,7 +92,7 @@ public class TossPaymentClient {
         try {
             return request.get();
         } catch (RestClientResponseException e) {
-            PaymentResDTO.TossError tossError = parseTossError(e);
+            PaymentResDTO.TossErrorRes tossError = parseTossError(e);
             log.warn("토스 결제 API 실패: status={}, code={}, message={}",
                     e.getStatusCode(), tossError.code(), tossError.message());
             throw new ProjectException(new TossErrorCode(
@@ -104,9 +104,9 @@ public class TossPaymentClient {
         }
     }
 
-    private PaymentResDTO.TossError parseTossError(RestClientResponseException e) {
+    private PaymentResDTO.TossErrorRes parseTossError(RestClientResponseException e) {
         try {
-            PaymentResDTO.TossError tossError = e.getResponseBodyAs(PaymentResDTO.TossError.class);
+            PaymentResDTO.TossErrorRes tossError = e.getResponseBodyAs(PaymentResDTO.TossErrorRes.class);
             // 응답 바디가 비어있으면 예외 없이 null이 반환된다
             return tossError != null ? tossError : unknownTossError();
         } catch (Exception parseException) {
@@ -114,8 +114,8 @@ public class TossPaymentClient {
         }
     }
 
-    private PaymentResDTO.TossError unknownTossError() {
-        return new PaymentResDTO.TossError("UNKNOWN_PAYMENT_ERROR", "결제 처리에 실패했습니다.");
+    private PaymentResDTO.TossErrorRes unknownTossError() {
+        return new PaymentResDTO.TossErrorRes("UNKNOWN_PAYMENT_ERROR", "결제 처리에 실패했습니다.");
     }
 
     private record ConfirmRequest(String paymentKey, String orderId, Long amount) {

@@ -28,7 +28,7 @@ public class ReservationController {
             + "커서 기반 무한스크롤 방식이며, status로 탭(승인대기/계약대기/사용중 등) 필터링이 가능합니다.<br>"
             + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/me")
-    public ApiResponse<ReservationResDTO.PagedSummary> getMyReservations(
+    public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getMyReservations(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(required = false) ReservationStatus status,
             @RequestParam(required = false) String cursor,
@@ -42,7 +42,7 @@ public class ReservationController {
 
     @Operation(summary = "게스트 예약 상태별 개수 조회", description = "게스트 예약관리 화면 상단 탭(승인대기/계약대기/사용중 등)에 붙는 배지 숫자를 상태별로 반환합니다.")
     @GetMapping("/me/status-counts")
-    public ApiResponse<ReservationResDTO.StatusCounts> getMyStatusCounts(
+    public ApiResponse<ReservationResDTO.ReservationStatusCountsRes> getMyStatusCounts(
             @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
@@ -55,7 +55,7 @@ public class ReservationController {
             + "커서 기반 무한스크롤 방식이며, status로 탭 필터링이 가능합니다.<br>"
             + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/host")
-    public ApiResponse<ReservationResDTO.PagedSummary> getHostReservations(
+    public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getHostReservations(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(required = false) ReservationStatus status,
             @RequestParam(required = false) String cursor,
@@ -69,7 +69,7 @@ public class ReservationController {
 
     @Operation(summary = "호스트 예약 상태별 개수 조회", description = "호스트 예약관리 화면 상단 탭에 붙는 배지 숫자를 상태별로 반환합니다.")
     @GetMapping("/host/status-counts")
-    public ApiResponse<ReservationResDTO.StatusCounts> getHostStatusCounts(
+    public ApiResponse<ReservationResDTO.ReservationStatusCountsRes> getHostStatusCounts(
             @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
@@ -82,9 +82,9 @@ public class ReservationController {
             + "대여료/보험료(대여료의 5%)/보증금을 서버에서 계산해 총 결제 금액을 반환합니다.<br>"
             + "(이용 기간 최대 90일, 공간의 대여 가능 기간 범위 내에서만 요청 가능)")
     @PostMapping
-    public ApiResponse<ReservationResDTO.CreateRes> createReservation(
+    public ApiResponse<ReservationResDTO.ReservationCreateRes> createReservation(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody ReservationReqDTO.CreateReq request
+            @Valid @RequestBody ReservationReqDTO.ReservationCreateReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_REQUEST,
@@ -95,7 +95,7 @@ public class ReservationController {
     @Operation(summary = "예약 승인", description = "호스트가 승인대기 상태의 예약을 승인합니다. (PENDING_APPROVAL → APPROVED)<br>"
             + "승인 시 계약(서명대기) 절차로 이어집니다.")
     @PostMapping("/{reservationId}/approve")
-    public ApiResponse<ReservationResDTO.StatusChange> approveReservation(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveReservation(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -107,7 +107,7 @@ public class ReservationController {
 
     @Operation(summary = "예약 거절", description = "호스트가 승인대기 상태의 예약을 거절합니다. (PENDING_APPROVAL → CANCELLED)")
     @PostMapping("/{reservationId}/reject")
-    public ApiResponse<ReservationResDTO.StatusChange> rejectReservation(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectReservation(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -120,7 +120,7 @@ public class ReservationController {
     @Operation(summary = "예약 취소(게스트)", description = "게스트가 본인 예약을 취소합니다.<br>"
             + "승인대기/승인완료(PENDING_APPROVAL, APPROVED) 상태에서만 가능하며, 결제(계약완료) 이후 상태는 이 API로 취소할 수 없습니다.")
     @PostMapping("/{reservationId}/cancel")
-    public ApiResponse<ReservationResDTO.StatusChange> cancelReservation(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> cancelReservation(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -134,10 +134,10 @@ public class ReservationController {
             + "제출 후에는 호스트 승인 또는 24시간 경과 시 자동 승인으로 퇴실이 완료됩니다.<br>"
             + "(현재는 이용 완료 USAGE_COMPLETED 상태에서만 제출 가능합니다.)")
     @PostMapping("/{reservationId}/checkout")
-    public ApiResponse<ReservationResDTO.StatusChange> submitCheckout(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> submitCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody ReservationReqDTO.Checkout request
+            @RequestBody ReservationReqDTO.ReservationCheckoutReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTO,
@@ -148,7 +148,7 @@ public class ReservationController {
     @Operation(summary = "퇴실 승인", description = "호스트가 제출된 퇴실 증빙을 확인하고 승인합니다. (USAGE_COMPLETED → CHECKOUT_COMPLETED)<br>"
             + "승인 즉시 정산되도록 연동 예정입니다.")
     @PostMapping("/{reservationId}/checkout/approve")
-    public ApiResponse<ReservationResDTO.StatusChange> approveCheckout(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -161,7 +161,7 @@ public class ReservationController {
     @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
             + "거절 시 기존 제출 사진은 초기화되며, 게스트가 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
     @PostMapping("/{reservationId}/checkout/reject")
-    public ApiResponse<ReservationResDTO.StatusChange> rejectCheckout(
+    public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -173,7 +173,7 @@ public class ReservationController {
 
     @Operation(summary = "퇴실 증빙 사진 조회", description = "호스트가 게스트의 퇴실 증빙 사진 목록을 조회합니다. (승인/거절 전 확인용)")
     @GetMapping("/{reservationId}/checkout-images")
-    public ApiResponse<ReservationResDTO.CheckoutImages> getCheckoutImages(
+    public ApiResponse<ReservationResDTO.ReservationCheckoutImagesRes> getCheckoutImages(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
@@ -186,7 +186,7 @@ public class ReservationController {
     @Operation(summary = "공간별 예약 불가 날짜 조회", description = "특정 공간에 대해 이미 선점(승인대기~진행 중)된 기간 목록을 반환합니다.<br>"
             + "프론트에서 예약 요청 화면의 캘린더에 예약 불가 날짜를 비활성화 표시하는 용도입니다. (지난 날짜는 제외됩니다.)")
     @GetMapping("/{spaceId}/unavailable-dates")
-    public ApiResponse<ReservationResDTO.UnavailableDates> getUnavailableDates(
+    public ApiResponse<ReservationResDTO.ReservationUnavailableDatesRes> getUnavailableDates(
             @PathVariable Long spaceId
     ) {
         return ApiResponse.onSuccess(

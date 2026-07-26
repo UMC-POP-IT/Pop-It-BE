@@ -13,12 +13,13 @@ import java.util.List;
 
 public class SpaceReqDTO {
 
-        @Schema(description = "공간 등록 요청")
-        public record Create(
-                @Schema(description = "건물명", example = "합정 메세나폴리스")
-                @NotBlank
-                @Size(max = 20)
-                String buildingName,
+
+    @Schema(description = "공간 등록 요청")
+    public record SpaceCreateReq(
+            @Schema(description = "건물명", example = "합정 메세나폴리스")
+            @NotBlank
+            @Size(max = 20)
+            String buildingName,
 
                 @Schema(description = "등록자 유형 (현재 OWNER만 지원)", example = "OWNER")
                 @NotNull

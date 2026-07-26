@@ -9,13 +9,13 @@ import java.util.List;
 
 public class FacilityConverter {
 
-    public static FacilityResDTO.ListResult toListResult(List<Facility> facilities) {
-        List<FacilityResDTO.CategoryGroup> groups = Arrays.stream(FacilityCategory.values())
-                .map(category -> new FacilityResDTO.CategoryGroup(
+    public static FacilityResDTO.FacilityListRes toListResult(List<Facility> facilities) {
+        List<FacilityResDTO.FacilityCategoryGroupRes> groups = Arrays.stream(FacilityCategory.values())
+                .map(category -> new FacilityResDTO.FacilityCategoryGroupRes(
                         category.name(),
                         facilities.stream()
                                 .filter(f -> f.getCategory() == category)
-                                .map(f -> new FacilityResDTO.Item(
+                                .map(f -> new FacilityResDTO.FacilityItemRes(
                                         f.getId(),
                                         f.getName().getDescription()
                                 ))
@@ -24,6 +24,6 @@ public class FacilityConverter {
                 .filter(group -> !group.items().isEmpty())
                 .toList();
 
-        return new FacilityResDTO.ListResult(groups);
+        return new FacilityResDTO.FacilityListRes(groups);
     }
 }

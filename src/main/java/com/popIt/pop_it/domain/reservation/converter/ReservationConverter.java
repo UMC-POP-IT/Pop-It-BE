@@ -10,10 +10,10 @@ import com.popIt.pop_it.domain.user.entity.User;
 import java.util.List;
 
 public class ReservationConverter {
-    public static ReservationResDTO.Summary toSummary(
+    public static ReservationResDTO.ReservationSummaryRes toSummary(
             Reservation reservation, boolean includeGuest, String thumbnailUrl, boolean isPhotoVerified
     ) {
-        return ReservationResDTO.Summary.builder()
+        return ReservationResDTO.ReservationSummaryRes.builder()
                 .reservationId(reservation.getId())
                 .status(reservation.getStatus())
                 .statusDescription(reservation.getStatus().getDescription())
@@ -27,8 +27,8 @@ public class ReservationConverter {
                 .build();
     }
 
-    private static ReservationResDTO.SpaceSummary toSpaceSummary(Space space, String thumbnailUrl) {
-        return ReservationResDTO.SpaceSummary.builder()
+    private static ReservationResDTO.ReservationSpaceSummaryRes toSpaceSummary(Space space, String thumbnailUrl) {
+        return ReservationResDTO.ReservationSpaceSummaryRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .address(space.getRoadAddress())
@@ -36,15 +36,15 @@ public class ReservationConverter {
                 .build();
     }
 
-    private static ReservationResDTO.GuestSummary toGuestSummary(User user) {
-        return ReservationResDTO.GuestSummary.builder()
+    private static ReservationResDTO.ReservationGuestSummaryRes toGuestSummary(User user) {
+        return ReservationResDTO.ReservationGuestSummaryRes.builder()
                 .userId(user.getUserId())
                 .nickname(user.getNickname())
                 .build();
     }
 
-    public static ReservationResDTO.CreateRes toCreateResult(Reservation reservation) {
-        return ReservationResDTO.CreateRes.builder()
+    public static ReservationResDTO.ReservationCreateRes toCreateResult(Reservation reservation) {
+        return ReservationResDTO.ReservationCreateRes.builder()
                 .reservationId(reservation.getId())
                 .status(reservation.getStatus())
                 .statusDescription(reservation.getStatus().getDescription())
@@ -55,33 +55,33 @@ public class ReservationConverter {
                 .build();
     }
 
-    public static ReservationResDTO.StatusChange toStatusChange(Reservation reservation) {
-        return ReservationResDTO.StatusChange.builder()
+    public static ReservationResDTO.ReservationStatusChangeRes toStatusChange(Reservation reservation) {
+        return ReservationResDTO.ReservationStatusChangeRes.builder()
                 .reservationId(reservation.getId())
                 .status(reservation.getStatus())
                 .statusDescription(reservation.getStatus().getDescription())
                 .build();
     }
 
-    public static ReservationResDTO.UnavailableDates toUnavailableDates(List<ReservationDateRange> ranges) {
-        List<ReservationResDTO.DateRange> dateRanges = ranges.stream()
-                .map(r -> ReservationResDTO.DateRange.builder()
+    public static ReservationResDTO.ReservationUnavailableDatesRes toUnavailableDates(List<ReservationDateRange> ranges) {
+        List<ReservationResDTO.ReservationDateRangeRes> dateRanges = ranges.stream()
+                .map(r -> ReservationResDTO.ReservationDateRangeRes.builder()
                         .startDate(r.getStartDate())
                         .endDate(r.getEndDate())
                         .build())
                 .toList();
 
-        return ReservationResDTO.UnavailableDates.builder()
+        return ReservationResDTO.ReservationUnavailableDatesRes.builder()
                 .unavailableDates(dateRanges)
                 .build();
     }
 
-    public static ReservationResDTO.CheckoutImages toCheckoutImages(List<CheckoutImage> images) {
+    public static ReservationResDTO.ReservationCheckoutImagesRes toCheckoutImages(List<CheckoutImage> images) {
         List<String> photoUrls = images.stream()
                 .map(CheckoutImage::getCheckoutImageUrl)
                 .toList();
 
-        return ReservationResDTO.CheckoutImages.builder()
+        return ReservationResDTO.ReservationCheckoutImagesRes.builder()
                 .photoUrls(photoUrls)
                 .build();
     }

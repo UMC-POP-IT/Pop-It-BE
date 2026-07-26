@@ -32,7 +32,7 @@ public class AuthService {
     }
 
     @Transactional(readOnly = true)
-    public UserResDTO.Reissue reissue(String refreshToken) {
+    public UserResDTO.TokenReissueRes reissue(String refreshToken) {
         if (!jwtUtil.isValid(refreshToken) || !jwtUtil.isRefreshToken(refreshToken)) {
             throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
         }

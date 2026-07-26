@@ -30,9 +30,9 @@ public class IdentityVerificationController {
      */
     @Operation(summary = "본인인증 요청", description = "포트원 API를 통해 인증 정보를 조회합니다. ")
     @PostMapping
-    public ApiResponse<IdentityVerificationResDTO.Verify> verify(
+    public ApiResponse<IdentityVerificationResDTO.IdentityVerificationVerifyRes> verify(
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody @Valid IdentityVerificationReqDTO.Verify dto
+            @RequestBody @Valid IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto
             ) {
         BaseSuccessCode code = IdentityVerificationSuccessCode.VERIFIED;
         return ApiResponse.onSuccess(code, identityVerificationService.verify(authUser.getUser(), dto));
@@ -45,7 +45,7 @@ public class IdentityVerificationController {
      */
     @Operation(summary = "본인인증 여부 조회", description = "본인인증을 했던 적이 있는지 여부를 조회합니다. ")
     @GetMapping
-    public ApiResponse<IdentityVerificationResDTO.Verify> isVerified(
+    public ApiResponse<IdentityVerificationResDTO.IdentityVerificationVerifyRes> isVerified(
             @AuthenticationPrincipal AuthUser authUser
     ) {
         BaseSuccessCode code = IdentityVerificationSuccessCode.ISVERIFIED;
