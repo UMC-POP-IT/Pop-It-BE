@@ -114,4 +114,76 @@ public class Space {
     public void updateEmbedding(float[] embedding) {
         this.embedding = embedding;
     }
+
+    // ==== 도메인 메서드 ====
+
+    // 공간 수정 (값이 들어온 필드만 반영 -> null: 기존 값 유지)
+    // space 테이블은 floorNumber를 제외한 스칼라 컬럼이 전부 NOT NULL이라 "null = 제거"가 성립하지 않음 -> 따로 처리
+    public void update(
+            String buildingName,
+            RegistrantType registrantType,
+            BuildingType buildingType,
+            String city,
+            String district,
+            String roadAddress,
+            String addressDetail,
+            Long deposit,
+            Integer pricePerDay,
+            LocalDate availableStartDate,
+            LocalDate availableEndDate,
+            SpaceCategory spaceCategory,
+            SpaceType spaceType,
+            Double exclusiveArea,
+            Boolean parkingAvailable,
+            String description
+    ) {
+        this.buildingName = orKeep(buildingName, this.buildingName);
+        this.registrantType = orKeep(registrantType, this.registrantType);
+        this.buildingType = orKeep(buildingType, this.buildingType);
+        this.city = orKeep(city, this.city);
+        this.district = orKeep(district, this.district);
+        this.roadAddress = orKeep(roadAddress, this.roadAddress);
+        this.addressDetail = orKeep(addressDetail, this.addressDetail);
+        this.deposit = orKeep(deposit, this.deposit);
+        this.pricePerDay = orKeep(pricePerDay, this.pricePerDay);
+        this.availableStartDate = orKeep(availableStartDate, this.availableStartDate);
+        this.availableEndDate = orKeep(availableEndDate, this.availableEndDate);
+        this.spaceCategory = orKeep(spaceCategory, this.spaceCategory);
+        this.spaceType = orKeep(spaceType, this.spaceType);
+        this.exclusiveArea = orKeep(exclusiveArea, this.exclusiveArea);
+        this.parkingAvailable = orKeep(parkingAvailable, this.parkingAvailable);
+        this.description = orKeep(description, this.description);
+    }
+
+    // 층 정보 수정 (floorType과 floorNumber는 한 세트로 처리)
+    public void updateFloorInfo(FloorType floorType, Integer floorNumber) {
+        if (floorType == null) {
+            return;
+        }
+
+        this.floorType = floorType;
+        this.floorNumber = floorNumber;
+    }
+
+    // 좌표 수정 (위도, 경도는 한 세트로 처리)
+    // dong은 좌표에서 파생되는 값 -> 좌표가 바뀌면 다시 계산된 값으로 덮어씀
+    public void updateLocation(Double latitude, Double longitude, String dong) {
+        if (latitude == null || longitude == null) {
+            return;
+        }
+
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.dong = dong;
+    }
+
+    // 요청값이 있으면 그 값으로, 없으면 기존 값 그대로 유지
+    private static <T> T orKeep(T requested, T current) {
+        return (requested != null) ? requested : current;
+    }
+
+    // 소프트 삭제 (공간 삭제 시 행을 지우지 않고 deletedAt에만 기록)
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }
