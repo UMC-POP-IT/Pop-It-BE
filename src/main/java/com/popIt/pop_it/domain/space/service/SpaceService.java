@@ -20,6 +20,7 @@ import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -301,15 +302,29 @@ public class SpaceService {
     @Transactional
     public SpaceResDTO.SpaceDeleteRes deleteSpace(Long userId, Long spaceId) {
 
-        // 1. 공간 조회, 소유권 확인
-        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+        // 1. 공간 행을 비관적 쓰기 락으로 조회한다.
+        //    -> 예약 생성(ReservationCommandService)도 같은 findByIdForUpdate로 이 행을 잡기 때문에
+        //    -> '예약 생성 중'과 '삭제'가 같은 공간에서 동시에 진행되지 못하고 직렬화된다.
+        Space space;
+        try {
+            space = spaceRepository.findByIdForUpdate(spaceId)
+                    .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+        } catch (PessimisticLockingFailureException e) {
+            // 다른 트랜젝샨(ex. 예약 생성)이 이 공간을 선점 중 -> 지금은 삭제 불가능
+            throw new ProjectException(SpaceErrorCode.SPACE_HAS_ACTIVE_RESERVATION);
+        }
 
+        // 2. findByIdForUpdate는 deleteAt을 거르지 않으므로 직접 확인
+        if (space.getDeletedAt() != null) {
+            throw new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND);
+        }
+
+        // 3. 소유권 확인
         if (!space.getHostId().equals(userId)) {
             throw new ProjectException(SpaceErrorCode.NOT_SPACE_OWNER);
         }
 
-        // 2. 종료되지 않은 예약인 경우 삭제 불가능
+        // 4. 종료되지 않은 예약인 경우 삭제 불가능
         if (reservationRepository.existsBySpaceIdAndStatusIn(spaceId, BLOCKING_RESERVATION_STATUSES)) {
             throw new ProjectException(SpaceErrorCode.SPACE_HAS_ACTIVE_RESERVATION);
         }
