@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.space.enums.FloorType;
 import com.popIt.pop_it.domain.space.enums.RegistrantType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
+import com.popIt.pop_it.global.embedding.converter.FloatArrayConverter;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -105,4 +106,12 @@ public class Space {
 
     @Column(nullable = false)
     private Long hostId; // 공간을 등록한 호스트의 user.id (host_profile.id 아님)
+
+    @Convert(converter = FloatArrayConverter.class)
+    @Column(columnDefinition = "TEXT")
+    private float[] embedding; // AI 추천용 임베딩 벡터 (Gemini embedding-2, 768차원)
+
+    public void updateEmbedding(float[] embedding) {
+        this.embedding = embedding;
+    }
 }
