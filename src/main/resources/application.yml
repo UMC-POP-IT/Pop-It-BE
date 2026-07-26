@@ -56,6 +56,9 @@ jwt:
       access: 1800000 # 30분
       refresh: 1209600000 # 14일
 
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+
 cloud:
   aws:
     credentials:

@@ -3,6 +3,7 @@ package com.popIt.pop_it.domain.space.repository;
 import com.popIt.pop_it.domain.facility.entity.Facility;
 import com.popIt.pop_it.domain.space.entity.SpaceFacility;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,4 +19,9 @@ public interface SpaceFacilityRepository extends JpaRepository<SpaceFacility, Lo
         order by sf.facility.id asc
         """)
     List<Facility> findFacilitiesBySpaceId(@Param("spaceId") Long spaceId);
+
+    // 공간 수정 시 시설 전체 교체용
+    @Modifying(flushAutomatically = true)
+    @Query("delete from SpaceFacility sf where sf.space.id = :spaceId")
+    void deleteAllBySpaceId(@Param("spaceId") Long spaceId);
 }
