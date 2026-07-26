@@ -24,8 +24,11 @@ public class HotspotService {
     private final SceneRepository sceneRepository;
 
     //핫스팟 생성
+    //원본 씬(sceneId)에 락을 걸어서 SceneCommandService.deleteScene과 같은 row를 두고 직렬화
+    //(락 없이 조회만 하면, 삭제 트랜잭션이 참조 체크를 통과한 직후 이 트랜잭션이 커밋되며
+    //  삭제된 씬 위에 핫스팟이 저장되는 경합이 생길 수 있었음)
     public HotspotResDTO.HotspotIdRes createHotspot(Long sceneId, Long hostId, HotspotReqDTO.HotspotCreateReq request) {
-        Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
+        Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new HotspotException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateHost(scene, hostId);
