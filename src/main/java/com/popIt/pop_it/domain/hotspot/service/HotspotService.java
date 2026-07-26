@@ -31,7 +31,7 @@ public class HotspotService {
         validateHost(scene, hostId);
         validateTypeFields(request.type(), request.description(), request.targetSceneId());
         if (request.type() == HotspotType.LINK) {
-            validateTargetSceneExists(request.targetSceneId());
+            validateTargetScene(scene.getId(), request.targetSceneId());
         }
 
         Hotspot hotspot = Hotspot.builder()
@@ -63,7 +63,7 @@ public class HotspotService {
             throw new HotspotException(HotspotErrorCode.HOTSPOT_TYPE_FIELD_MISMATCH);
         }
         if (hotspot.getType() == HotspotType.LINK && request.targetSceneId() != null) {
-            validateTargetSceneExists(request.targetSceneId());
+            validateTargetScene(hotspot.getScene().getId(), request.targetSceneId());
         }
 
         hotspot.update(request.positionX(), request.positionY(), request.positionZ(),
@@ -99,9 +99,15 @@ public class HotspotService {
         }
     }
 
-    //LINK 타입의 targetSceneId가 실제 존재하는(삭제 안 된) 씬인지 확인
-    private void validateTargetSceneExists(Long targetSceneId) {
-        sceneRepository.findByIdAndNotDeleted(targetSceneId)
+    //LINK 타입의 targetSceneId 검증 - 자기 자신을 가리키지 않는지 + 실제 존재하는(삭제 안 된) 씬인지
+    //비관적 락으로 잡아서, 이 트랜잭션이 끝날 때까지 해당 씬이 삭제되지 못하게 함
+    //(SceneCommandService.deleteScene도 동일하게 findByIdForUpdate를 써서 같은 씬 row를 두고 직렬화됨)
+    private void validateTargetScene(Long sourceSceneId, Long targetSceneId) {
+        if (targetSceneId.equals(sourceSceneId)) {
+            throw new HotspotException(HotspotErrorCode.HOTSPOT_SELF_REFERENCE);
+        }
+
+        sceneRepository.findByIdForUpdate(targetSceneId)
                 .orElseThrow(() -> new HotspotException(HotspotErrorCode.HOTSPOT_TARGET_SCENE_NOT_FOUND));
     }
 }

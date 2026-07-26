@@ -39,7 +39,7 @@ public class HotspotController {
     public ApiResponse<HotspotResDTO.HotspotIdRes> updateHotspot(
             @PathVariable Long hotspotId,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody HotspotReqDTO.HotspotUpdateReq request
+            @Valid @RequestBody HotspotReqDTO.HotspotUpdateReq request
     ) {
         return ApiResponse.onSuccess(
                 HotspotSuccessCode.HOTSPOT_UPDATED,

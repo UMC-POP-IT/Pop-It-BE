@@ -113,8 +113,10 @@ public class SceneCommandService {
     }
 
     //씬 삭제 (soft delete)
+    //핫스팟의 targetSceneId 참조 검증(HotspotService.validateTargetSceneExists)과 같은 findByIdForUpdate를 써서
+    //"이 씬을 가리키는 핫스팟 생성"과 "이 씬 삭제"가 같은 row 락으로 직렬화되게 함
     public void deleteScene(Long sceneId, Long hostId) {
-        Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
+        Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateHost(scene.getSpace(), hostId);
