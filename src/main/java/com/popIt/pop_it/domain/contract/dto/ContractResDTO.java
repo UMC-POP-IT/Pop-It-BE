@@ -30,7 +30,7 @@ public class ContractResDTO {
             @Schema(description = "보험료", example = "10000")
             Long insuranceFee,
 
-            @Schema(description = "총 결제 금액(대여료+보증금+보험료+플랫폼 수수료)", example = "1210000")
+            @Schema(description = "총 결제 금액(임대료+보증금+보험료)", example = "1210000")
             Long totalPrice
     ) implements ContractPaymentInfoRes {}
 
@@ -54,7 +54,7 @@ public class ContractResDTO {
             @Schema(description = "플랫폼 수수료", example = "20000")
             Long platformFee,
 
-            @Schema(description = "호스트 입금 예정 금액(대여료-플랫폼 수수료)", example = "180000")
+            @Schema(description = "호스트 입금 예정 금액(임대료-플랫폼 수수료)", example = "180000")
             Long totalPrice
     ) implements ContractPaymentInfoRes {}
 
