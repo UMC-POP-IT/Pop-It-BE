@@ -6,13 +6,13 @@ import java.util.List;
 
 public class WishlistResDTO {
 
-    public record Toggle(
+    public record WishlistToggleRes(
             Long spaceId,
             boolean isWishlisted
     ) {}
 
     @Schema(description = "내가 찜한 공간 목록 항목")
-    public record WishlistItem(
+    public record WishlistItemRes(
             @Schema(description = "공간 ID", example = "10")
             Long spaceId,
 
@@ -42,9 +42,9 @@ public class WishlistResDTO {
     ) {}
 
     @Schema(description = "내가 찜한 공간 목록 조회 응답")
-    public record MyWishlistResult(
+    public record WishlistListRes(
             @Schema(description = "찜한 공간 목록 (최근 찜한 순)")
-            List<WishlistItem> wishlist,
+            List<WishlistItemRes> wishlist,
 
             @Schema(description = "다음 페이지 존재 여부", example = "false")
             boolean hasNext

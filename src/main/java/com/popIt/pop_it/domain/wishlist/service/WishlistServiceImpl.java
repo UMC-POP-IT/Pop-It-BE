@@ -32,7 +32,7 @@ public class WishlistServiceImpl implements WishlistService {
     // 트랜잭션으로 즉시 커밋해야 (1) hot key 락 보유시간이 짧아 동시 토글 경합에 강하고,
     // (2) save 유니크 충돌이 바깥 트랜잭션을 rollback-only로 오염시키지 않는다.
     @Override
-    public WishlistResDTO.Toggle toggle(Long userId, Long spaceId) {
+    public WishlistResDTO.WishlistToggleRes toggle(Long userId, Long spaceId) {
         // 존재하지 않거나 삭제된 공간은 찜할 수 없음
         if (spaceRepository.findByIdAndDeletedAtIsNull(spaceId).isEmpty()) {
             throw new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND);
@@ -56,7 +56,7 @@ public class WishlistServiceImpl implements WishlistService {
 
     @Override
     @Transactional(readOnly = true)
-    public WishlistResDTO.MyWishlistResult getMyWishlist(Long userId, int page, int size) {
+    public WishlistResDTO.WishlistListRes getMyWishlist(Long userId, int page, int size) {
         // 1. 찜한 공간을 최근 찜한 순으로 페이징 조회 (삭제된 공간 제외)
         Page<Space> spacePage = wishlistRepository.findWishlistedSpaces(userId, PageRequest.of(page, size));
 

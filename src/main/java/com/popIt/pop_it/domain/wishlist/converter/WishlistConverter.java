@@ -18,18 +18,18 @@ public class WishlistConverter {
                 .build();
     }
 
-    public static WishlistResDTO.Toggle toToggle(Long spaceId, boolean isWishlisted) {
-        return new WishlistResDTO.Toggle(spaceId, isWishlisted);
+    public static WishlistResDTO.WishlistToggleRes toToggle(Long spaceId, boolean isWishlisted) {
+        return new WishlistResDTO.WishlistToggleRes(spaceId, isWishlisted);
     }
 
     // 찜한 공간 페이지 + 썸네일/찜수 맵을 조합해 목록 응답으로 변환
-    public static WishlistResDTO.MyWishlistResult toMyWishlistResult(
+    public static WishlistResDTO.WishlistListRes toMyWishlistResult(
             Page<Space> spacePage,
             Map<Long, String> thumbnailUrlBySpaceId,
             Map<Long, Integer> wishCountBySpaceId
     ) {
-        List<WishlistResDTO.WishlistItem> items = spacePage.getContent().stream()
-                .map(space -> new WishlistResDTO.WishlistItem(
+        List<WishlistResDTO.WishlistItemRes> items = spacePage.getContent().stream()
+                .map(space -> new WishlistResDTO.WishlistItemRes(
                         space.getId(),
                         space.getBuildingName(),
                         space.getRoadAddress(),
@@ -42,6 +42,6 @@ public class WishlistConverter {
                 ))
                 .toList();
 
-        return new WishlistResDTO.MyWishlistResult(items, spacePage.hasNext());
+        return new WishlistResDTO.WishlistListRes(items, spacePage.hasNext());
     }
 }

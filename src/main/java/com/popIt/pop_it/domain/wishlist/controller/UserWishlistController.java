@@ -46,7 +46,7 @@ public class UserWishlistController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "로그인 필요", content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping
-    public ApiResponse<WishlistResDTO.MyWishlistResult> getMyWishlist(
+    public ApiResponse<WishlistResDTO.WishlistListRes> getMyWishlist(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -59,7 +59,7 @@ public class UserWishlistController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        WishlistResDTO.MyWishlistResult result = wishlistService.getMyWishlist(userId, page, size);
+        WishlistResDTO.WishlistListRes result = wishlistService.getMyWishlist(userId, page, size);
 
         return ApiResponse.onSuccess(WishlistSuccessCode.WISH_LIST, result);
     }

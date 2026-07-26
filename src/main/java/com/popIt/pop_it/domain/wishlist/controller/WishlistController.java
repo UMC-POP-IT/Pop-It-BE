@@ -42,7 +42,7 @@ public class WishlistController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "존재하지 않는 공간", content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ApiResponse<WishlistResDTO.Toggle> toggleWishlist(
+    public ApiResponse<WishlistResDTO.WishlistToggleRes> toggleWishlist(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
@@ -53,7 +53,7 @@ public class WishlistController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        WishlistResDTO.Toggle result = wishlistService.toggle(userId, spaceId);
+        WishlistResDTO.WishlistToggleRes result = wishlistService.toggle(userId, spaceId);
 
         // 토글 결과에 따라 등록/해제 메시지를 구분해 응답
         WishlistSuccessCode code = result.isWishlisted()
