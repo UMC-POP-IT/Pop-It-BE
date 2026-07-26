@@ -62,6 +62,10 @@ public class ReservationCommandService {
         User guest = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));
 
+        if (space.getHostId().equals(userId)) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_SELF_BOOKING_NOT_ALLOWED);
+        }
+
         validateDateRange(space, request.startDate(), request.endDate());
 
         boolean overlapping = reservationRepository.existsOverlappingReservation(
@@ -99,7 +103,7 @@ public class ReservationCommandService {
                 .user(guest)
                 .build();
 
-        reservationRepository.save(reservation);
+        reservation = reservationRepository.save(reservation);
 
         return ReservationConverter.toCreateResult(reservation);
     }

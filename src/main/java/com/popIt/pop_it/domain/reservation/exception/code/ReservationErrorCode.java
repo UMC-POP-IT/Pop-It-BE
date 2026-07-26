@@ -23,6 +23,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     // ===== 403 FORBIDDEN : 권한 없음 =====
     RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_1", "본인의 예약이 아니므로 접근할 수 없습니다."),
     RESERVATION_HOST_PAYMENT_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_2", "호스트는 게스트의 예약을 직접 결제 처리할 수 없습니다."),
+    RESERVATION_SELF_BOOKING_NOT_ALLOWED(HttpStatus.FORBIDDEN, "RESERVATION403_3", "본인이 등록한 공간은 예약할 수 없습니다."),
 
     // ===== 404 NOT FOUND : 리소스 없음 =====
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION404_1", "해당 예약을 찾을 수 없습니다."),
