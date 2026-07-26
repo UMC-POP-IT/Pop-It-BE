@@ -49,4 +49,13 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
     // 여러 공간의 찜 수를 한 번의 쿼리로 집계 (목록 조회 시 N+1 방지)
     @Query("select w.spaceId as spaceId, count(w) as count from Wishlist w where w.spaceId in :spaceIds group by w.spaceId")
     List<WishCountBySpace> countBySpaceIds(@Param("spaceIds") List<Long> spaceIds);
+
+    // 특정 유저가 찜한 spaceId 배치 조회 (탐색 목록 isWishlisted N+1 방지)
+    @Query("""
+            select w.spaceId
+            from Wishlist w
+            where w.userId = :userId
+              and w.spaceId in :spaceIds
+            """)
+    List<Long> findWishlistedSpaceIds(@Param("userId") Long userId, @Param("spaceIds") List<Long> spaceIds);
 }
