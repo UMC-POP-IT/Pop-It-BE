@@ -10,7 +10,8 @@ import org.springframework.http.HttpStatus;
 public enum WishlistSuccessCode implements BaseSuccessCode {
 
     WISH_ADDED(HttpStatus.OK, "WISH200_1", "찜 등록에 성공했습니다."),
-    WISH_REMOVED(HttpStatus.OK, "WISH200_2", "찜 해제에 성공했습니다.");
+    WISH_REMOVED(HttpStatus.OK, "WISH200_2", "찜 해제에 성공했습니다."),
+    WISH_LIST(HttpStatus.OK, "WISH200_3", "찜 목록 조회에 성공했습니다.");
 
     private final HttpStatus status;
     private final String code;
