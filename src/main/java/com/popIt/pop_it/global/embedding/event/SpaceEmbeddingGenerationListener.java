@@ -3,6 +3,7 @@ package com.popIt.pop_it.global.embedding.event;
 import com.popIt.pop_it.domain.space.service.SpaceEmbeddingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -19,6 +20,7 @@ public class SpaceEmbeddingGenerationListener {
 
     private final SpaceEmbeddingService spaceEmbeddingService;
 
+    @Async("embeddingTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onSpaceCreated(SpaceCreatedEvent event) {
         log.info("공간(id={}) 임베딩 생성 이벤트 수신", event.spaceId());
