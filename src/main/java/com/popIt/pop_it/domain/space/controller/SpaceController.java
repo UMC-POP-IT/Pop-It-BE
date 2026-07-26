@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -60,9 +61,9 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<SpaceResDTO.CreateResult>> createSpace(
+    public ResponseEntity<ApiResponse<SpaceResDTO.SpaceCreateRes>> createSpace(
             @AuthenticationPrincipal  AuthUser authUser,
-            @Valid @RequestBody SpaceReqDTO.Create request
+            @Valid @RequestBody SpaceReqDTO.SpaceCreateReq request
     ) {
         // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
         if (authUser == null || authUser.getUser() == null) {
@@ -70,7 +71,7 @@ public class SpaceController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        SpaceResDTO.CreateResult result = spaceService.createSpace(userId, request);
+        SpaceResDTO.SpaceCreateRes result = spaceService.createSpace(userId, request);
         return ResponseEntity.status(SpaceSuccessCode.SPACE_CREATED.getStatus())
                 .body(ApiResponse.onSuccess(SpaceSuccessCode.SPACE_CREATED, result));
     }
@@ -96,14 +97,14 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping("/{spaceId}")
-    public ApiResponse<SpaceResDTO.Detail> getSpaceDetail(
+    public ApiResponse<SpaceResDTO.SpaceDetailRes> getSpaceDetail(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
     ) {
         Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
 
-        SpaceResDTO.Detail result = spaceService.getSpaceDetail(userId, spaceId);
+        SpaceResDTO.SpaceDetailRes result = spaceService.getSpaceDetail(userId, spaceId);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
@@ -130,7 +131,7 @@ public class SpaceController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping("/my")
-    public ApiResponse<SpaceResDTO.MyListResult> getMySpaces(
+    public ApiResponse<SpaceResDTO.MySpaceListRes> getMySpaces(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
             @RequestParam(defaultValue = "0") @Min(0) int page,
@@ -142,22 +143,67 @@ public class SpaceController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        SpaceResDTO.MyListResult result = spaceService.getMySpaces(userId, page, size);
+        SpaceResDTO.MySpaceListRes result = spaceService.getMySpaces(userId, page, size);
         return ApiResponse.onSuccess(SpaceSuccessCode.MY_PAGE_LIST_FETCHED, result);
+    }
+
+    @Operation(
+            summary = "공간 탐색 (검색/필터)",
+            description = """
+                    게스트 메인 화면의 공간 탐색 목록입니다. 통합 검색 + 필터 + 페이지네이션을 지원합니다.
+                    - 비로그인 상태에서도 호출할 수 있습니다.
+                    - 로그인 상태로 호출하면 isWishlisted가 실제 값으로 채워지고, 비로그인 상태에서는 항상 false입니다.
+                    - wishCount는 로그인 여부와 무관하게 항상 해당 공간의 총 찜 수입니다.
+                    - 모든 파라미터는 생략 가능하며, 생략하면 해당 조건은 적용되지 않습니다.
+                    
+                    [keyword] 통합 검색창에 대응합니다. 아래를 한 번에 부분 일치로 검색합니다.
+                      - 공간: 건물명
+                      - 지역 이름: 구 / 동 / 도로명 주소
+                      - 정보: 공간 용도(팝업스토어, 전시/갤러리 ...), 공간 구조 유형(오픈형 홀, 가벽 분리형 ...)
+                        한글 이름으로 검색하며 공백은 무시합니다. ("오픈형 홀" = "오픈형홀")
+                    
+                    [spaceCategory] 용도 필터 드롭다운에 대응합니다. '전체'는 파라미터를 생략하면 됩니다.
+                    [district] 지역 필터 드롭다운에 대응합니다. 서울 25개 구 이름을 그대로 전달하세요.
+                    
+                    - keywords는 카드 하단 태그입니다. (#지역명(동), #공간유형) 순서이며,
+                      동 정보가 없는 공간은 공간유형 하나만 내려갑니다.
+                    - 정렬은 등록일 최신순이며, 삭제된 공간은 제외됩니다.
+                    - page는 0부터 시작하고, totalCount로 페이지네이션 버튼 수를 계산하세요.
+                      size 기본값은 28입니다. (그리드 4x7 = 한 페이지당 28개)
+                    """
+
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "공간 탐색 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 요청 (page/size 범위 초과, 정의되지 않은 spaceCategory 값 등)",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping
+    public ApiResponse<SpaceResDTO.SpaceSearchListRes> searchSpaces(
+            @AuthenticationPrincipal AuthUser authUser,
+            @ParameterObject @Valid @ModelAttribute SpaceReqDTO.SpaceSearchReq request
+    ) {
+        Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
+
+        SpaceResDTO.SpaceSearchListRes result = spaceService.searchSpaces(userId, request);
+        return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_SEARCH_FETCHED, result);
     }
 
     // @TODO: AI 맞춤 추천 공간 조회
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")
     @GetMapping("/ai-recommended")
-    public ApiResponse<SpaceResDTO.AiRecommendedSpaceList> getAiRecommendedSpaces(
+    public ApiResponse<SpaceResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
             @AuthenticationPrincipal Long userId,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
         BaseSuccessCode code = SpaceSuccessCode.AI_RECOMMENDED_SPACE_LIST;
 
-        SpaceResDTO.AiRecommendedSpace space = SpaceResDTO.AiRecommendedSpace.builder()
+        SpaceResDTO.AiRecommendedSpaceRes space = SpaceResDTO.AiRecommendedSpaceRes.builder()
                 .spaceId(15L)
                 .buildingName("홍대 팝업 스튜디오")
                 .tag("이전에 찜한 공간과 비슷해요")
@@ -173,7 +219,7 @@ public class SpaceController {
                 .isWishlisted(false)
                 .build();
 
-        SpaceResDTO.AiRecommendedSpaceList result = SpaceResDTO.AiRecommendedSpaceList.builder()
+        SpaceResDTO.AiRecommendedSpaceListRes result = SpaceResDTO.AiRecommendedSpaceListRes.builder()
                 .spaces(List.of(space))
                 .hasNext(false)
                 .nextCursor(null)

@@ -8,7 +8,7 @@ import java.util.List;
 
 public class ReservationReqDTO {
 
-    public record CreateReq(
+    public record ReservationCreateReq(
             @NotNull Long spaceId,
             @NotNull LocalDate startDate,
             @NotNull LocalDate endDate,
@@ -16,7 +16,7 @@ public class ReservationReqDTO {
     ) {
     }
 
-    public record Checkout(
+    public record ReservationCheckoutReq(
             List<String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
     ) {
     }

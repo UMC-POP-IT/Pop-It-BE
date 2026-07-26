@@ -32,8 +32,8 @@ public class IdentityVerificationService {
     private final ObjectMapper objectMapper;
 
     // 본인인증 확인 로직
-    public IdentityVerificationResDTO.Verify verify(User user, IdentityVerificationReqDTO.Verify dto) {
-        IdentityVerificationResDTO.PortOneIdentityVerification response = portoneRestClient.get()
+    public IdentityVerificationResDTO.IdentityVerificationVerifyRes verify(User user, IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto) {
+        IdentityVerificationResDTO.PortOneSuccessRes response = portoneRestClient.get()
                 .uri("/identity-verifications/{id}", dto.identityVerificationId())
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, (req, res) -> {
@@ -42,9 +42,9 @@ public class IdentityVerificationService {
                     log.error("포트원 API 에러 - status: {}, body: {}", res.getStatusCode(), body);
 
                     // 포트원 서버 에러
-                    IdentityVerificationResDTO.PortOneError portOneError;
+                    IdentityVerificationResDTO.PortOneErrorRes portOneError;
                     try {
-                        portOneError = objectMapper.readValue(body, IdentityVerificationResDTO.PortOneError.class);
+                        portOneError = objectMapper.readValue(body, IdentityVerificationResDTO.PortOneErrorRes.class);
                     } catch (Exception e) {
                         log.error("포트원 에러 응답 파싱 실패, 원본 body: {}", body, e);
                         throw new IdentityVerificationException(
@@ -59,14 +59,14 @@ public class IdentityVerificationService {
                             String.format("포트원 인증 조회 실패 [%s]: %s", portOneError.type(), portOneError.message())
                     );
                 })
-                .body(IdentityVerificationResDTO.PortOneIdentityVerification.class);
+                .body(IdentityVerificationResDTO.PortOneSuccessRes.class);
 
         if (!"VERIFIED".equals(response.status())) {
             throw new ProjectException(IdentityVerificationErrorCode.NOT_VERIFIED);
         }
 
         // 인증회원 정보 꺼내기
-        IdentityVerificationResDTO.PortOneIdentityVerification.VerifiedCustomer customer = response.verifiedCustomer();
+        IdentityVerificationResDTO.PortOneSuccessRes.VerifiedCustomer customer = response.verifiedCustomer();
         // ciHash 생성
         String ciHash = HashUtil.sha256(customer.ci());
 
@@ -114,7 +114,7 @@ public class IdentityVerificationService {
 
     }
 
-    public IdentityVerificationResDTO.Verify isVerified(User user) {
+    public IdentityVerificationResDTO.IdentityVerificationVerifyRes isVerified(User user) {
 
         // userId로 IdentityVerification 조회
         IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user);

@@ -22,7 +22,7 @@ class PaymentWebhookApplier {
     private final PaymentRepository paymentRepository;
 
     @Transactional
-    public void apply(Long paymentId, PaymentResDTO.TossConfirm actual) {
+    public void apply(Long paymentId, PaymentResDTO.TossConfirmRes actual) {
         Payment payment = paymentRepository.findById(paymentId).orElse(null);
         if (payment == null) {
             log.warn("웹훅 반영 대상 결제를 찾을 수 없음: paymentId={}", paymentId);
@@ -38,7 +38,7 @@ class PaymentWebhookApplier {
         }
     }
 
-    private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirm actual) {
+    private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirmRes actual) {
         if (payment.getStatus() == PaymentStatus.PAID) {
             return;
         }
