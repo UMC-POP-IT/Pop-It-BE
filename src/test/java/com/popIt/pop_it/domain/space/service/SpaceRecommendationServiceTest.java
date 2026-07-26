@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
+import com.popIt.pop_it.domain.space.recommendation.RecommendationReasonEvaluator;
+import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContextResolver;
 import com.popIt.pop_it.domain.space.repository.SpaceEmbeddingRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
@@ -33,6 +35,10 @@ class SpaceRecommendationServiceTest {
     private WishlistRepository wishlistRepository;
     @Mock
     private UserVectorService userVectorService;
+    @Mock
+    private UserRecommendationContextResolver userRecommendationContextResolver;
+    @Mock
+    private RecommendationReasonEvaluator recommendationReasonEvaluator;
 
     @InjectMocks
     private SpaceRecommendationService spaceRecommendationService;

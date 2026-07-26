@@ -4,6 +4,11 @@ import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
+import com.popIt.pop_it.domain.space.recommendation.RecommendationMentTemplates;
+import com.popIt.pop_it.domain.space.recommendation.RecommendationReasonEvaluator;
+import com.popIt.pop_it.domain.space.recommendation.RecommendationReasonResult;
+import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContext;
+import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContextResolver;
 import com.popIt.pop_it.domain.space.repository.SpaceEmbeddingRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
@@ -36,6 +41,8 @@ public class SpaceRecommendationService {
     private final SpaceImageRepository spaceImageRepository;
     private final WishlistRepository wishlistRepository;
     private final UserVectorService userVectorService;
+    private final UserRecommendationContextResolver userRecommendationContextResolver;
+    private final RecommendationReasonEvaluator recommendationReasonEvaluator;
 
     public SpaceResDTO.AiRecommendedSpaceListRes getRecommendedSpaces(Long userId, String cursor, int size) {
         int offset = parseCursor(cursor);
@@ -70,9 +77,11 @@ public class SpaceRecommendationService {
         Map<Long, String> thumbnailBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(image -> image.getSpace().getId(), SpaceImage::getImageUrl));
 
+        UserRecommendationContext recommendationContext = userRecommendationContextResolver.resolve(userId);
+
         // 후보 단계에서 찜한 공간을 이미 제외했으므로 isWishlisted는 항상 false
         List<SpaceResDTO.AiRecommendedSpaceRes> spaces = page.stream()
-                .map(space -> toAiRecommendedSpace(space, thumbnailBySpaceId))
+                .map(space -> toAiRecommendedSpace(space, thumbnailBySpaceId, recommendationContext))
                 .toList();
 
         return SpaceResDTO.AiRecommendedSpaceListRes.builder()
@@ -103,11 +112,16 @@ public class SpaceRecommendationService {
         }
     }
 
-    private SpaceResDTO.AiRecommendedSpaceRes toAiRecommendedSpace(Space space, Map<Long, String> thumbnailBySpaceId) {
+    private SpaceResDTO.AiRecommendedSpaceRes toAiRecommendedSpace(Space space, Map<Long, String> thumbnailBySpaceId,
+                                                                     UserRecommendationContext recommendationContext) {
+        String tag = recommendationReasonEvaluator.evaluate(space, recommendationContext)
+                .map(RecommendationReasonResult::mentText)
+                .orElse(RecommendationMentTemplates.DEFAULT);
+
         return SpaceResDTO.AiRecommendedSpaceRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
-                .tag("맞춤 추천 공간")
+                .tag(tag)
                 .district(space.getDistrict())
                 .roadAddress(space.getRoadAddress())
                 .exclusiveArea(space.getExclusiveArea())
