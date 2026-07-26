@@ -3,6 +3,8 @@ package com.popIt.pop_it.domain.contract.entity;
 import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 
@@ -19,6 +21,10 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @Table(name = "contract")
 public class Contract {
+
+    @Version
+    @Column(nullable = false)
+    private Long version;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -40,38 +46,71 @@ public class Contract {
     private LocalDateTime guestSignedAt; // 게스트 서명 일시
 
     /**
-     * 전자서명 시 필요한 해시값
+     * Reservation의 스냅샷 (계약 체결 시점 확정 정보)---------------
      */
-    private String hostSignerCiHash; // 호스트 본인인증 ci 해시
-    private String guestSignerCiHash; // 게스트 본인인증 ci 해시
-    private String hostSignatureImgHash; // 호스트 서명 이미지 위변조 검증
-    private String guestSignatureImgHash; // 게스트 서명 이미지 위변조 검증
+    @Column(nullable = false)
+    private Long hostId;
+
+    @Column(nullable = false)
+    private Long guestId;
+
+    @Column(nullable = false)
+    private Long spaceId;
+
+
+    @Column(nullable = false)
+    private LocalDate startDate; // 이용 시작일
+
+    @Column(nullable = false)
+    private LocalDate endDate; // 이용 종료일
+
+    @Column(length = 200, nullable = false)
+    private String usagePurpose; // 사용 목적
+
+    @Column(nullable = false)
+    private Long rentalFee; // 임대료
+
+    @Column(nullable = false)
+    private Long deposit; // 보증금
+
+    @Column(nullable = false)
+    private Long insuranceFee; // 보험료
+
+    @Column(nullable = false)
+    private Long platformFee; // 플랫폼 수수료
+
+    @Column(nullable = false)
+    private Long totalPrice; // 총 결제 금액
+    /**
+     * ----------------------------------
+     */
+
+    /**
+     * 계약 위변조 검증용 Hash --------------
+     */
+    private String hostSignerCiHash; // 호스트 본인인증 ci Hash
+    private String guestSignerCiHash; // 게스트 본인인증 ci Hash
+    private String hostSignatureImgHash; // 호스트 서명 이미지 Hash
+    private String guestSignatureImgHash; // 게스트 서명 이미지 Hash
+
+    // 예약 확정 -> 계약 생성 시점 즉시 확성되는 값. 서명 처리 함수 등에서 재계산 금지
+    @Column(nullable = false)
+    private String contentHash; // 계약 내용(이용 목적, 이용 시작일, 종료일, 금액 등) Hash
+    /**
+     * ----------------------------------
+     */
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
 
-    @Version
-    @Column(nullable = false)
-    @Builder.Default
-    private Long version = 0L;
-
-    @Column(nullable = false)
-    private Long rentalFee; // 임대료 (계약 체결 시점 확정 금액)
-
-    @Column(nullable = false)
-    private Long deposit; // 보증금 (계약 체결 시점 확정 금액)
-
-    @Column(nullable = false)
-    private Long insuranceFee; // 보험료 (계약 체결 시점 확정 금액)
-
-    @Column(nullable = false)
-    private Long totalPrice; // 총 결제 금액 (계약 체결 시점 확정 금액)
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false, unique = true)
     private Reservation reservation; // 대상 예약
 
+    /**
+     * 도메인 메서드
+     */
     // 호스트 서명: 호스트 서명 정보 업데이트
     public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash, String hostSignatureImgHash) {
         this.status = status;

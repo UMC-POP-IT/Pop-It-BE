@@ -36,7 +36,7 @@ public class ContractController {
     // 계약서 조회
     @Operation(summary = "계약서 조회", description = "계약을 하기 위해 필요한 계약서 정보를 조회합니다. 게스트와 호스트는 같은 응답(동일 계약서)을 받습니다. ")
     @GetMapping("/contract-preview")
-    public ApiResponse<ContractResDTO.ContractPaymentInfoRes> getContractInfo(
+    public ApiResponse<ContractResDTO.ContractInfoRes> getContractInfo(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long reservationId
     ) {
@@ -48,10 +48,10 @@ public class ContractController {
     // 전자서명 제출
     @Operation(summary = "전자서명 제출", description = "호스트/게스트가 계약서에 전자 서명합니다. 양측 서명 완료 시 계약이 체결됩니다. ")
     @PostMapping("/signatures")
-    public ApiResponse<ContractResDTO.SignatureRes> signature(
+    public ApiResponse<ContractResDTO.ContractSignatureRes> signature(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long reservationId,
-            @RequestBody @Valid ContractReqDTO.SignatureReq dto
+            @RequestBody @Valid ContractReqDTO.ContractSignatureReq dto
             ) {
         BaseSuccessCode code = ContractSuccessCode.SIGNATURE_SUCCESS;
         return ApiResponse.onSuccess(code, contractService.signature(authUser.getUser(), reservationId, dto));

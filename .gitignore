@@ -44,3 +44,4 @@ out/
 .vscode/
 
 **/.DS_Store
+/gradle.properties

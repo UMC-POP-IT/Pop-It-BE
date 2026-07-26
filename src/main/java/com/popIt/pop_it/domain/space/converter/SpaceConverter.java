@@ -8,21 +8,24 @@ import com.popIt.pop_it.domain.space.entity.SpaceFacility;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import org.springframework.data.domain.Page;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class SpaceConverter {
 
     private SpaceConverter() {
     }
 
-    public static Space toSpace(SpaceReqDTO.Create request, Long hostId) {
+    public static Space toSpace(SpaceReqDTO.SpaceCreateReq request, Long hostId, String dong) {
         return Space.builder()
                 .buildingName(request.buildingName())
                 .registrantType(request.registrantType())
                 .buildingType(request.buildingType())
                 .city(request.city())
                 .district(request.district())
+                .dong(dong)
                 .latitude(request.latitude())
                 .longitude(request.longitude())
                 .roadAddress(request.roadAddress())
@@ -57,22 +60,22 @@ public class SpaceConverter {
                 .build();
     }
 
-    public static SpaceResDTO.CreateResult toCreateResult(Space space) {
-        return SpaceResDTO.CreateResult.builder()
+    public static SpaceResDTO.SpaceCreateRes toCreateResult(Space space) {
+        return SpaceResDTO.SpaceCreateRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .build();
     }
 
-    public static SpaceResDTO.FacilityItem toFacilityItem(Facility facility) {
-        return new SpaceResDTO.FacilityItem(
+    public static SpaceResDTO.SpaceFacilityItemRes toFacilityItem(Facility facility) {
+        return new SpaceResDTO.SpaceFacilityItemRes(
                 facility.getId(),
                 facility.getCategory(),
                 facility.getName().getDescription()
         );
     }
 
-    public static SpaceResDTO.Detail toDetail(
+    public static SpaceResDTO.SpaceDetailRes toDetail(
             Space space,
             List<String> imageUrls,
             List<Facility> facilities,
@@ -80,7 +83,7 @@ public class SpaceConverter {
             boolean isWishlisted,
             int wishCount
     ) {
-        return SpaceResDTO.Detail.builder()
+        return SpaceResDTO.SpaceDetailRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .registrantType(space.getRegistrantType())
@@ -113,12 +116,12 @@ public class SpaceConverter {
                 .build();
     }
 
-    public static SpaceResDTO.MyListResult toMyListResult(
+    public static SpaceResDTO.MySpaceListRes toMyListResult(
             Page<Space> spacePage,
             Map<Long, String> thumbnailUrlBySpaceId
     ) {
-        List<SpaceResDTO.MySpace> spaces = spacePage.getContent().stream()
-                .map(space -> SpaceResDTO.MySpace.builder()
+        List<SpaceResDTO.MySpaceRes> spaces = spacePage.getContent().stream()
+                .map(space -> SpaceResDTO.MySpaceRes.builder()
                         .spaceId(space.getId())
                         .buildingName(space.getBuildingName())
                         .thumbnailUrl(thumbnailUrlBySpaceId.get(space.getId()))
@@ -126,11 +129,54 @@ public class SpaceConverter {
                         .build())
                 .toList();
 
-        return SpaceResDTO.MyListResult.builder()
+        return SpaceResDTO.MySpaceListRes.builder()
                 .spaces(spaces)
                 .totalCount((int) spacePage.getTotalElements())
                 .currentPage(spacePage.getNumber())
                 .hasNext(spacePage.hasNext())
                 .build();
+    }
+
+    public static SpaceResDTO.SpaceSearchListRes toSearchResult(
+            Page<Space> spacePage,
+            Map<Long, String> thumbnailUrlBySpaceId,
+            Map<Long, Integer> wishCountBySpaceId,
+            Set<Long> wishlistedSpaceIds
+    ) {
+        List<SpaceResDTO.SpaceSearchRes> spaces = spacePage.getContent().stream()
+                .map(space -> SpaceResDTO.SpaceSearchRes.builder()
+                        .spaceId(space.getId())
+                        .buildingName(space.getBuildingName())
+                        .district(space.getDistrict())
+                        .roadAddress(space.getRoadAddress())
+                        .spaceCategory(space.getSpaceCategory())
+                        .keywords(toKeywords(space))
+                        .displayPrice(space.getPricePerDay())
+                        .thumbnailUrl(thumbnailUrlBySpaceId.get(space.getId()))
+                        .isWishlisted(wishlistedSpaceIds.contains(space.getId()))
+                        .wishCount(wishCountBySpaceId.getOrDefault(space.getId(), 0))
+                        .latitude(space.getLatitude())
+                        .longitude(space.getLongitude())
+                        .build())
+                .toList();
+
+        return SpaceResDTO.SpaceSearchListRes.builder()
+                .spaces(spaces)
+                .totalCount((int) spacePage.getTotalElements())
+                .currentPage(spacePage.getNumber())
+                .hasNext(spacePage.hasNext())
+                .build();
+    }
+
+    private static List<String> toKeywords(Space space) {
+        List<String> keywords = new ArrayList<>();
+
+        if (space.getDong() != null && !space.getDong().isEmpty()) {
+            keywords.add("#" + space.getDong());
+        }
+
+        keywords.add("#" + space.getSpaceCategory().getDescription());
+
+        return keywords;
     }
 }

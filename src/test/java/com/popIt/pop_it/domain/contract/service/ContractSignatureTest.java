@@ -88,6 +88,8 @@ public class ContractSignatureTest {
                 .latitude(37.5)
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
+                .addressDetail("101호")
+                .dong("합정동")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
                 .availableStartDate(LocalDate.now())
@@ -101,11 +103,15 @@ public class ContractSignatureTest {
                 .hostId(hostId)
                 .build());
 
+        LocalDate reservationStartDate = LocalDate.now().plusDays(10);
+        LocalDate reservationEndDate = LocalDate.now().plusDays(12);
+        String usagePurpose = "계약 서명 테스트";
+
         Reservation reservation = reservationRepository.save(Reservation.builder()
                 .status(ReservationStatus.APPROVED) // 계약 단계 전제 상태
-                .startDate(LocalDate.now().plusDays(10))
-                .endDate(LocalDate.now().plusDays(12))
-                .usagePurpose("계약 서명 테스트")
+                .startDate(reservationStartDate)
+                .endDate(reservationEndDate)
+                .usagePurpose(usagePurpose)
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
                 .insuranceFee(10_000L)
@@ -116,14 +122,9 @@ public class ContractSignatureTest {
                 .build());
         reservationId = reservation.getId();
 
-        contractRepository.save(Contract.builder()
-                .status(ContractStatus.HOST_SIGNATURE_PENDING)
-                .rentalFee(200_000L)
-                .deposit(1_000_000L)
-                .insuranceFee(10_000L)
-                .totalPrice(1_210_000L)
-                .reservation(reservation)
-                .build());
+        // 실제 생성 경로(contentHash 계산 포함)를 그대로 태워서, verifyContentIntegrity가
+        // 통과할 수 있는 진짜 해시가 저장되도록 한다.
+        contractService.createPendingContract(reservation);
 
         // 본인인증은 완료된 상태를 기본값으로 두고, 이미지 해시는 S3를 실제로 호출하지 않도록 고정값을 반환
         when(identityVerificationService.getVerifiedCiHash(any(User.class)))
@@ -139,8 +140,8 @@ public class ContractSignatureTest {
     void 호스트_계약_서명() {
         String signatureUrl = "https://signature.example.com/host.png";
 
-        ContractResDTO.SignatureRes result = contractService.signature(
-                host, reservationId, new ContractReqDTO.SignatureReq(signatureUrl)
+        ContractResDTO.ContractSignatureRes result = contractService.signature(
+                host, reservationId, new ContractReqDTO.ContractSignatureReq(signatureUrl)
         );
 
         // 응답: 게스트 서명 대기 상태로 전이, 아직 둘 다 서명된 건 아님
@@ -166,10 +167,10 @@ public class ContractSignatureTest {
         String guestSignatureUrl = "https://signature.example.com/guest.png";
 
         // 전제: 호스트가 먼저 서명해서 GUEST_SIGNATURE_PENDING 상태로 만들어둠
-        contractService.signature(host, reservationId, new ContractReqDTO.SignatureReq(hostSignatureUrl));
+        contractService.signature(host, reservationId, new ContractReqDTO.ContractSignatureReq(hostSignatureUrl));
 
-        ContractResDTO.SignatureRes result = contractService.signature(
-                guest, reservationId, new ContractReqDTO.SignatureReq(guestSignatureUrl)
+        ContractResDTO.ContractSignatureRes result = contractService.signature(
+                guest, reservationId, new ContractReqDTO.ContractSignatureReq(guestSignatureUrl)
         );
 
         // 응답: 완료 상태로 전이, 둘 다 서명됨
