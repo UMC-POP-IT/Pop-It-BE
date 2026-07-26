@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.user.controller;
 
+import com.popIt.pop_it.domain.user.dto.HostProfileRes;
 import com.popIt.pop_it.domain.user.dto.HostRegisterReq;
 import com.popIt.pop_it.domain.user.dto.HostRegisterRes;
 import com.popIt.pop_it.domain.user.exception.code.HostSuccessCode;
@@ -16,6 +17,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -61,5 +63,29 @@ public class HostController {
 
         return ResponseEntity.status(HostSuccessCode.HOST_REGISTER.getStatus())
                 .body(ApiResponse.onSuccess(HostSuccessCode.HOST_REGISTER, result));
+    }
+
+    @Operation(
+            summary = "내 호스트 프로필 조회",
+            description = "로그인한 사용자의 호스트 프로필을 조회합니다. 인증 필요: Access Token.",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증되지 않음", content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "호스트 프로필 없음", content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<HostProfileRes>> getMyProfile(
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        if (authUser == null || authUser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authUser.getUser().getUserId();
+        HostProfileRes result = hostService.getMyProfile(userId);
+
+        return ResponseEntity.ok(ApiResponse.onSuccess(HostSuccessCode.HOST_GET, result));
     }
 }

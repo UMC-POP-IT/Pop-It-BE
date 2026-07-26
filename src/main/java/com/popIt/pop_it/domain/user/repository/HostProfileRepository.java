@@ -14,4 +14,6 @@ public interface HostProfileRepository extends JpaRepository<HostProfile, Long> 
 
     // 동일 사업자등록번호로 다른 사용자가 중복 등록하는지 해시로 선검사
     boolean existsByBusinessRegistrationNumberHash(String businessRegistrationNumberHash);
+
+    Optional<HostProfile> findByUserId(Long userId);
 }
