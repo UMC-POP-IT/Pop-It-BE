@@ -30,7 +30,7 @@ public class SceneCommandService {
     private final SpaceRepository spaceRepository;
 
     //씬 생성 (사전 제작된 모델 연결)
-    public SceneResDTO.SceneId createScene(Long spaceId, Long hostId, SceneReqDTO.Create request) {
+    public SceneResDTO.SceneIdRes createScene(Long spaceId, Long hostId, SceneReqDTO.SceneCreateReq request) {
         Space space;
         try {
             space = spaceRepository.findByIdAndDeletedAtIsNullForUpdate(spaceId)
@@ -71,7 +71,7 @@ public class SceneCommandService {
     }
 
     //방(Scene) 사진 등록 - 프론트가 presigned URL로 이미 업로드 완료한 URL 목록을 그대로 저장
-    public SceneResDTO.ImageUploadResult uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
+    public SceneResDTO.ImageUploadResultRes uploadSceneImages(Long spaceId, Long sceneId, Long hostId, List<String> imageUrls) {
         Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
@@ -85,7 +85,7 @@ public class SceneCommandService {
     }
 
     //씬 부분 수정
-    public SceneResDTO.SceneId updateScene(Long sceneId, Long hostId, SceneReqDTO.Update request) {
+    public SceneResDTO.SceneIdRes updateScene(Long sceneId, Long hostId, SceneReqDTO.SceneUpdateReq request) {
         Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 

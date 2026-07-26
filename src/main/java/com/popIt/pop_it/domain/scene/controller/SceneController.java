@@ -25,7 +25,7 @@ public class SceneController {
 
     @Operation(summary = "씬 목록 조회", description = "공간에 등록된 씬 목록을 조회합니다. (기본 씬 여부는 각 씬의 isDefault로 표시)")
     @GetMapping("/spaces/{spaceId}/scenes")
-    public ApiResponse<SceneResDTO.SceneList> getScenes(
+    public ApiResponse<SceneResDTO.SceneListRes> getScenes(
             @PathVariable Long spaceId
     ) {
         return ApiResponse.onSuccess(
@@ -37,7 +37,7 @@ public class SceneController {
     @Operation(summary = "씬 상세 조회", description = "모델 URL, 카메라 초기 설정, 핫스팟 목록을 조회합니다.<br>"
             + "(핫스팟 도메인 구현 전까지 hotspots는 빈 배열로 내려갑니다.)")
     @GetMapping("/scenes/{sceneId}")
-    public ApiResponse<SceneResDTO.Detail> getSceneDetail(
+    public ApiResponse<SceneResDTO.SceneDetailRes> getSceneDetail(
             @PathVariable Long sceneId
     ) {
         return ApiResponse.onSuccess(
@@ -49,10 +49,10 @@ public class SceneController {
     @Operation(summary = "씬 생성", description = "사전 제작된 3D 모델(.glb)을 씬에 연결하여 생성합니다.<br>"
             + "사진은 presigned URL로 먼저 S3에 올린 뒤, 완료된 URL만 imageUrls로 전달합니다.")
     @PostMapping("/spaces/{spaceId}/scenes")
-    public ApiResponse<SceneResDTO.SceneId> createScene(
+    public ApiResponse<SceneResDTO.SceneIdRes> createScene(
             @PathVariable Long spaceId,
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody SceneReqDTO.Create request
+            @Valid @RequestBody SceneReqDTO.SceneCreateReq request
     ) {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_CREATED,
@@ -62,11 +62,11 @@ public class SceneController {
 
     @Operation(summary = "씬 사진 등록", description = "프론트가 presigned URL로 이미 S3에 업로드 완료한 이미지 URL 목록을 받아 씬에 등록합니다. (기존 사진 뒤에 이어붙음)")
     @PostMapping("/spaces/{spaceId}/scenes/{sceneId}/images")
-    public ApiResponse<SceneResDTO.ImageUploadResult> uploadSceneImages(
+    public ApiResponse<SceneResDTO.ImageUploadResultRes> uploadSceneImages(
             @PathVariable Long spaceId,
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody SceneReqDTO.ImageUpload request
+            @Valid @RequestBody SceneReqDTO.SceneImageUploadReq request
     ) {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_IMAGES_UPLOADED,
@@ -76,10 +76,10 @@ public class SceneController {
 
     @Operation(summary = "씬 수정", description = "씬 이름/모델/썸네일/기본 씬 여부를 부분 수정합니다. (null인 필드는 기존 값 유지)")
     @PatchMapping("/scenes/{sceneId}")
-    public ApiResponse<SceneResDTO.SceneId> updateScene(
+    public ApiResponse<SceneResDTO.SceneIdRes> updateScene(
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody SceneReqDTO.Update request
+            @RequestBody SceneReqDTO.SceneUpdateReq request
     ) {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_UPDATED,

@@ -20,7 +20,7 @@ public class SceneQueryService {
     private final SpaceRepository spaceRepository;
 
     //공간의 방(씬) 목록 조회
-    public SceneResDTO.SceneList getScenes(Long spaceId) {
+    public SceneResDTO.SceneListRes getScenes(Long spaceId) {
         if (!spaceRepository.existsByIdAndDeletedAtIsNull(spaceId)) {
             throw new SceneException(SpaceErrorCode.SPACE_NOT_FOUND);
         }
@@ -29,7 +29,7 @@ public class SceneQueryService {
     }
 
     //방(씬) 상세 조회 (모델·카메라 설정 포함, 핫스팟은 후속 이슈)
-    public SceneResDTO.Detail getSceneDetail(Long sceneId) {
+    public SceneResDTO.SceneDetailRes getSceneDetail(Long sceneId) {
         Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
