@@ -17,7 +17,9 @@ import com.popIt.pop_it.domain.upload.enums.UploadType;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.config.AwsProperties;
+import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
+import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -28,12 +30,86 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional(readOnly = true)
 public class ContractService {
 
+    private static final String FIELD_SEPARATOR = "\u001F"; // usagePurpose 등 자유 텍스트와 구분자 충돌 방지용 제어문자
+
     private final ContractRepository contractRepository;
     private final ReservationRepository reservationRepository;
     private final IdentityVerificationService identityVerificationService;
     private final S3ObjectHasher s3ObjectHasher;
     private final AwsProperties awsProperties;
+    private final CryptoService cryptoService;
 
+    // 계약 생성
+    @Transactional
+    public void createPendingContract(Reservation reservation) {
+        if (contractRepository.findByReservation_Id(reservation.getId()).isPresent()) {
+            return; // 이미 계약이 생성돼 있으면 아무 것도 안 하고 성공 처리
+        }
+
+        // 계약 생성 시점엔 Contract 스냅샷이 아직 없으므로 Reservation의 현재 값에서 뽑는다.
+        // (이 시점엔 Reservation과 Contract의 값이 동일함이 보장된다)
+        String contentHash = buildContentHash(
+                reservation.getId(),
+                reservation.getSpace().getId(),
+                reservation.getSpace().getHostId(),
+                reservation.getUser().getUserId(),
+                reservation.getStartDate(),
+                reservation.getEndDate(),
+                reservation.getUsagePurpose(),
+                reservation.getRentalFee(),
+                reservation.getDeposit(),
+                reservation.getInsuranceFee(),
+                reservation.getTotalPrice()
+        );
+
+        contractRepository.save(ContractConverter.toPendingContract(reservation, contentHash));
+    }
+
+    // 계약 내용 무결성 검증 - 서명/결제 진행 전에 호출해, 저장된 contentHash와 Contract 스냅샷
+    // 컬럼으로 재계산한 해시가 다르면(=계약 체결 이후 Contract 자체가 변조됐으면) 처리를 막는다.
+    // 결제·정산이 실제로 참조하는 값은 Contract 스냅샷이므로, 검증도 반드시 같은 소스(Contract)를 기준으로 해야 한다.
+    public void verifyContentIntegrity(Contract contract) {
+        String recomputed = buildContentHash(
+                contract.getReservation().getId(),
+                contract.getSpaceId(),
+                contract.getHostId(),
+                contract.getGuestId(),
+                contract.getStartDate(),
+                contract.getEndDate(),
+                contract.getUsagePurpose(),
+                contract.getRentalFee(),
+                contract.getDeposit(),
+                contract.getInsuranceFee(),
+                contract.getTotalPrice()
+        );
+        if (!recomputed.equals(contract.getContentHash())) {
+            throw new ContractException(ContractErrorCode.CONTRACT_CONTENT_TAMPERED);
+        }
+    }
+
+    // 계약 내용 해시(HMAC) 생성 - createPendingContract/verifyContentIntegrity가 값의 출처(Reservation/Contract)만
+    // 다르게 넘기고 포맷 로직 자체는 이 메서드 하나만 타도록 공유한다.
+    private String buildContentHash(Long reservationId, Long spaceId, Long hostId, Long guestId,
+                                      LocalDate startDate, LocalDate endDate, String usagePurpose,
+                                      Long rentalFee, Long deposit, Long insuranceFee,
+                                      Long totalPrice) {
+        String payload = String.join(FIELD_SEPARATOR,
+                String.valueOf(reservationId),
+                String.valueOf(spaceId),
+                String.valueOf(hostId),
+                String.valueOf(guestId),
+                startDate.toString(), // yyyy-MM-dd 고정 포맷
+                endDate.toString(),
+                usagePurpose,
+                String.valueOf(rentalFee),
+                String.valueOf(deposit),
+                String.valueOf(insuranceFee),
+                String.valueOf(totalPrice)
+        );
+        return cryptoService.hash(payload);
+    }
+
+    // 계약 예정 정보 조회
     public ContractResDTO.ContractInfoRes getContractInfo(User user, Long reservationId) {
 
         // 예약 조회
@@ -52,6 +128,7 @@ public class ContractService {
 
     }
 
+    // 전자 서명 제출
     @Transactional
     public ContractResDTO.ContractSignatureRes signature(User user, Long reservationId, ContractReqDTO.ContractSignatureReq dto) {
 
@@ -70,6 +147,9 @@ public class ContractService {
 
         // 계약 조회 (예약이 승인되는 시점에 계약이 생성됨)
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
+
+        // 서명 전, 계약 체결 이후 내용이 변조되지 않았는지 검증
+        verifyContentIntegrity(contract);
 
         // 서명 이미지 저장
         // 호스트가 먼저 서명하고 나서 게스트 서명 가능 -> 계약 COMPLETE
