@@ -7,7 +7,7 @@ import jakarta.validation.constraints.Positive;
 
 public class PaymentReqDTO {
 
-    public record Confirm(
+    public record PaymentConfirmReq(
             @NotBlank(message = "paymentKey는 필수입니다.")
             String paymentKey,
 
@@ -22,7 +22,7 @@ public class PaymentReqDTO {
 
     // 토스페이먼츠 웹훅 payload
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public record Webhook(
+    public record PaymentWebhookReq(
             String eventType, // 예: PAYMENT_STATUS_CHANGED
             WebhookData data
     ) {

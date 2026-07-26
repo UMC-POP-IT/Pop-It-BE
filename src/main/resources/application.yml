@@ -84,3 +84,7 @@ management:
   endpoint:
     health:
       show-details: never
+
+kakao:
+  local:
+    rest-api-key: ${KAKAO_CLIENT_ID}

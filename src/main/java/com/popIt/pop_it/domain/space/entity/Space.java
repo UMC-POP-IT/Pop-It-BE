@@ -47,6 +47,9 @@ public class Space {
     @Column(length = 50, nullable = false)
     private String district; // 시/군/구
 
+    @Column(length = 50)
+    private String dong;
+
     @Column(nullable = false)
     private Double latitude; // 위도
 

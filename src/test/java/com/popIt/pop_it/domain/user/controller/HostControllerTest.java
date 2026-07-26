@@ -1,7 +1,7 @@
 package com.popIt.pop_it.domain.user.controller;
 
 import tools.jackson.databind.ObjectMapper;
-import com.popIt.pop_it.domain.user.dto.HostRegisterRequest;
+import com.popIt.pop_it.domain.user.dto.HostRegisterReq;
 import com.popIt.pop_it.domain.user.entity.HostProfile;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.Bank;
@@ -62,8 +62,8 @@ class HostControllerTest {
         accessToken = "Bearer " + jwtUtil.createAccessToken(new AuthUser(user));
     }
 
-    private HostRegisterRequest validRequest() {
-        return new HostRegisterRequest(
+    private HostRegisterReq validRequest() {
+        return new HostRegisterReq(
                 TaxationType.SIMPLIFIED,
                 "123-45-67890",
                 "https://s3.example.com/business-license.png",
@@ -127,7 +127,7 @@ class HostControllerTest {
     @Test
     @DisplayName("검증 실패(사업자등록번호 형식 오류) 시 400을 반환한다")
     void registerHost_validationFail() throws Exception {
-        HostRegisterRequest invalid = new HostRegisterRequest(
+        HostRegisterReq invalid = new HostRegisterReq(
                 TaxationType.SIMPLIFIED,
                 "123",                         // 형식 오류: 10자리가 아님
                 "https://s3.example.com/a.png",

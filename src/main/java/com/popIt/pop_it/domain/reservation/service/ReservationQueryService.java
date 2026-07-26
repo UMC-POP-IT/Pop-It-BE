@@ -41,7 +41,7 @@ public class ReservationQueryService {
     private final SpaceRepository spaceRepository;
 
     //게스트 예약 목록 조회 (커서 기반 + 상태 필터)
-    public ReservationResDTO.PagedSummary getMyReservations(
+    public ReservationResDTO.ReservationPagedSummaryRes getMyReservations(
             Long userId, ReservationStatus status, String cursor, int size
     ) {
         ReservationCursor.Decoded decoded = ReservationCursor.decode(cursor);
@@ -52,7 +52,7 @@ public class ReservationQueryService {
     }
 
     //호스트 예약 목록 조회 (커서 기반 + 상태 필터)
-    public ReservationResDTO.PagedSummary getHostReservations(
+    public ReservationResDTO.ReservationPagedSummaryRes getHostReservations(
             Long hostId, ReservationStatus status, String cursor, int size
     ) {
         ReservationCursor.Decoded decoded = ReservationCursor.decode(cursor);
@@ -71,17 +71,17 @@ public class ReservationQueryService {
     }
 
     //게스트 상태별 탭 카운트
-    public ReservationResDTO.StatusCounts getMyStatusCounts(Long userId) {
+    public ReservationResDTO.ReservationStatusCountsRes getMyStatusCounts(Long userId) {
         return toStatusCounts(reservationRepository.countMyReservationsByStatus(userId));
     }
 
     //호스트 상태별 탭 카운트
-    public ReservationResDTO.StatusCounts getHostStatusCounts(Long hostId) {
+    public ReservationResDTO.ReservationStatusCountsRes getHostStatusCounts(Long hostId) {
         return toStatusCounts(reservationRepository.countHostReservationsByStatus(hostId));
     }
 
     //공간별 예약 불가(선점된) 날짜 목록 - 프론트 캘린더 비활성화 표시용
-    public ReservationResDTO.UnavailableDates getUnavailableDates(Long spaceId) {
+    public ReservationResDTO.ReservationUnavailableDatesRes getUnavailableDates(Long spaceId) {
         if (!spaceRepository.existsById(spaceId)) {
             throw new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND);
         }
@@ -94,7 +94,7 @@ public class ReservationQueryService {
     }
 
     //퇴실 증빙 사진 목록 조회(호스트가 승인/거절 전 확인용)
-    public ReservationResDTO.CheckoutImages getCheckoutImages(Long reservationId, Long hostId) {
+    public ReservationResDTO.ReservationCheckoutImagesRes getCheckoutImages(Long reservationId, Long hostId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
 
@@ -107,12 +107,12 @@ public class ReservationQueryService {
     }
 
     //페이징
-    private ReservationResDTO.PagedSummary toPagedSummary(Slice<Reservation> slice, boolean includeGuest) {
+    private ReservationResDTO.ReservationPagedSummaryRes toPagedSummary(Slice<Reservation> slice, boolean includeGuest) {
         List<Reservation> reservations = slice.getContent();
         Map<Long, String> thumbnails = getThumbnailMap(reservations);
         Set<Long> verifiedIds = getVerifiedReservationIds(reservations);
 
-        List<ReservationResDTO.Summary> summaries = reservations.stream()
+        List<ReservationResDTO.ReservationSummaryRes> summaries = reservations.stream()
                 .map(r -> ReservationConverter.toSummary(
                         r, includeGuest, thumbnails.get(r.getSpace().getId()), verifiedIds.contains(r.getId())
                 ))
@@ -125,7 +125,7 @@ public class ReservationQueryService {
                   )
                 : null;
 
-        return ReservationResDTO.PagedSummary.builder()
+        return ReservationResDTO.ReservationPagedSummaryRes.builder()
                 .reservations(summaries)
                 .hasNext(slice.hasNext())
                 .nextCursor(nextCursor)
@@ -133,10 +133,10 @@ public class ReservationQueryService {
     }
 
     //상태별 예약 갯수 카운트 DTO변환
-    private ReservationResDTO.StatusCounts toStatusCounts(List<ReservationStatusCount> counts) {
+    private ReservationResDTO.ReservationStatusCountsRes toStatusCounts(List<ReservationStatusCount> counts) {
         Map<ReservationStatus, Long> countMap = counts.stream()
                 .collect(Collectors.toMap(ReservationStatusCount::getStatus, ReservationStatusCount::getCount));
-        return ReservationResDTO.StatusCounts.builder()
+        return ReservationResDTO.ReservationStatusCountsRes.builder()
                 .countsByStatus(countMap)
                 .build();
     }
