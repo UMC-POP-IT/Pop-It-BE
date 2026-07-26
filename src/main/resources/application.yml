@@ -88,3 +88,6 @@ management:
 kakao:
   local:
     rest-api-key: ${KAKAO_CLIENT_ID}
+
+server:
+  forward-headers-strategy: framework # nginx 리버스 프록시 뒤에서 X-Forwarded-* 헤더를 신뢰 (OAuth redirect-uri의 {baseScheme}가 https로 정확히 채워지도록)
