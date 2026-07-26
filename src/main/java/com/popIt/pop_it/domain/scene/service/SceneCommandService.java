@@ -125,6 +125,7 @@ public class SceneCommandService {
             throw new SceneException(SceneErrorCode.SCENE_REFERENCED_BY_HOTSPOT);
         }
 
+        hotspotRepository.deleteAllBySceneId(sceneId);
         scene.markDeleted();
     }
 

@@ -34,7 +34,7 @@ public class HotspotService {
         validateHost(scene, hostId);
         validateTypeFields(request.type(), request.description(), request.targetSceneId());
         if (request.type() == HotspotType.LINK) {
-            validateTargetScene(scene.getId(), request.targetSceneId());
+            validateTargetScene(scene, request.targetSceneId());
         }
 
         Hotspot hotspot = Hotspot.builder()
@@ -66,7 +66,7 @@ public class HotspotService {
             throw new HotspotException(HotspotErrorCode.HOTSPOT_TYPE_FIELD_MISMATCH);
         }
         if (hotspot.getType() == HotspotType.LINK && request.targetSceneId() != null) {
-            validateTargetScene(hotspot.getScene().getId(), request.targetSceneId());
+            validateTargetScene(hotspot.getScene(), request.targetSceneId());
         }
 
         hotspot.update(request.positionX(), request.positionY(), request.positionZ(),
@@ -103,14 +103,19 @@ public class HotspotService {
     }
 
     //LINK 타입의 targetSceneId 검증 - 자기 자신을 가리키지 않는지 + 실제 존재하는(삭제 안 된) 씬인지
+    //+ 같은 공간(Space) 소속인지 (다른 공간의 씬으로는 링크 불가 - 존재 자체를 숨기기 위해 404로 통일)
     //비관적 락으로 잡아서, 이 트랜잭션이 끝날 때까지 해당 씬이 삭제되지 못하게 함
     //(SceneCommandService.deleteScene도 동일하게 findByIdForUpdate를 써서 같은 씬 row를 두고 직렬화됨)
-    private void validateTargetScene(Long sourceSceneId, Long targetSceneId) {
-        if (targetSceneId.equals(sourceSceneId)) {
+    private void validateTargetScene(Scene sourceScene, Long targetSceneId) {
+        if (targetSceneId.equals(sourceScene.getId())) {
             throw new HotspotException(HotspotErrorCode.HOTSPOT_SELF_REFERENCE);
         }
 
-        sceneRepository.findByIdForUpdate(targetSceneId)
+        Scene targetScene = sceneRepository.findByIdForUpdate(targetSceneId)
                 .orElseThrow(() -> new HotspotException(HotspotErrorCode.HOTSPOT_TARGET_SCENE_NOT_FOUND));
+
+        if (!targetScene.getSpace().getId().equals(sourceScene.getSpace().getId())) {
+            throw new HotspotException(HotspotErrorCode.HOTSPOT_TARGET_SCENE_NOT_FOUND);
+        }
     }
 }
