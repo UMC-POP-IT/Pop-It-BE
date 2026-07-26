@@ -137,7 +137,7 @@ public class ReservationController {
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> submitCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody ReservationReqDTO.ReservationCheckoutReq request
+            @Valid @RequestBody ReservationReqDTO.ReservationCheckoutReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTO,
