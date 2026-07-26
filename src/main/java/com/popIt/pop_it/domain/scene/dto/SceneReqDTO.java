@@ -9,7 +9,7 @@ import java.util.List;
 
 public class SceneReqDTO {
 
-    public record Create(
+    public record SceneCreateReq(
             @NotBlank String name,
             @NotBlank @URL String modelUrl,
             @NotBlank @URL String thumbnail,
@@ -28,7 +28,7 @@ public class SceneReqDTO {
     ) {
     }
 
-    public record Update(
+    public record SceneUpdateReq(
             String name,
             @URL String modelUrl,
             @URL String thumbnail,
@@ -47,7 +47,7 @@ public class SceneReqDTO {
     ) {
     }
 
-    public record ImageUpload(
+    public record SceneImageUploadReq(
             @NotEmpty List<@NotBlank @URL String> imageUrls // 프론트가 presigned URL로 이미 업로드 완료한 이미지 URL 목록
     ) {
     }

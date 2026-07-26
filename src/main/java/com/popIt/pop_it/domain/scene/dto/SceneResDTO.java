@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.scene.dto;
 
+import com.popIt.pop_it.domain.hotspot.dto.HotspotResDTO;
 import lombok.Builder;
 
 import java.util.List;
@@ -7,7 +8,7 @@ import java.util.List;
 public class SceneResDTO {
 
     @Builder
-    public record Summary(
+    public record SceneSummaryRes(
             Long sceneId,
             String name,
             String thumbnail,
@@ -17,13 +18,13 @@ public class SceneResDTO {
     }
 
     @Builder
-    public record SceneList(
-            List<Summary> scenes
+    public record SceneListRes(
+            List<SceneSummaryRes> scenes
     ) {
     }
 
     @Builder
-    public record Camera(
+    public record SceneCameraRes(
             List<Double> position,
             List<Double> target,
             Double minDistance,
@@ -34,24 +35,24 @@ public class SceneResDTO {
     }
 
     @Builder
-    public record Detail(
+    public record SceneDetailRes(
             Long sceneId,
             String name,
             String modelUrl,
             Boolean isDefault,
-            Camera camera,
-            List<Object> hotspots // TODO: Hotspot 도메인 구현 후 List<HotspotResDTO.Summary>로 교체
+            SceneCameraRes camera,
+            List<HotspotResDTO.HotspotSummaryRes> hotspots
     ) {
     }
 
     @Builder
-    public record SceneId(
+    public record SceneIdRes(
             Long sceneId
     ) {
     }
 
     @Builder
-    public record ImageUploadResult(
+    public record SceneImageUploadRes(
             Long sceneId,
             List<String> images
     ) {

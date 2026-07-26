@@ -1,13 +1,15 @@
 package com.popIt.pop_it.domain.scene.converter;
 
+import com.popIt.pop_it.domain.hotspot.converter.HotspotConverter;
+import com.popIt.pop_it.domain.hotspot.entity.Hotspot;
 import com.popIt.pop_it.domain.scene.dto.SceneResDTO;
 import com.popIt.pop_it.domain.scene.entity.Scene;
 
 import java.util.List;
 
 public class SceneConverter {
-    public static SceneResDTO.Summary toSummary(Scene scene) {
-        return SceneResDTO.Summary.builder()
+    public static SceneResDTO.SceneSummaryRes toSummary(Scene scene) {
+        return SceneResDTO.SceneSummaryRes.builder()
                 .sceneId(scene.getId())
                 .name(scene.getName())
                 .thumbnail(scene.getThumbnail())
@@ -16,18 +18,18 @@ public class SceneConverter {
                 .build();
     }
 
-    public static SceneResDTO.SceneList toSceneList(List<Scene> scenes) {
-        List<SceneResDTO.Summary> summaries = scenes.stream()
+    public static SceneResDTO.SceneListRes toSceneList(List<Scene> scenes) {
+        List<SceneResDTO.SceneSummaryRes> summaries = scenes.stream()
                 .map(SceneConverter::toSummary)
                 .toList();
 
-        return SceneResDTO.SceneList.builder()
+        return SceneResDTO.SceneListRes.builder()
                 .scenes(summaries)
                 .build();
     }
 
-    public static SceneResDTO.Detail toDetail(Scene scene) {
-        SceneResDTO.Camera camera = SceneResDTO.Camera.builder()
+    public static SceneResDTO.SceneDetailRes toDetail(Scene scene, List<Hotspot> hotspots) {
+        SceneResDTO.SceneCameraRes camera = SceneResDTO.SceneCameraRes.builder()
                 .position(List.of(scene.getCameraPositionX(), scene.getCameraPositionY(), scene.getCameraPositionZ()))
                 .target(List.of(scene.getCameraTargetX(), scene.getCameraTargetY(), scene.getCameraTargetZ()))
                 .minDistance(scene.getMinDistance())
@@ -36,24 +38,24 @@ public class SceneConverter {
                 .maxPolarAngle(scene.getMaxPolarAngle())
                 .build();
 
-        return SceneResDTO.Detail.builder()
+        return SceneResDTO.SceneDetailRes.builder()
                 .sceneId(scene.getId())
                 .name(scene.getName())
                 .modelUrl(scene.getModelUrl())
                 .isDefault(scene.getIsDefault())
                 .camera(camera)
-                .hotspots(List.of()) // TODO: Hotspot 도메인 구현 후 실제 목록으로 교체
+                .hotspots(HotspotConverter.toSummaryList(hotspots))
                 .build();
     }
 
-    public static SceneResDTO.SceneId toSceneId(Scene scene) {
-        return SceneResDTO.SceneId.builder()
+    public static SceneResDTO.SceneIdRes toSceneId(Scene scene) {
+        return SceneResDTO.SceneIdRes.builder()
                 .sceneId(scene.getId())
                 .build();
     }
 
-    public static SceneResDTO.ImageUploadResult toImageUploadResult(Long sceneId, List<String> imageUrls) {
-        return SceneResDTO.ImageUploadResult.builder()
+    public static SceneResDTO.SceneImageUploadRes toImageUploadResult(Long sceneId, List<String> imageUrls) {
+        return SceneResDTO.SceneImageUploadRes.builder()
                 .sceneId(sceneId)
                 .images(imageUrls)
                 .build();
