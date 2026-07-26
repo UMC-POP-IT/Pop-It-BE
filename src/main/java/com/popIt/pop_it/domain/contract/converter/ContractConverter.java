@@ -48,7 +48,7 @@ public class ContractConverter {
                 .period(contract.getPeriod())
                 .rentalFee(contract.getRentalFee())
                 .platformFee(contract.getPlatformFee())
-                .totalPrice(contract.getHostTotalPrice()) //
+                .totalPrice(contract.getHostTotalPrice())
                 .build();
     }
 
