@@ -77,7 +77,7 @@ public class Contract {
     private Long insuranceFee; // 보험료
 
     @Column(nullable = false)
-    private Long platformFee; // 플랫폼 수수료
+    private Long platformFee; // 플랫폼 수수료; 호스트-게스트 계약서에 쓰이진 않지만 계약 당시 값을 기록해두기 위함
 
     @Column(nullable = false)
     private Long totalPrice; // 총 결제 금액
@@ -135,5 +135,10 @@ public class Contract {
     // 기간 계산 (시작일/종료일 모두 포함)
     public long getPeriod() {
         return ChronoUnit.DAYS.between(startDate, endDate) + 1;
+    }
+
+    // 호스트의 총 금액
+    public Long getHostTotalPrice() {
+        return rentalFee - platformFee;
     }
 }

@@ -132,9 +132,4 @@ public class Reservation {
     public void completeCheckout() {
         this.status = ReservationStatus.CHECKOUT_COMPLETED;
     }
-
-    // 호스트의 총 금액
-    public Long getHostTotalPrice() {
-        return rentalFee - platformFee;
-    }
 }

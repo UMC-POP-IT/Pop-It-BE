@@ -228,7 +228,7 @@ public class PaymentService {
         }
         try {
             Long hostId = contract.getReservation().getSpace().getHostId();
-            Long hostPayoutAmount = contract.getReservation().getHostTotalPrice();
+            Long hostPayoutAmount = contract.getHostTotalPrice();
             hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, hostPayoutAmount);
             paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
             return true;
