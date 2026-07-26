@@ -206,10 +206,7 @@ public class ContractService {
             throw new ContractException(ContractErrorCode.CONTRACT_CONCURRENT_MODIFICATION);
         }
 
-        return ContractResDTO.ContractSignatureRes.builder()
-                .contractStatus(contract.getStatus())
-                .bothSigned(contract.getStatus() == ContractStatus.PENDING_PAYMENT)
-                .build();
+        return ContractConverter.toGetContractSignatureRes(contract);
     }
 
     // 사용자(호스트/게스트)의 예약인지 검사

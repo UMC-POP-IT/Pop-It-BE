@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.contract.converter;
 
 import com.popIt.pop_it.domain.contract.dto.ContractResDTO;
 import com.popIt.pop_it.domain.contract.entity.Contract;
+import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
 
 public class ContractConverter {
@@ -57,6 +58,7 @@ public class ContractConverter {
     // 계약 예정 계약서 조회
     public static ContractResDTO.ContractInfoRes toGetContractInfoRes(Contract contract) {
         return ContractResDTO.ContractInfoRes.builder()
+                .contractId(contract.getId())
                 .spaceName(contract.getSpaceName())
                 .roadAddress(contract.getRoadAddress())
                 .startDate(contract.getStartDate())
@@ -65,6 +67,15 @@ public class ContractConverter {
                 .rentalFee(contract.getRentalFee())
                 .deposit(contract.getDeposit())
                 .insuranceFee(contract.getInsuranceFee())
+                .build();
+    }
+
+    // 전자 서명 제출
+    public static ContractResDTO.ContractSignatureRes toGetContractSignatureRes(Contract contract) {
+        return ContractResDTO.ContractSignatureRes.builder()
+                .contractId(contract.getId())
+                .contractStatus(contract.getStatus())
+                .bothSigned(contract.getStatus() == ContractStatus.PENDING_PAYMENT)
                 .build();
     }
 }

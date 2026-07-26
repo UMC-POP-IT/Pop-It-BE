@@ -60,6 +60,9 @@ public class ContractResDTO {
 
     @Builder
     public record ContractSignatureRes(
+            @Schema(description = "계약 ID", example = "1")
+            Long contractId,
+
             @Schema(description = "계약 상태", example = "GUEST_SIGNATURE_PENDING")
             ContractStatus contractStatus,
 
@@ -72,6 +75,9 @@ public class ContractResDTO {
 
     @Builder
     public record ContractInfoRes(
+            @Schema(description = "계약 ID", example = "1")
+            Long contractId,
+
             @Schema(description = "공간 건물명", example = "팝잇 빌딩")
             String spaceName,
 
