@@ -179,4 +179,16 @@ public class SpaceConverter {
 
         return keywords;
     }
+
+    public static SpaceResDTO.SpaceUpdateRes toUpdateResult(Space space) {
+        return SpaceResDTO.SpaceUpdateRes.builder()
+                .spaceId(space.getId())
+                .build();
+    }
+
+    public static SpaceResDTO.SpaceDeleteRes toDeleteResult(Space space) {
+        return SpaceResDTO.SpaceDeleteRes.builder()
+                .spaceId(space.getId())
+                .build();
+    }
 }
