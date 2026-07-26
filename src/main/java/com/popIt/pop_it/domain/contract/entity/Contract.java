@@ -57,6 +57,11 @@ public class Contract {
     @Column(nullable = false)
     private Long spaceId;
 
+    @Column(nullable = false)
+    private String spaceName; // 건물명
+
+    @Column(nullable = false)
+    private String roadAddress; // 도로명 주소
 
     @Column(nullable = false)
     private LocalDate startDate; // 이용 시작일

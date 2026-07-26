@@ -13,6 +13,8 @@ public class ContractConverter {
                 .hostId(reservation.getSpace().getHostId())
                 .guestId(reservation.getUser().getUserId())
                 .spaceId(reservation.getSpace().getId())
+                .spaceName(reservation.getSpace().getBuildingName())
+                .roadAddress(reservation.getSpace().getRoadAddress())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
                 .usagePurpose(reservation.getUsagePurpose())
@@ -26,9 +28,9 @@ public class ContractConverter {
     }
 
     // 결제 예정(게스트) 정보 조회
-    public static ContractResDTO.ContractGuestPaymentInfoRes toGetGuestContractPaymentInfoRes(Contract contract, Reservation reservation) {
+    public static ContractResDTO.ContractGuestPaymentInfoRes toGetGuestContractPaymentInfoRes(Contract contract) {
         return ContractResDTO.ContractGuestPaymentInfoRes.builder()
-                .spaceName(reservation.getSpace().getBuildingName())
+                .spaceName(contract.getSpaceName())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
                 .period(contract.getPeriod())
@@ -40,9 +42,9 @@ public class ContractConverter {
     }
 
     // 임대 예정(호스트) 정보 조회
-    public static ContractResDTO.ContractHostPaymentInfoRes toGetHostContractPaymentInfoRes(Contract contract, Reservation reservation) {
+    public static ContractResDTO.ContractHostPaymentInfoRes toGetHostContractPaymentInfoRes(Contract contract) {
         return ContractResDTO.ContractHostPaymentInfoRes.builder()
-                .spaceName(reservation.getSpace().getBuildingName())
+                .spaceName(contract.getSpaceName())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
                 .period(contract.getPeriod())
@@ -53,10 +55,10 @@ public class ContractConverter {
     }
 
     // 계약 예정 계약서 조회
-    public static ContractResDTO.ContractInfoRes toGetContractInfoRes(Contract contract, Reservation reservation) {
+    public static ContractResDTO.ContractInfoRes toGetContractInfoRes(Contract contract) {
         return ContractResDTO.ContractInfoRes.builder()
-                .spaceName(reservation.getSpace().getBuildingName())
-                .roadAddress(reservation.getSpace().getRoadAddress())
+                .spaceName(contract.getSpaceName())
+                .roadAddress(contract.getRoadAddress())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
                 .period(contract.getPeriod())

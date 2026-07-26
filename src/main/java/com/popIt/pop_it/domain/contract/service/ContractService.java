@@ -125,9 +125,9 @@ public class ContractService {
         // @TODO: 예약 승인 시 계약 데이터가 채워지므로, 예약 기반이 아닌 계약 엔티티 기반 정보 조회로 바꿔야합니다.
         UserMode currentMode = user.getCurrentMode();
         if (currentMode == UserMode.GUEST) {
-            return ContractConverter.toGetGuestContractPaymentInfoRes(contract, reservation);
+            return ContractConverter.toGetGuestContractPaymentInfoRes(contract);
         } else {
-            return ContractConverter.toGetHostContractPaymentInfoRes(contract, reservation);
+            return ContractConverter.toGetHostContractPaymentInfoRes(contract);
         }
 
     }
@@ -145,7 +145,7 @@ public class ContractService {
                 .orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
 
         // 계약 정보 조회
-        return ContractConverter.toGetContractInfoRes(contract, reservation);
+        return ContractConverter.toGetContractInfoRes(contract);
     }
 
     // 전자 서명 제출
