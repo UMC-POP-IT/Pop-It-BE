@@ -48,6 +48,10 @@ spring:
       path: "/h2-console"
       settings:
         web-allow-others: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 jwt:
   token:
@@ -75,6 +79,12 @@ portone:
 
 toss:
   secret-key: ${TOSS_SECRET_KEY}
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  model: gemini-embedding-2
+  output-dimensionality: 768
 
 management:
   endpoints:
