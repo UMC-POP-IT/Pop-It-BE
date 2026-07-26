@@ -25,10 +25,6 @@ public interface SpaceVisitLogRepository extends JpaRepository<SpaceVisitLog, Lo
     long deleteByVisitDateBefore(LocalDate cutoff);
 
     // @TODO
-    // 공간 삭제 시 고아 로그 방지용 - 삭제되는 공간의 방문 기록을 정리
-    void deleteAllBySpaceId(Long spaceId);
-
-    // @TODO
     // 유저 탈퇴 시 고아 로그 방지용 - 탈퇴하는 유저의 방문 기록을 정리
     void deleteAllByUserId(Long userId);
 
