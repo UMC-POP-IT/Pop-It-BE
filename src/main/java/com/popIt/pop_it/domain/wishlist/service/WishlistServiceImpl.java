@@ -9,7 +9,9 @@ import com.popIt.pop_it.domain.wishlist.converter.WishlistConverter;
 import com.popIt.pop_it.domain.wishlist.dto.WishlistResDTO;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import com.popIt.pop_it.global.embedding.service.UserVectorService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class WishlistServiceImpl implements WishlistService {
@@ -27,6 +30,7 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final SpaceRepository spaceRepository;
     private final SpaceImageRepository spaceImageRepository;
+    private final UserVectorService userVectorService;
 
     // toggle은 의도적으로 @Transactional을 두지 않는다: exists/delete/save를 각각 독립된 짧은
     // 트랜잭션으로 즉시 커밋해야 (1) hot key 락 보유시간이 짧아 동시 토글 경합에 강하고,
@@ -41,6 +45,7 @@ public class WishlistServiceImpl implements WishlistService {
         // 이미 찜한 상태면 해제 (벌크 삭제라 동시 해제에도 멱등)
         if (wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)) {
             wishlistRepository.deleteByUserIdAndSpaceId(userId, spaceId);
+            recomputeUserVectorSafely(userId);
             return WishlistConverter.toToggle(spaceId, false);
         }
 
@@ -51,6 +56,7 @@ public class WishlistServiceImpl implements WishlistService {
         } catch (DataIntegrityViolationException e) {
             return WishlistConverter.toToggle(spaceId, true);
         }
+        recomputeUserVectorSafely(userId);
         return WishlistConverter.toToggle(spaceId, true);
     }
 
@@ -82,5 +88,13 @@ public class WishlistServiceImpl implements WishlistService {
                         row -> row.getCount().intValue()));
 
         return WishlistConverter.toMyWishlistResult(spacePage, thumbnailUrlBySpaceId, wishCountBySpaceId);
+    }
+    
+    private void recomputeUserVectorSafely(Long userId) {
+        try {
+            userVectorService.recomputeUserVector(userId);
+        } catch (Exception e) {
+            log.warn("유저(id={}) 취향 벡터 재계산 실패 - 찜 처리 자체는 정상 반영됨", userId, e);
+        }
     }
 }
