@@ -229,6 +229,9 @@ public class SpaceResDTO {
     public record AiRecommendedSpaceListRes(
             List<AiRecommendedSpaceRes> spaces,
             Boolean hasNext,
-            String nextCursor
+            String nextCursor,
+
+            @Schema(description = "찜/조회 이력이 있어 맞춤 추천을 시도했는지 여부. false면 이력이 없어 spaces가 항상 빈 배열입니다.", example = "true")
+            Boolean hasActivityHistory
     ) {}
 }

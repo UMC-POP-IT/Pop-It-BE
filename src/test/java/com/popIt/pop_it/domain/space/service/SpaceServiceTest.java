@@ -72,8 +72,8 @@ class SpaceServiceTest {
         org.assertj.core.api.Assertions.assertThat(captor.getValue().spaceId()).isEqualTo(savedSpaceId);
     }
 
-    private SpaceReqDTO.Create createRequest() {
-        return new SpaceReqDTO.Create(
+    private SpaceReqDTO.SpaceCreateReq createRequest() {
+        return new SpaceReqDTO.SpaceCreateReq(
                 "테스트 빌딩",
                 RegistrantType.OWNER,
                 BuildingType.LARGE_OFFICE,
