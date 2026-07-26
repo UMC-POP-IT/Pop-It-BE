@@ -12,8 +12,11 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "Wishlist", description = "찜 API")
 @RestController
+@Validated
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users/me/wishlist")
 public class UserWishlistController {
@@ -38,15 +42,16 @@ public class UserWishlistController {
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 페이징 파라미터(page<0 또는 size 범위 밖)", content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "로그인 필요", content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping
     public ApiResponse<WishlistResDTO.MyWishlistResult> getMyWishlist(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "페이지 크기", example = "12")
-            @RequestParam(defaultValue = "12") int size
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @Parameter(description = "페이지 크기 (1~12)", example = "12")
+            @RequestParam(defaultValue = "12") @Min(1) @Max(12) int size
     ) {
         // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
         if (authUser == null || authUser.getUser() == null) {

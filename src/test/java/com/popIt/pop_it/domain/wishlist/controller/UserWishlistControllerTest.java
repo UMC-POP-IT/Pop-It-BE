@@ -197,4 +197,27 @@ class UserWishlistControllerTest {
         mockMvc.perform(get("/api/v1/users/me/wishlist"))
                 .andExpect(status().isUnauthorized());
     }
+
+    @Test
+    @DisplayName("page가 음수면 500이 아니라 400을 반환한다")
+    void getMyWishlist_invalidPage() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me/wishlist")
+                        .header("Authorization", accessToken)
+                        .param("page", "-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("size가 범위 밖(0 또는 12 초과)이면 400을 반환한다")
+    void getMyWishlist_invalidSize() throws Exception {
+        mockMvc.perform(get("/api/v1/users/me/wishlist")
+                        .header("Authorization", accessToken)
+                        .param("size", "0"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/users/me/wishlist")
+                        .header("Authorization", accessToken)
+                        .param("size", "13"))
+                .andExpect(status().isBadRequest());
+    }
 }
