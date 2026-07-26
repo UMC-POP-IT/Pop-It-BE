@@ -57,7 +57,7 @@ jwt:
       refresh: 1209600000 # 14일
 
 app:
-  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
 
 cloud:
   aws:
