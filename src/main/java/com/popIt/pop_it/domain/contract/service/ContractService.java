@@ -130,7 +130,7 @@ public class ContractService {
 
     // 전자 서명 제출
     @Transactional
-    public ContractResDTO.SignatureRes signature(User user, Long reservationId, ContractReqDTO.SignatureReq dto) {
+    public ContractResDTO.ContractSignatureRes signature(User user, Long reservationId, ContractReqDTO.ContractSignatureReq dto) {
 
         // 예약 조회 후 사용자의 예약인지 검사
         Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(()->new ReservationException(ReservationErrorCode.RESERVATION_NOT_FOUND));
@@ -186,7 +186,7 @@ public class ContractService {
             throw new ContractException(ContractErrorCode.CONTRACT_CONCURRENT_MODIFICATION);
         }
 
-        return ContractResDTO.SignatureRes.builder()
+        return ContractResDTO.ContractSignatureRes.builder()
                 .contractStatus(contract.getStatus())
                 .bothSigned(contract.getStatus() == ContractStatus.PENDING_PAYMENT)
                 .build();

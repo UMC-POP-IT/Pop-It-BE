@@ -245,22 +245,22 @@ class ContractSignatureConcurrencyTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CyclicBarrier barrier = new CyclicBarrier(2);
 
-        Callable<ContractResDTO.SignatureRes> attempt = () -> {
+        Callable<ContractResDTO.ContractSignatureRes> attempt = () -> {
             // 두 스레드가 최대한 같은 순간에 signature()를 호출하도록 동기화해 레이스를 유도
             barrier.await(5, TimeUnit.SECONDS);
             return contractService.signature(
                     host, reservationId,
-                    new ContractReqDTO.SignatureReq("https://signature.example.com/host.png"));
+                    new ContractReqDTO.ContractSignatureReq("https://signature.example.com/host.png"));
         };
 
-        List<Future<ContractResDTO.SignatureRes>> futures = executor.invokeAll(List.of(attempt, attempt));
+        List<Future<ContractResDTO.ContractSignatureRes>> futures = executor.invokeAll(List.of(attempt, attempt));
         executor.shutdown();
 
         int successCount = 0;
         int conflictCount = 0;
-        for (Future<ContractResDTO.SignatureRes> future : futures) {
+        for (Future<ContractResDTO.ContractSignatureRes> future : futures) {
             try {
-                ContractResDTO.SignatureRes result = future.get();
+                ContractResDTO.ContractSignatureRes result = future.get();
                 assertThat(result.contractStatus()).isEqualTo(ContractStatus.GUEST_SIGNATURE_PENDING);
                 successCount++;
             } catch (ExecutionException e) {

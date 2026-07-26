@@ -56,21 +56,21 @@ class PaymentWebhookServiceTest {
                 .build();
     }
 
-    private PaymentReqDTO.Webhook webhookOf(String status) {
-        return new PaymentReqDTO.Webhook(
+    private PaymentReqDTO.PaymentWebhookReq webhookOf(String status) {
+        return new PaymentReqDTO.PaymentWebhookReq(
                 "PAYMENT_STATUS_CHANGED",
-                new PaymentReqDTO.Webhook.WebhookData(PAYMENT_KEY, ORDER_ID, status));
+                new PaymentReqDTO.PaymentWebhookReq.WebhookData(PAYMENT_KEY, ORDER_ID, status));
     }
 
-    private PaymentResDTO.TossConfirm tossConfirmOf(String status) {
-        return new PaymentResDTO.TossConfirm(
+    private PaymentResDTO.TossConfirmRes tossConfirmOf(String status) {
+        return new PaymentResDTO.TossConfirmRes(
                 PAYMENT_KEY, ORDER_ID, "카드", status, 155_000L, OffsetDateTime.now());
     }
 
     @Test
     void 검증을_통과하면_applier에_반영을_위임한다() {
         Payment payment = paymentOf(PaymentStatus.PENDING);
-        PaymentResDTO.TossConfirm actual = tossConfirmOf("DONE");
+        PaymentResDTO.TossConfirmRes actual = tossConfirmOf("DONE");
         given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
         given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(actual);
 
@@ -91,8 +91,8 @@ class PaymentWebhookServiceTest {
 
     @Test
     void PAYMENT_STATUS_CHANGED가_아닌_이벤트는_무시한다() {
-        PaymentReqDTO.Webhook payload = new PaymentReqDTO.Webhook(
-                "OTHER_EVENT", new PaymentReqDTO.Webhook.WebhookData(PAYMENT_KEY, ORDER_ID, "DONE"));
+        PaymentReqDTO.PaymentWebhookReq payload = new PaymentReqDTO.PaymentWebhookReq(
+                "OTHER_EVENT", new PaymentReqDTO.PaymentWebhookReq.WebhookData(PAYMENT_KEY, ORDER_ID, "DONE"));
 
         paymentWebhookService.handle(payload);
 
@@ -102,7 +102,7 @@ class PaymentWebhookServiceTest {
 
     @Test
     void data가_없으면_조용히_무시한다() {
-        PaymentReqDTO.Webhook payload = new PaymentReqDTO.Webhook("PAYMENT_STATUS_CHANGED", null);
+        PaymentReqDTO.PaymentWebhookReq payload = new PaymentReqDTO.PaymentWebhookReq("PAYMENT_STATUS_CHANGED", null);
 
         paymentWebhookService.handle(payload);
 
@@ -114,7 +114,7 @@ class PaymentWebhookServiceTest {
     void 조회_결과의_주문번호가_다르면_반영하지_않는다() {
         Payment payment = paymentOf(PaymentStatus.PENDING);
         given(paymentRepository.findByOrderId(ORDER_ID)).willReturn(Optional.of(payment));
-        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(new PaymentResDTO.TossConfirm(
+        given(tossPaymentClient.getPayment(PAYMENT_KEY)).willReturn(new PaymentResDTO.TossConfirmRes(
                 PAYMENT_KEY, "OTHER_ORDER_ID", "카드", "DONE", 155_000L, OffsetDateTime.now()));
 
         paymentWebhookService.handle(webhookOf("DONE"));

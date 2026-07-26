@@ -5,7 +5,7 @@ import com.popIt.pop_it.domain.user.entity.enums.TaxationType;
 
 import java.time.LocalDateTime;
 
-public record HostProfileResponse(
+public record HostProfileRes(
         Long id,
         TaxationType taxationType,
         String businessRegistrationNumber,

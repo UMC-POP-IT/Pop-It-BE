@@ -13,7 +13,7 @@ public class SpaceResDTO {
     // 공간 등록
     @Schema(description = "공간 등록 응답")
     @Builder
-    public record CreateResult(
+    public record SpaceCreateRes(
             @Schema(description = "등록된 공간 ID", example = "10")
             Long spaceId,
 
@@ -23,7 +23,7 @@ public class SpaceResDTO {
 
     // 공간 상세 조회
     @Schema(description = "공간에 연결된 시설 항목")
-    public record FacilityItem(
+    public record SpaceFacilityItemRes(
             @Schema(description = "시설 ID (공간 수정 화면의 체크박스 초기값 매핑용)", example = "1")
             Long facilityId,
 
@@ -36,7 +36,7 @@ public class SpaceResDTO {
 
     @Schema(description = "공간 상세 조회 응답")
     @Builder
-    public record Detail(
+    public record SpaceDetailRes(
             @Schema(description = "공간 ID", example = "10")
             Long spaceId,
 
@@ -98,7 +98,7 @@ public class SpaceResDTO {
             Boolean parkingAvailable,
 
             @Schema(description = "연결된 시설 목록. 없으면 빈 배열")
-            List<FacilityItem> facilities,
+            List<SpaceFacilityItemRes> facilities,
 
             @Schema(description = "공간 소개", example = "홍대, 합정 중심지에 위치한 공간입니다.")
             String description,
@@ -118,7 +118,7 @@ public class SpaceResDTO {
 
     @Schema(description = "내 공간 목록 항목")
     @Builder
-    public record MySpace(
+    public record MySpaceRes(
             @Schema(description = "공간 ID", example = "10")
             Long spaceId,
 
@@ -134,9 +134,9 @@ public class SpaceResDTO {
 
     @Schema(description = "내 공간 목록 조회 응답")
     @Builder
-    public record MyListResult(
+    public record MySpaceListRes(
             @Schema(description = "공간 목록")
-            List<MySpace> spaces,
+            List<MySpaceRes> spaces,
 
             @Schema(description = "내가 등록한 전체 공간 수", example = "2")
             Integer totalCount,
@@ -209,7 +209,7 @@ public class SpaceResDTO {
     ) {}
 
     @Builder
-    public record AiRecommendedSpace(
+    public record AiRecommendedSpaceRes(
             Long spaceId,
             String buildingName,
             String tag,
@@ -226,8 +226,8 @@ public class SpaceResDTO {
     ) {}
 
     @Builder
-    public record AiRecommendedSpaceList(
-            List<AiRecommendedSpace> spaces,
+    public record AiRecommendedSpaceListRes(
+            List<AiRecommendedSpaceRes> spaces,
             Boolean hasNext,
             String nextCursor
     ) {}

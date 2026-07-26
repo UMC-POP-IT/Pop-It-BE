@@ -6,8 +6,8 @@ import com.popIt.pop_it.domain.reservation.entity.Reservation;
 
 public class ContractConverter {
     // 결제 예정(게스트) 정보 조회
-    public static ContractResDTO.GetGuestContractInfoRes toGetGuestContractInfoRes(Reservation reservation) {
-        return ContractResDTO.GetGuestContractInfoRes.builder()
+    public static ContractResDTO.ContractGuestInfoRes toGetGuestContractInfoRes(Reservation reservation) {
+        return ContractResDTO.ContractGuestInfoRes.builder()
                 .spaceName(reservation.getSpace().getBuildingName())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())
@@ -20,8 +20,8 @@ public class ContractConverter {
     }
 
     // 임대 예정(호스트) 정보 조회
-    public static ContractResDTO.GetHostContractInfoRes toGetHostContractInfoRes(Reservation reservation) {
-        return ContractResDTO.GetHostContractInfoRes.builder()
+    public static ContractResDTO.ContractHostInfoRes toGetHostContractInfoRes(Reservation reservation) {
+        return ContractResDTO.ContractHostInfoRes.builder()
                 .spaceName(reservation.getSpace().getBuildingName())
                 .startDate(reservation.getStartDate())
                 .endDate(reservation.getEndDate())

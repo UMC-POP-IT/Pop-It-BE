@@ -1,8 +1,8 @@
 package com.popIt.pop_it.domain.user.controller;
 
-import com.popIt.pop_it.domain.user.dto.HostProfileResponse;
-import com.popIt.pop_it.domain.user.dto.HostRegisterRequest;
-import com.popIt.pop_it.domain.user.dto.HostRegisterResponse;
+import com.popIt.pop_it.domain.user.dto.HostProfileRes;
+import com.popIt.pop_it.domain.user.dto.HostRegisterReq;
+import com.popIt.pop_it.domain.user.dto.HostRegisterRes;
 import com.popIt.pop_it.domain.user.exception.code.HostSuccessCode;
 import com.popIt.pop_it.domain.user.service.HostService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
@@ -49,9 +49,9 @@ public class HostController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 등록된 호스트 프로필", content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ResponseEntity<ApiResponse<HostRegisterResponse>> registerHost(
+    public ResponseEntity<ApiResponse<HostRegisterRes>> registerHost(
             @AuthenticationPrincipal AuthUser authUser,
-            @Valid @RequestBody HostRegisterRequest request
+            @Valid @RequestBody HostRegisterReq request
     ) {
         // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
         if (authUser == null || authUser.getUser() == null) {
@@ -59,7 +59,7 @@ public class HostController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        HostRegisterResponse result = hostService.register(userId, request);
+        HostRegisterRes result = hostService.register(userId, request);
 
         return ResponseEntity.status(HostSuccessCode.HOST_REGISTER.getStatus())
                 .body(ApiResponse.onSuccess(HostSuccessCode.HOST_REGISTER, result));
@@ -76,7 +76,7 @@ public class HostController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "호스트 프로필 없음", content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResponse<HostProfileResponse>> getMyProfile(
+    public ResponseEntity<ApiResponse<HostProfileRes>> getMyProfile(
             @AuthenticationPrincipal AuthUser authUser
     ) {
         if (authUser == null || authUser.getUser() == null) {
@@ -84,7 +84,7 @@ public class HostController {
         }
 
         Long userId = authUser.getUser().getUserId();
-        HostProfileResponse result = hostService.getMyProfile(userId);
+        HostProfileRes result = hostService.getMyProfile(userId);
 
         return ResponseEntity.ok(ApiResponse.onSuccess(HostSuccessCode.HOST_GET, result));
     }
