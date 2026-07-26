@@ -47,6 +47,9 @@ public class Space {
     @Column(length = 50, nullable = false)
     private String district; // 시/군/구
 
+    @Column(length = 50)
+    private String dong;
+
     @Column(nullable = false)
     private Double latitude; // 위도
 
@@ -101,5 +104,5 @@ public class Space {
     private LocalDateTime deletedAt; // 삭제일시
 
     @Column(nullable = false)
-    private Long hostId; // 호스트(등록자) 식별자
+    private Long hostId; // 공간을 등록한 호스트의 user.id (host_profile.id 아님)
 }
