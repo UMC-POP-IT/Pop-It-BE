@@ -1,0 +1,54 @@
+package com.popIt.pop_it.domain.scene.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.URL;
+
+import java.util.List;
+
+public class SceneReqDTO {
+
+    public record Create(
+            @NotBlank String name,
+            @NotBlank @URL String modelUrl,
+            @NotBlank @URL String thumbnail,
+            @NotNull Double cameraPositionX,
+            @NotNull Double cameraPositionY,
+            @NotNull Double cameraPositionZ,
+            @NotNull Double cameraTargetX,
+            @NotNull Double cameraTargetY,
+            @NotNull Double cameraTargetZ,
+            @NotNull Double minDistance,
+            @NotNull Double maxDistance,
+            @NotNull Double minPolarAngle,
+            @NotNull Double maxPolarAngle,
+            List<@NotBlank @URL String> imageUrls, // presigned URL로 업로드 완료한 이미지 URL 목록
+            Boolean isDefault // null이면 false로 처리
+    ) {
+    }
+
+    public record Update(
+            String name,
+            @URL String modelUrl,
+            @URL String thumbnail,
+            Boolean isDefault,
+            // 카메라 설정
+            Double cameraPositionX,
+            Double cameraPositionY,
+            Double cameraPositionZ,
+            Double cameraTargetX,
+            Double cameraTargetY,
+            Double cameraTargetZ,
+            Double minDistance,
+            Double maxDistance,
+            Double minPolarAngle,
+            Double maxPolarAngle
+    ) {
+    }
+
+    public record ImageUpload(
+            @NotEmpty List<@NotBlank @URL String> imageUrls // 프론트가 presigned URL로 이미 업로드 완료한 이미지 URL 목록
+    ) {
+    }
+}
