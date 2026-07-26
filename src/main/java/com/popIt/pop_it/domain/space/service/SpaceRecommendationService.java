@@ -11,6 +11,8 @@ import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContext;
 import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContextResolver;
 import com.popIt.pop_it.domain.space.repository.SpaceEmbeddingRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
+import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
+import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
@@ -40,6 +42,7 @@ public class SpaceRecommendationService {
     private final SpaceEmbeddingRepository spaceEmbeddingRepository;
     private final SpaceImageRepository spaceImageRepository;
     private final WishlistRepository wishlistRepository;
+    private final UserActivityRepository userActivityRepository;
     private final UserVectorService userVectorService;
     private final UserRecommendationContextResolver userRecommendationContextResolver;
     private final RecommendationReasonEvaluator recommendationReasonEvaluator;
@@ -59,12 +62,15 @@ public class SpaceRecommendationService {
                     .build();
         }
 
-        // 이미 찜한 공간은 추천의 의미가 없으므로 후보에서 제외
-        Set<Long> wishlistedSpaceIds = wishlistRepository.findByUserId(userId).stream()
+        // 이미 찜했거나 조회한 공간은 추천의 의미가 없으므로 후보에서 제외
+        Set<Long> excludedSpaceIds = wishlistRepository.findByUserId(userId).stream()
                 .map(Wishlist::getSpaceId)
                 .collect(Collectors.toSet());
+        userActivityRepository.findByUserId(userId).stream()
+                .map(UserActivity::getSpaceId)
+                .forEach(excludedSpaceIds::add);
         List<Space> candidates = spaceEmbeddingRepository.findAllByEmbeddingIsNotNullAndDeletedAtIsNull().stream()
-                .filter(space -> !wishlistedSpaceIds.contains(space.getId()))
+                .filter(space -> !excludedSpaceIds.contains(space.getId()))
                 .toList();
 
         List<Space> ranked = rankBySimilarity(candidates, userVector.get());

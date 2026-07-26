@@ -13,6 +13,8 @@ import com.popIt.pop_it.domain.space.recommendation.RecommendationReasonEvaluato
 import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContextResolver;
 import com.popIt.pop_it.domain.space.repository.SpaceEmbeddingRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
+import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
+import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
@@ -33,6 +35,8 @@ class SpaceRecommendationServiceTest {
     private SpaceImageRepository spaceImageRepository;
     @Mock
     private WishlistRepository wishlistRepository;
+    @Mock
+    private UserActivityRepository userActivityRepository;
     @Mock
     private UserVectorService userVectorService;
     @Mock
@@ -117,6 +121,28 @@ class SpaceRecommendationServiceTest {
         assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
                 .containsExactly(2L);
         assertThat(result.spaces()).allMatch(space -> !space.isWishlisted());
+    }
+
+    @Test
+    void 이미_조회한_공간은_추천_후보에서_제외된다() {
+        Long userId = 1L;
+        Space viewedSpace = spaceWithEmbedding(1L, new float[]{1f, 0f}); // 유사도 1.0으로 가장 가깝지만 이미 조회함
+        Space otherSpace = spaceWithEmbedding(2L, new float[]{0.9f, 0.436f}); // 기준(0.5) 통과하는 차순위
+
+        given(userVectorService.getUserVector(userId)).willReturn(Optional.of(new float[]{1f, 0f}));
+        given(spaceEmbeddingRepository.findAllByEmbeddingIsNotNullAndDeletedAtIsNull())
+                .willReturn(List.of(viewedSpace, otherSpace));
+        given(wishlistRepository.findByUserId(userId)).willReturn(List.of());
+        given(userActivityRepository.findByUserId(userId)).willReturn(List.of(
+                UserActivity.builder().userId(userId).spaceId(1L).build()
+        ));
+        given(spaceImageRepository.findThumbnailsBySpaceIds(any())).willReturn(List.of());
+
+        SpaceResDTO.AiRecommendedSpaceListRes result =
+                spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
+                .containsExactly(2L);
     }
 
     private Space spaceWithEmbedding(Long id, float[] embedding) {
