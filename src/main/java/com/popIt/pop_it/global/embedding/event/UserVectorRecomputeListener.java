@@ -6,6 +6,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -35,8 +36,11 @@ public class UserVectorRecomputeListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onUserEngagement(UserEngagementEvent event) {
         Long userId = event.userId();
+
+        AtomicReference<ScheduledFuture<?>> selfRef = new AtomicReference<>();
         ScheduledFuture<?> scheduled = userVectorDebounceScheduler.schedule(
-                () -> recompute(userId), DEBOUNCE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
+                () -> recompute(userId, selfRef.get()), DEBOUNCE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
+        selfRef.set(scheduled);
 
         ScheduledFuture<?> previous = pendingRecomputes.put(userId, scheduled);
         if (previous != null) {
@@ -44,8 +48,13 @@ public class UserVectorRecomputeListener {
         }
     }
 
-    private void recompute(Long userId) {
-        pendingRecomputes.remove(userId);
+    private void recompute(Long userId, ScheduledFuture<?> self) {
+        // 맵에 남아있는 게 정확히 "나 자신"일 때만 지운다.
+        // 본인이 더 이상 최신이 아니면(=제거 실패) 곧 실행될 최신 태스크에 맡기고 재계산도 건너뛴다.
+        boolean stillCurrent = pendingRecomputes.remove(userId, self);
+        if (!stillCurrent) {
+            return;
+        }
         try {
             userVectorService.recomputeUserVector(userId);
         } catch (Exception e) {

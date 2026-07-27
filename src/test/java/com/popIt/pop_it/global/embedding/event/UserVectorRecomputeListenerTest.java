@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
@@ -56,6 +58,36 @@ class UserVectorRecomputeListenerTest {
 
         // 두 번째 이벤트가 오면 첫 번째로 예약해둔 재계산은 취소하고 타이머를 다시 시작해야 한다
         verify(firstScheduled).cancel(false);
+    }
+
+    @Test
+    void 취소가_실패해서_이전_태스크가_실행중이어도_최신_예약의_재계산만_실행된다() {
+        ScheduledFuture firstScheduled = mock(ScheduledFuture.class);
+        ScheduledFuture secondScheduled = mock(ScheduledFuture.class);
+        given(userVectorDebounceScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .willReturn(firstScheduled)
+                .willReturn(secondScheduled);
+        // 이미 실행이 시작돼서 취소 요청이 반영되지 않는 상황을 재현
+        given(firstScheduled.cancel(false)).willReturn(false);
+
+        listener.onUserEngagement(new UserEngagementEvent(1L));
+        listener.onUserEngagement(new UserEngagementEvent(1L)); // 두 번째 이벤트가 대기 목록을 secondScheduled로 덮어씀
+
+        ArgumentCaptor<Runnable> taskCaptor = ArgumentCaptor.forClass(Runnable.class);
+        verify(userVectorDebounceScheduler, times(2)).schedule(taskCaptor.capture(), anyLong(), any(TimeUnit.class));
+        Runnable firstTask = taskCaptor.getAllValues().get(0);
+        Runnable secondTask = taskCaptor.getAllValues().get(1);
+
+        // 취소가 안 먹혀서 이미 실행 중이던 첫 번째 태스크가 뒤늦게 도는 상황을 재현
+        firstTask.run();
+        // 대기 목록의 현재 값은 이미 secondScheduled로 바뀌어 있으므로, 첫 번째 태스크는 자기 자신이
+        // 아니라는 걸 확인하고 재계산을 건너뛰어야 한다 (안 그러면 이 자리에서 secondScheduled의
+        // 엔트리를 잘못 지워서 취소 체인이 끊긴다)
+        verify(userVectorService, never()).recomputeUserVector(1L);
+
+        // 진짜 최신 태스크가 실행되면 그때는 정상적으로 재계산해야 한다
+        secondTask.run();
+        verify(userVectorService).recomputeUserVector(1L);
     }
 
     @Test

@@ -18,9 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -47,12 +47,16 @@ public class UserVectorService {
 
     // 같은 유저의 재계산이 겹치면(연속 찜 토글 등) 늦게 시작했지만 먼저 끝난 계산이 Redis를 덮어써
     // 최신 벡터가 오래된 값으로 되돌아갈 수 있다 - 유저 단위로 읽기~쓰기 전체를 직렬화해 막는다.
-    private final ConcurrentHashMap<Long, Object> recomputeLocks = new ConcurrentHashMap<>();
+    // 고정 개수의 락에 해시로 나눠 담는 스트라이프 방식을 사용해
+    // 락 저장 공간 자체는 유저 수와 무관하게 항상 STRIPE_COUNT개로 고정된다.
+    private static final int STRIPE_COUNT = 32;
+    private final Object[] recomputeLocks = IntStream.range(0, STRIPE_COUNT)
+            .mapToObj(i -> new Object())
+            .toArray();
 
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void recomputeUserVector(Long userId) {
-        Object lock = recomputeLocks.computeIfAbsent(userId, id -> new Object());
-        synchronized (lock) {
+        synchronized (lockFor(userId)) {
             LocalDateTime now = LocalDateTime.now();
 
             List<Wishlist> wishlists = wishlistRepository.findByUserId(userId);
@@ -102,6 +106,11 @@ public class UserVectorService {
         // 유저"인지 DB 이력으로 다시 계산해서 구분한다.
         recomputeUserVector(userId);
         return userVectorRedisStore.find(userId);
+    }
+
+    private Object lockFor(Long userId) {
+        int index = Math.floorMod(userId.hashCode(), STRIPE_COUNT);
+        return recomputeLocks[index];
     }
 
     private void addWeightedVector(List<WeightedVector> target, Space space,
