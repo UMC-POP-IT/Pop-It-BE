@@ -74,7 +74,7 @@ class SpaceUvAggregationSchedulerTest {
 
         scheduler.aggregateYesterdayUv();
 
-        verify(spaceVisitLogRepository).deleteByVisitDateBefore(eq(LocalDate.now()));
+        verify(spaceVisitLogRepository).deleteByVisitDate(eq(LocalDate.now().minusDays(1)));
         verify(spaceDailyUvRepository).deleteByVisitDateBefore(eq(LocalDate.now().minusDays(8)));
     }
 }

@@ -111,11 +111,16 @@ public class SpaceRecommendationService {
         if (cursor == null || cursor.isBlank()) {
             return 0;
         }
+        int offset;
         try {
-            return Integer.parseInt(cursor);
+            offset = Integer.parseInt(cursor);
         } catch (NumberFormatException e) {
             throw new ProjectException(SpaceErrorCode.INVALID_CURSOR);
         }
+        if (offset < 0) {
+            throw new ProjectException(SpaceErrorCode.INVALID_CURSOR);
+        }
+        return offset;
     }
 
     private SpaceResDTO.AiRecommendedSpaceRes toAiRecommendedSpace(Space space, Map<Long, String> thumbnailBySpaceId,

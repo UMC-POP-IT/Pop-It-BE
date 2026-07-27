@@ -3,6 +3,7 @@ package com.popIt.pop_it.global.embedding.event;
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
@@ -18,7 +19,8 @@ public class UserVectorRecomputeListener {
 
     private final UserVectorService userVectorService;
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Async("embeddingTaskExecutor")
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onUserEngagement(UserEngagementEvent event) {
         try {
             userVectorService.recomputeUserVector(event.userId());

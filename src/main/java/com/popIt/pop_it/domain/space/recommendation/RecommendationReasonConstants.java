@@ -7,6 +7,8 @@ public final class RecommendationReasonConstants {
 
     private RecommendationReasonConstants() {}
 
+    // 대표 지역 중심에서 이 반경 내여야 "가깝다"고 판단 (COLD_TARGET_NEARBY)
+    public static final double COLD_TARGET_NEARBY_RADIUS_KM = 3.0;
     // 최근 N일 내 A지역 조회+찜 합산 3회 이상
     public static final int REGION_PIVOT_MIN_VIEW_COUNT = 3;
     public static final int REGION_PIVOT_WINDOW_DAYS = 7;

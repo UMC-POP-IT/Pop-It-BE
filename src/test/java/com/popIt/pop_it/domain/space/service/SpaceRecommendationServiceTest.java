@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.space.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
@@ -9,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
+import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.recommendation.RecommendationReasonEvaluator;
 import com.popIt.pop_it.domain.space.recommendation.UserRecommendationContextResolver;
 import com.popIt.pop_it.domain.space.repository.SpaceEmbeddingRepository;
@@ -17,6 +19,7 @@ import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
 import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
+import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
 import java.util.List;
 import java.util.Optional;
@@ -143,6 +146,16 @@ class SpaceRecommendationServiceTest {
 
         assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
                 .containsExactly(2L);
+    }
+
+    @Test
+    void 커서가_음수면_예외가_발생한다() {
+        Long userId = 1L;
+
+        assertThatThrownBy(() -> spaceRecommendationService.getRecommendedSpaces(userId, "-1", 10))
+                .isInstanceOf(ProjectException.class)
+                .hasFieldOrPropertyWithValue("errorCode", SpaceErrorCode.INVALID_CURSOR);
+        verify(userVectorService, never()).getUserVector(any());
     }
 
     private Space spaceWithEmbedding(Long id, float[] embedding) {

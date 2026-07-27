@@ -44,8 +44,10 @@ public class SpaceUvAggregationScheduler {
             spaceDailyUvRepository.save(daily);
         }
 
-        // 집계 끝난 원본 방문 로그 정리 - 실제 8일치 히스토리는 SpaceDailyUv가 담당
-        spaceVisitLogRepository.deleteByVisitDateBefore(LocalDate.now());
+        // 집계 끝난 원본 방문 로그 정리 - 실제 8일치 히스토리는 SpaceDailyUv가 담당.
+        // 오늘 이전 전체가 아니라 방금 집계한 날짜(yesterday)만 지운다 - 배치가 못 돈 날이 있어도
+        // 그 미집계 로그는 남아있어야 다음에 되살릴 여지가 있다.
+        spaceVisitLogRepository.deleteByVisitDate(yesterday);
 
         // 보관 기간(8일)이 지난 집계 데이터 정리
         LocalDate retentionCutoff = LocalDate.now().minusDays(RETENTION_DAYS);

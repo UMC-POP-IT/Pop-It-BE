@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.space.recommendation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceDailyUv;
@@ -29,6 +30,7 @@ class RecommendationReasonEvaluatorTest {
     private RecommendationReasonEvaluator evaluator;
 
     private static final RegionCenter GANGNAM_CENTER = new RegionCenter(37.4979, 127.0276);
+    private static final RegionCenter HAPJEONG_CENTER = new RegionCenter(37.55, 126.92);
 
     @BeforeEach
     void setUp() {
@@ -44,14 +46,15 @@ class RecommendationReasonEvaluatorTest {
                 .build();
     }
 
-    // 최신순으로 uv24h가 맨 앞, 그 뒤로 baselineDailyUv가 "직전 7일 베이스라인"이 되도록 SpaceDailyUv 목록을 만든다
+    // uv24h는 "어제"(스케줄러가 매일 00:10에 확정 저장하는 날짜) 행으로, baselineDailyUv는
+    // 그 전 날짜부터 순서대로 "직전 7일 베이스라인" 행으로 SpaceDailyUv 목록을 만든다
     private List<SpaceDailyUv> dailyUvHistory(Long spaceId, int uv24h, int... baselineDailyUv) {
-        LocalDate today = LocalDate.now();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
         List<SpaceDailyUv> history = new ArrayList<>();
-        history.add(SpaceDailyUv.builder().spaceId(spaceId).visitDate(today).uvCount(uv24h).build());
+        history.add(SpaceDailyUv.builder().spaceId(spaceId).visitDate(yesterday).uvCount(uv24h).build());
         for (int i = 0; i < baselineDailyUv.length; i++) {
             history.add(SpaceDailyUv.builder()
-                    .spaceId(spaceId).visitDate(today.minusDays(i + 1)).uvCount(baselineDailyUv[i]).build());
+                    .spaceId(spaceId).visitDate(yesterday.minusDays(i + 1)).uvCount(baselineDailyUv[i]).build());
         }
         return history;
     }
@@ -59,6 +62,7 @@ class RecommendationReasonEvaluatorTest {
     @Test
     void 콜드_타겟_후보_공간의_동이_유저_이력에_없으면_추천된다() {
         Space candidate = space(1L, "홍대", 37.55, 126.92, 50000);
+        given(regionCenterResolver.resolveCenter("합정")).willReturn(Optional.of(HAPJEONG_CENTER));
         // 유저는 "합정"만 다녀봤고 "홍대"는 아직 안 가봄
         UserRecommendationContext context = new UserRecommendationContext(
                 1L, true, Set.of("합정"), "합정", 0, 0, null, null);
@@ -166,7 +170,23 @@ class RecommendationReasonEvaluatorTest {
     void FOMO_비교할_베이스라인_이력이_없으면_추천되지_않는다() {
         Space candidate = space(1L, "홍대", 37.55, 126.92, 50000);
         given(spaceDailyUvRepository.findTop8BySpaceIdOrderByVisitDateDesc(1L))
-                .willReturn(dailyUvHistory(1L, 100)); // 오늘 하루치밖에 없음
+                .willReturn(dailyUvHistory(1L, 100)); // 어제치밖에 없음 -> 베이스라인 7일이 전부 0으로 채워져 평균이 0
+        UserRecommendationContext context = new UserRecommendationContext(
+                1L, true, Set.of("홍대"), null, 0, 0, null, null);
+
+        Optional<RecommendationReasonResult> result = evaluator.evaluate(candidate, context);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void FOMO_어제치_집계가_없으면_더_오래된_기록이_있어도_추천되지_않는다() {
+        // 방문이 없던 날은 SpaceDailyUv 행 자체가 생기지 않으므로, "가장 최근 행"이 실제로는
+        // 어제가 아니라 며칠 전 데이터일 수 있다 - 이 경우 그 오래된 행을 uv24h로 착각하면 안 된다.
+        Space candidate = space(1L, "홍대", 37.55, 126.92, 50000);
+        LocalDate threeDaysAgo = LocalDate.now().minusDays(3);
+        given(spaceDailyUvRepository.findTop8BySpaceIdOrderByVisitDateDesc(1L))
+                .willReturn(List.of(SpaceDailyUv.builder().spaceId(1L).visitDate(threeDaysAgo).uvCount(999).build()));
         UserRecommendationContext context = new UserRecommendationContext(
                 1L, true, Set.of("홍대"), null, 0, 0, null, null);
 
@@ -240,10 +260,8 @@ class RecommendationReasonEvaluatorTest {
 
     @Test
     void 여러_조건이_동시에_만족되면_우선순위가_높은_태그가_선택된다() {
-        // 콜드 타겟(1순위)과 FOMO(3순위) 조건을 동시에 만족시켜서 콜드 타겟이 선택되는지 검증
         Space candidate = space(1L, "홍대", 37.55, 126.92, 50000);
-        given(spaceDailyUvRepository.findTop8BySpaceIdOrderByVisitDateDesc(1L))
-                .willReturn(dailyUvHistory(1L, 20, 10, 10, 10, 10, 10, 10, 10));
+        given(regionCenterResolver.resolveCenter("합정")).willReturn(Optional.of(HAPJEONG_CENTER));
         UserRecommendationContext context = new UserRecommendationContext(
                 1L, true, Set.of("합정"), "합정", 0, 0, null, null);
 
@@ -251,6 +269,7 @@ class RecommendationReasonEvaluatorTest {
 
         assertThat(result).isPresent();
         assertThat(result.get().type()).isEqualTo(RecommendationReasonType.COLD_TARGET_NEARBY);
+        verifyNoInteractions(spaceDailyUvRepository);
     }
 
     @Test

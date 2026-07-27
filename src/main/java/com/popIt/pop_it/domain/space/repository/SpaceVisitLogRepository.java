@@ -21,8 +21,8 @@ public interface SpaceVisitLogRepository extends JpaRepository<SpaceVisitLog, Lo
             """)
     List<SpaceUvCount> countDistinctUsersByVisitDate(@Param("visitDate") LocalDate visitDate);
 
-    // 집계가 끝난 원본 방문 로그는 배치가 정리한다
-    long deleteByVisitDateBefore(LocalDate cutoff);
+    // 이번 배치 실행에서 실제로 집계에 성공한 날짜의 원본 로그만 정리한다.
+    long deleteByVisitDate(LocalDate visitDate);
 
     // @TODO
     // 유저 탈퇴 시 고아 로그 방지용 - 탈퇴하는 유저의 방문 기록을 정리

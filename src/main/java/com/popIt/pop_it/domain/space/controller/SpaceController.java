@@ -111,7 +111,7 @@ public class SpaceController {
         // 조회 기록은 부가 기능이라 실패해도 상세 조회 응답 자체에 영향을 주면 안 됨
         if (userId != null) {
             try {
-                spaceVisitLogService.recordVisit(userId, spaceId);
+                spaceVisitLogService.recordVisit(spaceId, userId);
             } catch (Exception e) {
                 log.warn("공간(id={}) 조회 기록 실패 - userId={}", spaceId, userId, e);
             }

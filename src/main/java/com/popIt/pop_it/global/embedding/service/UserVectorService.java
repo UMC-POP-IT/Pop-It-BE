@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -44,54 +45,72 @@ public class UserVectorService {
     private final SpaceRepository spaceRepository;
     private final UserVectorRedisStore userVectorRedisStore;
 
+    // 같은 유저의 재계산이 겹치면(연속 찜 토글 등) 늦게 시작했지만 먼저 끝난 계산이 Redis를 덮어써
+    // 최신 벡터가 오래된 값으로 되돌아갈 수 있다 - 유저 단위로 읽기~쓰기 전체를 직렬화해 막는다.
+    private final ConcurrentHashMap<Long, Object> recomputeLocks = new ConcurrentHashMap<>();
+
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void recomputeUserVector(Long userId) {
-        LocalDateTime now = LocalDateTime.now();
+        Object lock = recomputeLocks.computeIfAbsent(userId, id -> new Object());
+        synchronized (lock) {
+            LocalDateTime now = LocalDateTime.now();
 
-        List<Wishlist> wishlists = wishlistRepository.findByUserId(userId);
-        List<UserActivity> activities = userActivityRepository.findByUserId(userId);
+            List<Wishlist> wishlists = wishlistRepository.findByUserId(userId);
+            List<UserActivity> activities = userActivityRepository.findByUserId(userId);
 
-        if (wishlists.isEmpty() && activities.isEmpty()) {
-            userVectorRedisStore.delete(userId); // 이력이 아예 없어졌으면 예전에 캐시된 벡터도 정리
-            return;
+            if (wishlists.isEmpty() && activities.isEmpty()) {
+                userVectorRedisStore.delete(userId); // 이력이 아예 없어졌으면 예전에 캐시된 벡터도 정리
+                return;
+            }
+
+            Set<Long> spaceIds = new HashSet<>();
+            wishlists.forEach(w -> spaceIds.add(w.getSpaceId()));
+            activities.forEach(a -> spaceIds.add(a.getSpaceId()));
+
+            Map<Long, Space> spaceById = spaceRepository.findAllById(spaceIds).stream()
+                    .collect(Collectors.toMap(Space::getId, Function.identity()));
+
+            List<WeightedVector> weightedVectors = new ArrayList<>();
+            for (Wishlist wishlist : wishlists) {
+                addWeightedVector(weightedVectors, spaceById.get(wishlist.getSpaceId()),
+                        wishlist.getCreatedAt(), now, EngagementType.WISHLIST, 1.0);
+            }
+            for (UserActivity activity : activities) {
+                // 같은 공간을 반복 조회할수록 취향 신호가 강하다고 보고 viewCount를 가중치에 그대로 곱한다.
+                // 행이 존재하는 이상 recordView()를 최소 한 번은 거쳤어야 하므로 1 미만은 방어적으로 1 취급한다.
+                addWeightedVector(weightedVectors, spaceById.get(activity.getSpaceId()),
+                        activity.getLastViewedAt(), now, EngagementType.VIEW, Math.max(activity.getViewCount(), 1));
+            }
+
+            if (weightedVectors.isEmpty()) {
+                userVectorRedisStore.delete(userId); // 임베딩 없는 공간만 남았다면 이전 벡터도 더는 유효하지 않음
+                return;
+            }
+
+            float[] userVector = VectorMath.weightedAverage(weightedVectors);
+            userVectorRedisStore.save(userId, userVector);
         }
-
-        Set<Long> spaceIds = new HashSet<>();
-        wishlists.forEach(w -> spaceIds.add(w.getSpaceId()));
-        activities.forEach(a -> spaceIds.add(a.getSpaceId()));
-
-        Map<Long, Space> spaceById = spaceRepository.findAllById(spaceIds).stream()
-                .collect(Collectors.toMap(Space::getId, Function.identity()));
-
-        List<WeightedVector> weightedVectors = new ArrayList<>();
-        for (Wishlist wishlist : wishlists) {
-            addWeightedVector(weightedVectors, spaceById.get(wishlist.getSpaceId()),
-                    wishlist.getCreatedAt(), now, EngagementType.WISHLIST);
-        }
-        for (UserActivity activity : activities) {
-            addWeightedVector(weightedVectors, spaceById.get(activity.getSpaceId()),
-                    activity.getLastViewedAt(), now, EngagementType.VIEW);
-        }
-
-        if (weightedVectors.isEmpty()) {
-            userVectorRedisStore.delete(userId); // 임베딩 없는 공간만 남았다면 이전 벡터도 더는 유효하지 않음
-            return;
-        }
-
-        float[] userVector = VectorMath.weightedAverage(weightedVectors);
-        userVectorRedisStore.save(userId, userVector);
     }
 
     public Optional<float[]> getUserVector(Long userId) {
+        Optional<float[]> cached = userVectorRedisStore.find(userId);
+        if (cached.isPresent()) {
+            return cached;
+        }
+
+        // 캐시가 비어 있는 이유가 "이력이 아예 없는 유저"인지 "TTL이 지나 캐시만 만료된
+        // 유저"인지 DB 이력으로 다시 계산해서 구분한다.
+        recomputeUserVector(userId);
         return userVectorRedisStore.find(userId);
     }
 
     private void addWeightedVector(List<WeightedVector> target, Space space,
-                                    LocalDateTime eventTime, LocalDateTime now, EngagementType type) {
+                                    LocalDateTime eventTime, LocalDateTime now, EngagementType type,
+                                    double repeatWeight) {
         if (space == null || space.getEmbedding() == null) {
             return;
         }
-        double weight = TimeDecayCalculator.decay(eventTime, now) * TimeDecayCalculator.actionWeight(type);
+        double weight = TimeDecayCalculator.decay(eventTime, now) * TimeDecayCalculator.actionWeight(type) * repeatWeight;
         target.add(new WeightedVector(space.getEmbedding(), weight));
     }
 }
