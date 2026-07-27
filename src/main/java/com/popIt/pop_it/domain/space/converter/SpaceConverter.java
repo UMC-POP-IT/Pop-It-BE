@@ -6,6 +6,7 @@ import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceFacility;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
+import com.popIt.pop_it.domain.space.enums.RealtimeRecommendType;
 import org.springframework.data.domain.Page;
 
 import java.util.ArrayList;
@@ -190,5 +191,41 @@ public class SpaceConverter {
         return SpaceResDTO.SpaceDeleteRes.builder()
                 .spaceId(space.getId())
                 .build();
+    }
+
+    public static SpaceResDTO.SpaceRealtimeRecommendedListRes toRealtimeRecommendedList(
+            List<Space> spaces,
+            Map<Long, RealtimeRecommendType> typeBySpaceId,
+            Map<Long, String> thumbnailUrlBySpaceId
+    ) {
+        List<SpaceResDTO.SpaceRealtimeRecommendedRes> items = spaces.stream()
+                .map(space -> {
+                    long spaceId = space.getId();
+                    RealtimeRecommendType type = typeBySpaceId.getOrDefault(spaceId, RealtimeRecommendType.DEFAULT);
+                    String region = resolveRegion(space);
+
+                    return SpaceResDTO.SpaceRealtimeRecommendedRes.builder()
+                            .spaceId(spaceId)
+                            .title(type.pickTitle(spaceId, region))
+                            .subtitle(type.pickSubtitle(spaceId))
+                            .thumbnailUrl(thumbnailUrlBySpaceId.get(spaceId))
+                            .build();
+                })
+                .toList();
+
+        return SpaceResDTO.SpaceRealtimeRecommendedListRes.builder()
+                .spaces(items)
+                .build();
+    }
+
+    // 카드 문구의 [지역] 자리에 넣은 지역명
+    private static String resolveRegion(Space space) {
+        String dong = space.getDong();
+
+        if (dong != null && !dong.isBlank()) {
+            return dong;
+        }
+
+        return space.getDistrict();
     }
 }

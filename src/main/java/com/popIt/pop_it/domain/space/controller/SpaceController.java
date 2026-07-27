@@ -266,6 +266,21 @@ public class SpaceController {
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
     }
 
+    @Operation(
+            summary = "실시간 추천 공간 조회",
+            description = "게스트 메인 화면의 '실시간 추천 공간' 캐러셀에 노출할 공간 목록입니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "실시간 추천 공간 조회 성공")
+    })
+    @GetMapping("/realtime-recommended")
+    public ApiResponse<SpaceResDTO.SpaceRealtimeRecommendedListRes> getRealtimeRecommendedSpaces() {
+
+        SpaceResDTO.SpaceRealtimeRecommendedListRes result = spaceService.getRealtimeRecommendedSpaces();
+        return ApiResponse.onSuccess(SpaceSuccessCode.REALTIME_RECOMMENDED_FETCHED, result);
+    }
+
     // @TODO: AI 맞춤 추천 공간 조회
     @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
             + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")

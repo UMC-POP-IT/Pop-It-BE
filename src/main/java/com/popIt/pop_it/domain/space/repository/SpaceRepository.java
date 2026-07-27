@@ -80,4 +80,8 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
             @Param("keywordType") SpaceType keywordType,
             Pageable pageable
     );
+
+    // 실시간 추천 공간
+    @Query("select s from Space s where s.deletedAt is null order by s.createdAt desc, s.id desc")
+    List<Space> findRealtimeRecommended(Pageable pageable);
 }
