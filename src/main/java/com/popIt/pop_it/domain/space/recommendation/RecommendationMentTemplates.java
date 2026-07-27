@@ -17,7 +17,7 @@ public final class RecommendationMentTemplates {
     private RecommendationMentTemplates() {}
 
     // 1순위: COLD_TARGET_NEARBY
-    public static final String COLD_TARGET_NEARBY = "%s과 가까운 추천 공간";
+    public static final String COLD_TARGET_NEARBY = "%s 가까운 추천 공간"; // %s = "[동]와/과"처럼 조사까지 합쳐진 문자열
     public static final String COLD_TARGET_NEARBY_NO_REGION = "관심 지역과 가까운 추천 공간";
 
     // 2순위: REGION_PIVOT

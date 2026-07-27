@@ -9,8 +9,13 @@ class RecommendationMentComposerTest {
     private final RecommendationMentComposer composer = new RecommendationMentComposer();
 
     @Test
-    void 콜드_타겟_멘트는_지역명을_포함한다() {
-        assertThat(composer.composeColdTargetNearby("마포구")).isEqualTo("마포구과 가까운 추천 공간");
+    void 콜드_타겟_멘트는_받침_있는_지역명에_과를_붙인다() {
+        assertThat(composer.composeColdTargetNearby("합정동")).isEqualTo("합정동과 가까운 추천 공간");
+    }
+
+    @Test
+    void 콜드_타겟_멘트는_받침_없는_지역명에_와를_붙인다() {
+        assertThat(composer.composeColdTargetNearby("종로")).isEqualTo("종로와 가까운 추천 공간");
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.space.recommendation;
 
+import com.popIt.pop_it.global.util.KoreanParticleUtil;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import org.springframework.stereotype.Component;
@@ -19,9 +20,11 @@ public class RecommendationMentComposer {
     );
 
     public String composeColdTargetNearby(String region) {
-        return isBlank(region)
-                ? RecommendationMentTemplates.COLD_TARGET_NEARBY_NO_REGION
-                : RecommendationMentTemplates.COLD_TARGET_NEARBY.formatted(region);
+        if (isBlank(region)) {
+            return RecommendationMentTemplates.COLD_TARGET_NEARBY_NO_REGION;
+        }
+        String regionWithParticle = region + KoreanParticleUtil.waGwa(region);
+        return RecommendationMentTemplates.COLD_TARGET_NEARBY.formatted(regionWithParticle);
     }
 
     public String composeRegionPivot(String region) {
