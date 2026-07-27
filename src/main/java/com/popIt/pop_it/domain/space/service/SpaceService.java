@@ -17,6 +17,7 @@ import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
+import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import lombok.RequiredArgsConstructor;
@@ -190,8 +191,8 @@ public class SpaceService {
         // 5. 찜 수 조회
         Map<Long, Integer> wishCountBySpaceId = wishlistRepository.countBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(
-                        WishlistRepository.WishCountView::getSpaceId,
-                        view -> view.getWishCount().intValue()));
+                        WishCountBySpace::getSpaceId,
+                        view -> view.getCount().intValue()));
 
         // 6. 내 찜 여부 조회
         Set<Long> wishlistedSpaceIds = (userId == null)

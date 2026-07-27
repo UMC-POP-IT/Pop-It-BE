@@ -23,6 +23,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     // ===== 403 FORBIDDEN : 권한 없음 =====
     RESERVATION_ACCESS_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_1", "본인의 예약이 아니므로 접근할 수 없습니다."),
     RESERVATION_HOST_PAYMENT_DENIED(HttpStatus.FORBIDDEN, "RESERVATION403_2", "호스트는 게스트의 예약을 직접 결제 처리할 수 없습니다."),
+    RESERVATION_SELF_BOOKING_NOT_ALLOWED(HttpStatus.FORBIDDEN, "RESERVATION403_3", "본인이 등록한 공간은 예약할 수 없습니다."),
 
     // ===== 404 NOT FOUND : 리소스 없음 =====
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "RESERVATION404_1", "해당 예약을 찾을 수 없습니다."),
@@ -35,6 +36,7 @@ public enum ReservationErrorCode implements BaseErrorCode {
     RESERVATION_CANCEL_NOT_ALLOWED(HttpStatus.CONFLICT, "RESERVATION409_4", "현재 예약 상태에서는 취소/환불이 불가능합니다."),
     RESERVATION_CHECKOUT_ALREADY_SUBMITTED(HttpStatus.CONFLICT, "RESERVATION409_5", "이미 퇴실 증빙이 제출되어 호스트 확인을 기다리고 있습니다."),
     RESERVATION_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "RESERVATION409_6", "다른 요청에 의해 이미 처리된 예약입니다. 새로고침 후 다시 시도해주세요."),
+    RESERVATION_CHECKOUT_ALREADY_REJECTED(HttpStatus.CONFLICT, "RESERVATION409_7", "이미 거절 처리되어 게스트의 재제출을 기다리고 있습니다."),
 
     // ===== 500 INTERNAL SERVER ERROR : 서버/외부 PG 연동 오류 =====
     RESERVATION_PAYMENT_APPROVAL_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "RESERVATION500_1", "결제 승인 처리 중 오류가 발생했습니다."),
