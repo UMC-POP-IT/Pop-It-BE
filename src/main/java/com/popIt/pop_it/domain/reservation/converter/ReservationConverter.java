@@ -85,4 +85,28 @@ public class ReservationConverter {
                 .photoUrls(photoUrls)
                 .build();
     }
+
+    public static ReservationResDTO.ReservationCheckoutPhotosRes toCheckoutPhotos(
+            boolean checkoutRejected, List<CheckoutImage> images
+    ) {
+        List<String> photoUrls = images.stream()
+                .map(CheckoutImage::getCheckoutImageUrl)
+                .toList();
+
+        return ReservationResDTO.ReservationCheckoutPhotosRes.builder()
+                .checkoutRejected(checkoutRejected)
+                .photoUrls(photoUrls)
+                .build();
+    }
+
+    public static ReservationResDTO.ReservationCheckoutApprovalRes toCheckoutApproval(Reservation reservation) {
+        return ReservationResDTO.ReservationCheckoutApprovalRes.builder()
+                .reservationId(reservation.getId())
+                .status(reservation.getStatus())
+                .statusDescription(reservation.getStatus().getDescription())
+                .checkoutRejected(reservation.getCheckoutRejected())
+                .checkoutSubmittedAt(reservation.getCheckoutSubmittedAt())
+                .checkoutRejectedAt(reservation.getCheckoutRejectedAt())
+                .build();
+    }
 }

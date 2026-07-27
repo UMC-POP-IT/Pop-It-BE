@@ -126,9 +126,9 @@ public class Reservation {
     }
 
     //퇴실 증빙 거절(재인증 대기 상태로 전환)
-    public void rejectCheckout() {
+    public void rejectCheckout(LocalDateTime rejectedAt) {
         this.checkoutRejected = true;
-        this.checkoutRejectedAt = LocalDateTime.now();
+        this.checkoutRejectedAt = rejectedAt;
     }
 
     //퇴실 완료
