@@ -69,12 +69,12 @@ public enum RealtimeRecommendType {
             LocalDateTime now,
             boolean lowUtilization
     ) {
-        if (lowUtilization) {
-            return LOW_UTILIZATION;
-        }
-
         if (isNew(createdAt, now)) {
             return NEW;
+        }
+
+        if (lowUtilization) {
+            return LOW_UTILIZATION;
         }
 
         return DEFAULT;
