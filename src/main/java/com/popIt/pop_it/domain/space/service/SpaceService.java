@@ -17,7 +17,11 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.space.repository.SpaceUtilizationRepository;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
+import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
+import com.popIt.pop_it.domain.user_activity.entity.enums.ActivityType;
+import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
@@ -45,6 +49,8 @@ public class SpaceService {
     private final WishlistRepository wishlistRepository;
     private final KakaoLocalService kakaoLocalService;
     private final ReservationRepository reservationRepository;
+    private final UserActivityRepository userActivityRepository;
+    private final SpaceUtilizationCalculator spaceUtilizationCalculator;
 
     // 공간 삭제를 막아야하는 예약 상태
     private static final List<ReservationStatus> BLOCKING_RESERVATION_STATUSES = List.of(
@@ -108,6 +114,7 @@ public class SpaceService {
     }
 
     // 공간 상세 조회
+    @Transactional
     public SpaceResDTO.SpaceDetailRes getSpaceDetail(Long userId, Long spaceId) {
         // 1. 공간 조회
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
@@ -127,6 +134,11 @@ public class SpaceService {
         if (userId != null) {
             isMine = space.getHostId().equals(userId);
             isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
+        }
+
+        // 5. 조회 누적 기록 (실시간 추천의 가동률 판정 지표로 사용 - user_activity.user_id가 NOT NULL이라 비로그인 조회는 집계에 담지 못함)
+        if (userId != null) {
+            recordSpaceView(userId, spaceId);
         }
 
         return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
@@ -348,27 +360,18 @@ public class SpaceService {
         LocalDateTime now = LocalDateTime.now();
 
         // 1. 추천 풀 조회
-        List<Space> spaces = spaceRepository.findRealtimeRecommended(PageRequest.of(0, REALTIME_RECOMMENDED_POOL_SIZE));
+        List<Space> candidates = spaceRepository.findAllActiveForRecommendation();
 
-        if (spaces.isEmpty()) {
+        if (candidates.isEmpty()) {
             return SpaceConverter.toRealtimeRecommendedList(List.of(), Map.of(), Map.of());
         }
 
-        List<Long> spaceIds = spaces.stream()
-                .map(Space::getId)
-                .toList();
-
-        // 2. 대표 이미지를 한 번의 쿼리로 모아서 조회
-        Map<Long, String> thumbnailUrlBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
-                .collect(Collectors.toMap(
-                        image -> image.getSpace().getId(),
-                        image -> image.getImageUrl(),
-                        (existing, duplicate) -> existing));
+        // 2. 가동률 하위 공간 판정
+        Set<Long> lowUtilizationSpaceIds =
+                spaceUtilizationCalculator.findLowUtilizationSpaceIds(candidates, now);
 
         // 3. 추천 유형 분류
-        Set<Long> lowUtilizationSpaceIds = resolveLowUtilizationSpaceIds(spaceIds);
-
-        Map<Long, RealtimeRecommendType> typeBySpaceId = spaces.stream()
+        Map<Long, RealtimeRecommendType> typeBySpaceId = candidates.stream()
                 .collect(Collectors.toMap(
                         Space::getId,
                         space -> RealtimeRecommendType.classify(
@@ -376,8 +379,21 @@ public class SpaceService {
                                 now,
                                 lowUtilizationSpaceIds.contains(space.getId()))));
 
-        // 4. 슬롯 배치
-        List<Space> orderedSpaces = placeIntoSlots(spaces, typeBySpaceId);
+        // 4. 슬롯 배치 후 캐러셀에 내려줄 개수만큼 자르기
+        List<Space> orderedSpaces = placeIntoSlots(candidates, typeBySpaceId).stream()
+                .limit(REALTIME_RECOMMENDED_POOL_SIZE)
+                .toList();
+
+        // 5. 최종 선정된 공간의 대표 이미지 조회
+        List<Long> spaceIds = orderedSpaces.stream()
+                .map(Space::getId)
+                .toList();
+
+        Map<Long, String> thumbnailUrlBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getSpace().getId(),
+                        image -> image.getImageUrl(),
+                        (existing, duplicate) -> existing));
 
         return SpaceConverter.toRealtimeRecommendedList(orderedSpaces, typeBySpaceId, thumbnailUrlBySpaceId);
     }
@@ -421,11 +437,6 @@ public class SpaceService {
 
     private String blankToNull(String value) {
         return (value == null || value.isBlank()) ? null : value.trim();
-    }
-
-    // 가동률 하위 공간 판정
-    private Set<Long> resolveLowUtilizationSpaceIds(List<Long> spaceIds) {
-        return Set.of();
     }
 
     // 슬롯 배치
@@ -477,5 +488,21 @@ public class SpaceService {
     ) {
         RealtimeRecommendType type = typeBySpaceId.get(space.getId());
         return type != null && type.isFrontSlotType();
+    }
+
+    private void recordSpaceView(Long userId, Long spaceId) {
+        LocalDateTime now = LocalDateTime.now();
+
+        int updated = userActivityRepository.incrementViewCount(userId, spaceId, ActivityType.VIEW, now);
+
+        if (updated == 0) {
+            userActivityRepository.save(UserActivity.builder()
+                    .userId(userId)
+                    .spaceId(spaceId)
+                    .activityType(ActivityType.VIEW)
+                    .viewCount(1)
+                    .lastViewedAt(now)
+                    .build());
+        }
     }
 }
