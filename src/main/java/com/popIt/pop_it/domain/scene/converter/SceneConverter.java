@@ -1,5 +1,7 @@
 package com.popIt.pop_it.domain.scene.converter;
 
+import com.popIt.pop_it.domain.hotspot.converter.HotspotConverter;
+import com.popIt.pop_it.domain.hotspot.entity.Hotspot;
 import com.popIt.pop_it.domain.scene.dto.SceneResDTO;
 import com.popIt.pop_it.domain.scene.entity.Scene;
 
@@ -26,7 +28,7 @@ public class SceneConverter {
                 .build();
     }
 
-    public static SceneResDTO.SceneDetailRes toDetail(Scene scene) {
+    public static SceneResDTO.SceneDetailRes toDetail(Scene scene, List<Hotspot> hotspots) {
         SceneResDTO.SceneCameraRes camera = SceneResDTO.SceneCameraRes.builder()
                 .position(List.of(scene.getCameraPositionX(), scene.getCameraPositionY(), scene.getCameraPositionZ()))
                 .target(List.of(scene.getCameraTargetX(), scene.getCameraTargetY(), scene.getCameraTargetZ()))
@@ -42,7 +44,7 @@ public class SceneConverter {
                 .modelUrl(scene.getModelUrl())
                 .isDefault(scene.getIsDefault())
                 .camera(camera)
-                .hotspots(List.of()) // TODO: Hotspot 도메인 구현 후 실제 목록으로 교체
+                .hotspots(HotspotConverter.toSummaryList(hotspots))
                 .build();
     }
 
