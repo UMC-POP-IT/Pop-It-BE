@@ -10,4 +10,11 @@ public class UserResDTO {
     public record TokenReissueRes(
             String accessToken
     ) {}
+
+    public record UserInfoRes(
+            Long userId,
+            String nickname,
+            com.popIt.pop_it.domain.user.entity.enums.UserMode currentMode,
+            boolean isHost
+    ) {}
 }
