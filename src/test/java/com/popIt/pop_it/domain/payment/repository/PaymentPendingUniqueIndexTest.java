@@ -155,6 +155,8 @@ class PaymentPendingUniqueIndexTest {
                 .hostId(host.getUserId())
                 .guestId(guest.getUserId())
                 .spaceId(space.getId())
+                .spaceName(space.getBuildingName())
+                .roadAddress(space.getRoadAddress())
                 .startDate(reservationStartDate)
                 .endDate(reservationEndDate)
                 .usagePurpose(usagePurpose)
