@@ -65,14 +65,16 @@ public class Reservation {
     // 호스트가 퇴실 증빙을 거절한 상태(재인증 대기)인지 여부
     private Boolean checkoutRejected = false; // 호스트가 퇴실 거부한 경우 스케줄러가 작동 안하도록
 
+    @Column
+    private LocalDateTime checkoutRejectedAt; // 퇴실 거절 시각 (거절 후 재제출 없을 시 자동승인 기준)
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt; // 생성일시
 
     @Version
     @Column(nullable = false)
-    @Builder.Default
-    private Long version = 0L;
+    private Long version;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(nullable = false)
@@ -126,6 +128,7 @@ public class Reservation {
     //퇴실 증빙 거절(재인증 대기 상태로 전환)
     public void rejectCheckout() {
         this.checkoutRejected = true;
+        this.checkoutRejectedAt = LocalDateTime.now();
     }
 
     //퇴실 완료

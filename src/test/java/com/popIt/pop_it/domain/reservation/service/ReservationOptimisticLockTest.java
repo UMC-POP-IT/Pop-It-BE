@@ -78,7 +78,7 @@ public class ReservationOptimisticLockTest {
                 .latitude(37.5)
                 .longitude(127.0)
                 .roadAddress("테스트로 1")
-                .addressDetail("101호")
+                .addressDetail("101동 101호")
                 .dong("합정동")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
@@ -111,9 +111,7 @@ public class ReservationOptimisticLockTest {
 
     @AfterEach
     void tearDown() {
-        // 같은_예약을_동시에_승인시도하면_한_건만_성공한다()가 실제 승인 플로우를 타면서
-        // 계약(Contract)까지 만들어지므로, 예약을 지우기 전에 그 계약부터 정리해야 FK 위반이 안 난다.
-        contractRepository.findByReservation_Id(reservationId).ifPresent(contractRepository::delete);
+        contractRepository.deleteAll(); // 예약 승인 시 생성되는 계약을 먼저 지워야 FK 제약 없이 예약 삭제 가능
         reservationRepository.deleteAll();
         spaceRepository.deleteAll();
         identityVerificationRepository.deleteAll();

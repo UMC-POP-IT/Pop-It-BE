@@ -107,6 +107,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     List<Reservation> findAllByStatusAndEndDateBefore(ReservationStatus status, LocalDate date);
     List<Reservation> findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtBefore(ReservationStatus status, LocalDateTime cutoff);
     List<Reservation> findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNullAndEndDateLessThanEqual(ReservationStatus status, LocalDate cutoffDate);
+    List<Reservation> findAllByStatusAndCheckoutRejectedTrueAndCheckoutRejectedAtBefore(ReservationStatus status, LocalDateTime cutoff);
 
     // 공간 삭제 가능 여부 판단용 (space 도메인에서 호출)
     boolean existsBySpaceIdAndStatusIn(Long spaceId, List<ReservationStatus> statuses);
