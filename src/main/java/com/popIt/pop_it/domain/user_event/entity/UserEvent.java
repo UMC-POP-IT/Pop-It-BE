@@ -44,7 +44,7 @@ public class UserEvent {
     private UserEventType eventType;
 
     @Column(nullable = false, length = 50)
-    private String region; // 이벤트 발생 시점의 공간 지역(구) 스냅샷
+    private String region; // 이벤트 발생 시점의 공간 지역(동) 스냅샷
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

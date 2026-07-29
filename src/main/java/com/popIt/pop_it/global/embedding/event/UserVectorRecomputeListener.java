@@ -35,10 +35,6 @@ public class UserVectorRecomputeListener {
     public void onUserEngagement(UserEngagementEvent event) {
         Long userId = event.userId();
 
-        // holder를 맵에 먼저 넣고 나서 schedule()을 부른다. 실행될 Runnable은 이 holder 자체를
-        // 람다 캡처로 들고 있으므로(=나중에 채워지는 필드를 읽는 게 아니라 생성 시점부터 확정된 참조),
-        // 태스크가 언제 실행되든(이론상 아무리 빨라도) "자기 자신이 맞는지" 판단이 항상 가능하다.
-        // future는 취소 용도로만 쓰이므로 schedule() 이후에 채워도 안전하다.
         RecomputeTask task = new RecomputeTask();
         RecomputeTask previous = pendingRecomputes.put(userId, task);
 
@@ -47,7 +43,7 @@ public class UserVectorRecomputeListener {
         task.future = scheduled;
 
         if (previous != null && previous.future != null) {
-            previous.future.cancel(false); // 이미 실행 중이면 취소돼도 무시됨 - recompute()의 자기 확인이 최종 방어선
+            previous.future.cancel(false); // 이미 실행 중이면 취소해도 무시됨, recompute에서 최종 판단
         }
     }
 

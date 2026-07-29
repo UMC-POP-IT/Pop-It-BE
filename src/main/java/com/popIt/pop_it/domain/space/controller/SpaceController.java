@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.exception.SpaceSuccessCode;
 import com.popIt.pop_it.domain.space.service.SpaceService;
 import com.popIt.pop_it.domain.space.service.SpaceVisitLogService;
+import com.popIt.pop_it.domain.user_activity.service.UserActivityService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
@@ -33,6 +34,7 @@ public class SpaceController {
 
     private final SpaceService spaceService;
     private final SpaceVisitLogService spaceVisitLogService;
+    private final UserActivityService userActivityService;
 
     @Operation(
             summary = "공간 등록",
@@ -113,7 +115,12 @@ public class SpaceController {
             try {
                 spaceVisitLogService.recordVisit(spaceId, userId);
             } catch (Exception e) {
-                log.warn("공간(id={}) 조회 기록 실패 - userId={}", spaceId, userId, e);
+                log.warn("공간(id={}) 방문 기록(UV) 실패 - userId={}", spaceId, userId, e);
+            }
+            try {
+                userActivityService.recordView(userId, spaceId);
+            } catch (Exception e) {
+                log.warn("공간(id={}) 조회 이력(개인화) 기록 실패 - userId={}", spaceId, userId, e);
             }
         }
 
