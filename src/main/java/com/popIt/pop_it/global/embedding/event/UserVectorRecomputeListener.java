@@ -2,11 +2,9 @@ package com.popIt.pop_it.global.embedding.event;
 
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
 import java.time.Duration;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -31,24 +29,29 @@ public class UserVectorRecomputeListener {
     private final UserVectorService userVectorService;
     private final ScheduledExecutorService userVectorDebounceScheduler;
 
-    private final ConcurrentHashMap<Long, ScheduledFuture<?>> pendingRecomputes = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, RecomputeTask> pendingRecomputes = new ConcurrentHashMap<>();
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void onUserEngagement(UserEngagementEvent event) {
         Long userId = event.userId();
 
-        AtomicReference<ScheduledFuture<?>> selfRef = new AtomicReference<>();
-        ScheduledFuture<?> scheduled = userVectorDebounceScheduler.schedule(
-                () -> recompute(userId, selfRef.get()), DEBOUNCE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
-        selfRef.set(scheduled);
+        // holder를 맵에 먼저 넣고 나서 schedule()을 부른다. 실행될 Runnable은 이 holder 자체를
+        // 람다 캡처로 들고 있으므로(=나중에 채워지는 필드를 읽는 게 아니라 생성 시점부터 확정된 참조),
+        // 태스크가 언제 실행되든(이론상 아무리 빨라도) "자기 자신이 맞는지" 판단이 항상 가능하다.
+        // future는 취소 용도로만 쓰이므로 schedule() 이후에 채워도 안전하다.
+        RecomputeTask task = new RecomputeTask();
+        RecomputeTask previous = pendingRecomputes.put(userId, task);
 
-        ScheduledFuture<?> previous = pendingRecomputes.put(userId, scheduled);
-        if (previous != null) {
-            previous.cancel(false); // 이미 실행 중이면 취소돼도 무시됨
+        ScheduledFuture<?> scheduled = userVectorDebounceScheduler.schedule(
+                () -> recompute(userId, task), DEBOUNCE_DELAY.toMillis(), TimeUnit.MILLISECONDS);
+        task.future = scheduled;
+
+        if (previous != null && previous.future != null) {
+            previous.future.cancel(false); // 이미 실행 중이면 취소돼도 무시됨 - recompute()의 자기 확인이 최종 방어선
         }
     }
 
-    private void recompute(Long userId, ScheduledFuture<?> self) {
+    private void recompute(Long userId, RecomputeTask self) {
         // 맵에 남아있는 게 정확히 "나 자신"일 때만 지운다.
         // 본인이 더 이상 최신이 아니면(=제거 실패) 곧 실행될 최신 태스크에 맡기고 재계산도 건너뛴다.
         boolean stillCurrent = pendingRecomputes.remove(userId, self);
@@ -60,5 +63,9 @@ public class UserVectorRecomputeListener {
         } catch (Exception e) {
             log.warn("유저(id={}) 취향 벡터 재계산에 실패했습니다.", userId, e);
         }
+    }
+
+    private static final class RecomputeTask {
+        private volatile ScheduledFuture<?> future;
     }
 }

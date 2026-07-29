@@ -47,6 +47,24 @@ class UserVectorRecomputeListenerTest {
     }
 
     @Test
+    void 스케줄된_직후_future가_아직_대입되기_전에_실행돼도_재계산이_유실되지_않는다() {
+        // schedule()이 future를 반환하기도 전에(=future 필드가 채워지기 전에) 태스크가 곧바로
+        // 실행되는 극단적인 상황을 재현한다 - "자기 자신"을 future 값으로 판별했다면 이 시점엔
+        // 아직 null이라 ConcurrentHashMap.remove(key, null)이 항상 false를 반환해 재계산 자체가
+        // 조용히 유실됐을 것이다. holder 객체 자체로 판별하므로 이 타이밍과 무관해야 한다.
+        given(userVectorDebounceScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
+                .willAnswer(invocation -> {
+                    Runnable task = invocation.getArgument(0);
+                    task.run();
+                    return mock(ScheduledFuture.class);
+                });
+
+        listener.onUserEngagement(new UserEngagementEvent(1L));
+
+        verify(userVectorService).recomputeUserVector(1L);
+    }
+
+    @Test
     void 같은_유저에게_연속으로_이벤트가_오면_이전_예약을_취소한다() {
         ScheduledFuture firstScheduled = mock(ScheduledFuture.class);
         given(userVectorDebounceScheduler.schedule(any(Runnable.class), anyLong(), any(TimeUnit.class)))
