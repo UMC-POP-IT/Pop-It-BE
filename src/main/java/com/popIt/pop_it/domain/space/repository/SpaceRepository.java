@@ -90,5 +90,5 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
      * - 외부 API 부하를 제한하기 위해 한 번에 최대 50건만 가져온다.
      * - 최근 등록분부터 처리해 새로 실패한 공간이 먼저 복구되도록 한다.
      */
-    List<Space> findTop50ByDongIsNullAndDeleteAtIsNullAndCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime createdAfter);
+    List<Space> findTop50ByDongIsNullAndDeletedAtIsNullAndCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime createdAfter);
 }
