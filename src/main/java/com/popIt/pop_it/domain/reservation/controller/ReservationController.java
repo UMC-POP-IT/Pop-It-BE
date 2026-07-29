@@ -159,7 +159,7 @@ public class ReservationController {
     }
 
     @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
-            + "거절 시 기존 제출 사진은 초기화되며, 게스트가 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
+            + "거절 시 기존 제출 사진은 삭제되지 않고 비활성화되어 게스트가 조회할 수 있으며, 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
     @PostMapping("/{reservationId}/checkout/reject")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectCheckout(
             @PathVariable Long reservationId,
@@ -180,6 +180,33 @@ public class ReservationController {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_IMAGES,
                 reservationQueryService.getCheckoutImages(reservationId, authUser.getUser().getUserId())
+        );
+    }
+
+    @Operation(summary = "게스트 퇴실 증빙 사진 조회", description = "게스트 본인이 제출한 퇴실 증빙 사진을 조회합니다.<br>"
+            + "거절된 상태(재인증 대기)라면 가장 최근 거절된 사진을, 그 외에는 현재 유효한(승인 대기/완료) 제출 사진을 반환합니다.")
+    @GetMapping("/{reservationId}/checkout-photos")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutPhotosRes> getCheckoutPhotos(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTOS,
+                reservationQueryService.getCheckoutPhotosForGuest(reservationId, authUser.getUser().getUserId())
+        );
+    }
+
+    @Operation(summary = "퇴실 승인 여부 조회", description = "예약의 퇴실 승인 진행 상태를 조회합니다. 게스트/호스트 모두 본인이 연관된 예약이면 조회 가능합니다.<br>"
+            + "status가 CHECKOUT_COMPLETED면 승인 완료, checkoutRejected가 true면 거절(재인증 대기), "
+            + "checkoutSubmittedAt만 있고 위 두 조건에 해당하지 않으면 제출 후 호스트 확인 대기 중입니다.")
+    @GetMapping("/{reservationId}/checkout-approval")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutApprovalRes> getCheckoutApproval(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_APPROVAL,
+                reservationQueryService.getCheckoutApproval(reservationId, authUser.getUser().getUserId())
         );
     }
 

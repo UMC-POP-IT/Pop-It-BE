@@ -123,12 +123,13 @@ public class Reservation {
     public void markCheckoutSubmitted() {
         this.checkoutSubmittedAt = LocalDateTime.now();
         this.checkoutRejected = false;
+        this.checkoutRejectedAt = null; // 재제출 시 과거 거절 시각이 남아있지 않도록 초기화
     }
 
     //퇴실 증빙 거절(재인증 대기 상태로 전환)
-    public void rejectCheckout() {
+    public void rejectCheckout(LocalDateTime rejectedAt) {
         this.checkoutRejected = true;
-        this.checkoutRejectedAt = LocalDateTime.now();
+        this.checkoutRejectedAt = rejectedAt;
     }
 
     //퇴실 완료
