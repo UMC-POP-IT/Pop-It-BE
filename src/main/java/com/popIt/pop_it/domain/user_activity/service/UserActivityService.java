@@ -11,8 +11,10 @@ import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.embedding.event.UserEngagementEvent;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,14 +39,24 @@ public class UserActivityService {
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
 
-        UserActivity activity = userActivityRepository.findByUserIdAndSpaceId(userId, spaceId)
-                .orElseGet(() -> UserActivity.builder()
+        // DB에서 원자적으로 +1 - 동시 조회 시 lost update 방지
+        LocalDateTime now = LocalDateTime.now();
+        int updatedRows = userActivityRepository.incrementViewCount(userId, spaceId, now);
+        if (updatedRows == 0) {
+            // 이 공간을 처음 조회하는 경우라 UPDATE 대상 행이 없었으므로 새로 만든다.
+            try {
+                userActivityRepository.saveAndFlush(UserActivity.builder()
                         .userId(userId)
                         .spaceId(spaceId)
                         .activityType(ActivityType.VIEW)
+                        .viewCount(1)
+                        .lastViewedAt(now)
                         .build());
-        activity.recordView(); // viewCount 증가 + lastViewedAt 갱신 일괄 처리
-        userActivityRepository.save(activity);
+            } catch (DataIntegrityViolationException e) {
+                // 첫 조회가 동시에 겹쳐 다른 요청이 먼저 행을 만든 경우 +1을 반영
+                userActivityRepository.incrementViewCount(userId, spaceId, now);
+            }
+        }
 
         if (space.getDong() != null) {
             userEventRepository.save(UserEvent.builder()
