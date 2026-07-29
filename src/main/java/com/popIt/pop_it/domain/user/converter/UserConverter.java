@@ -12,12 +12,12 @@ public class UserConverter {
         return new UserResDTO.TokenReissueRes(accessToken);
     }
 
-    public static UserResDTO.UserInfoRes toUserInfo(User user, boolean isHost) {
+    public static UserResDTO.UserInfoRes toUserInfo(User user, boolean hasHostProfile) {
         return new UserResDTO.UserInfoRes(
                 user.getUserId(),
                 user.getNickname(),
                 user.getCurrentMode(),
-                isHost
+                hasHostProfile
         );
     }
 }

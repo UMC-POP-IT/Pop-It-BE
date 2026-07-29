@@ -1,5 +1,7 @@
 package com.popIt.pop_it.domain.user.dto;
 
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
+
 public class UserResDTO {
 
     public record UserLoginRes(
@@ -14,7 +16,7 @@ public class UserResDTO {
     public record UserInfoRes(
             Long userId,
             String nickname,
-            com.popIt.pop_it.domain.user.entity.enums.UserMode currentMode,
-            boolean isHost
+            UserMode currentMode,
+            boolean hasHostProfile
     ) {}
 }
