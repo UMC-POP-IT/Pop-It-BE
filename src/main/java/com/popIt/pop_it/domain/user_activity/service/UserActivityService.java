@@ -46,12 +46,14 @@ public class UserActivityService {
         activity.recordView(); // viewCount 증가 + lastViewedAt 갱신 일괄 처리
         userActivityRepository.save(activity);
 
-        userEventRepository.save(UserEvent.builder()
-                .userId(userId)
-                .spaceId(spaceId)
-                .eventType(UserEventType.VIEW)
-                .region(space.getDong())
-                .build());
+        if (space.getDong() != null) {
+            userEventRepository.save(UserEvent.builder()
+                    .userId(userId)
+                    .spaceId(spaceId)
+                    .eventType(UserEventType.VIEW)
+                    .region(space.getDong())
+                    .build());
+        }
 
         eventPublisher.publishEvent(new UserEngagementEvent(userId));
     }

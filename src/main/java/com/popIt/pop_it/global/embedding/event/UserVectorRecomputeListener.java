@@ -2,6 +2,7 @@ package com.popIt.pop_it.global.embedding.event;
 
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
 import java.time.Duration;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
