@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.space.service;
 
-import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
+import com.popIt.pop_it.domain.space.converter.SpaceConverter;
+import com.popIt.pop_it.domain.space.dto.AiRecommendationResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
@@ -14,6 +15,7 @@ import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
 import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
+import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.embedding.service.UserVectorService;
@@ -47,14 +49,14 @@ public class SpaceRecommendationService {
     private final UserRecommendationContextResolver userRecommendationContextResolver;
     private final RecommendationReasonEvaluator recommendationReasonEvaluator;
 
-    public SpaceResDTO.AiRecommendedSpaceListRes getRecommendedSpaces(Long userId, String cursor, int size) {
+    public AiRecommendationResDTO.AiRecommendedSpaceListRes getRecommendedSpaces(Long userId, String cursor, int size) {
         int offset = parseCursor(cursor);
 
         Optional<float[]> userVector = userVectorService.getUserVector(userId);
         if (userVector.isEmpty()) {
             // 찜/조회 이력이 전혀 없는 신규 유저는 취향 벡터가 없으므로 추천 없이 빈 목록을 반환.
             // hasActivityHistory=false로 "매칭되는 게 없어서 빈 것"과 구분해 프런트가 안내 문구를 보여줄 수 있게 한다.
-            return SpaceResDTO.AiRecommendedSpaceListRes.builder()
+            return AiRecommendationResDTO.AiRecommendedSpaceListRes.builder()
                     .spaces(List.of())
                     .hasNext(false)
                     .nextCursor(null)
@@ -82,15 +84,17 @@ public class SpaceRecommendationService {
         List<Long> spaceIds = page.stream().map(Space::getId).toList();
         Map<Long, String> thumbnailBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(image -> image.getSpace().getId(), SpaceImage::getImageUrl));
+        Map<Long, Integer> wishCountBySpaceId = wishlistRepository.countBySpaceIds(spaceIds).stream()
+                .collect(Collectors.toMap(WishCountBySpace::getSpaceId, count -> count.getCount().intValue()));
 
         UserRecommendationContext recommendationContext = userRecommendationContextResolver.resolve(userId);
 
         // 후보 단계에서 찜한 공간을 이미 제외했으므로 isWishlisted는 항상 false
-        List<SpaceResDTO.AiRecommendedSpaceRes> spaces = page.stream()
-                .map(space -> toAiRecommendedSpace(space, thumbnailBySpaceId, recommendationContext))
+        List<AiRecommendationResDTO.AiRecommendedSpaceRes> spaces = page.stream()
+                .map(space -> toAiRecommendedSpace(space, thumbnailBySpaceId, wishCountBySpaceId, recommendationContext))
                 .toList();
 
-        return SpaceResDTO.AiRecommendedSpaceListRes.builder()
+        return AiRecommendationResDTO.AiRecommendedSpaceListRes.builder()
                 .spaces(spaces)
                 .hasNext(hasNext)
                 .nextCursor(nextCursor)
@@ -123,26 +127,29 @@ public class SpaceRecommendationService {
         return offset;
     }
 
-    private SpaceResDTO.AiRecommendedSpaceRes toAiRecommendedSpace(Space space, Map<Long, String> thumbnailBySpaceId,
+    private AiRecommendationResDTO.AiRecommendedSpaceRes toAiRecommendedSpace(Space space, Map<Long, String> thumbnailBySpaceId,
+                                                                     Map<Long, Integer> wishCountBySpaceId,
                                                                      UserRecommendationContext recommendationContext) {
         String tag = recommendationReasonEvaluator.evaluate(space, recommendationContext)
                 .map(RecommendationReasonResult::mentText)
                 .orElse(RecommendationMentTemplates.DEFAULT);
 
-        return SpaceResDTO.AiRecommendedSpaceRes.builder()
+        return AiRecommendationResDTO.AiRecommendedSpaceRes.builder()
                 .spaceId(space.getId())
                 .buildingName(space.getBuildingName())
                 .tag(tag)
                 .district(space.getDistrict())
                 .roadAddress(space.getRoadAddress())
                 .exclusiveArea(space.getExclusiveArea())
-                .basicInfo(space.getSpaceCategory().name())
+                .spaceCategory(space.getSpaceCategory().name())
+                .keywords(SpaceConverter.toKeywords(space))
                 .pricePerDay(space.getPricePerDay())
                 .pricePerWeek(space.getPricePerDay() * 7)
                 .pricePerMonth(space.getPricePerDay() * 30)
                 .thumbnailUrl(thumbnailBySpaceId.get(space.getId()))
                 .parkingAvailable(space.getParkingAvailable())
                 .isWishlisted(false)
+                .wishCount(wishCountBySpaceId.getOrDefault(space.getId(), 0))
                 .build();
     }
 }

@@ -7,7 +7,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
+import com.popIt.pop_it.domain.space.dto.AiRecommendationResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
@@ -55,7 +55,7 @@ class SpaceRecommendationServiceTest {
         Long userId = 1L;
         given(userVectorService.getUserVector(userId)).willReturn(Optional.empty());
 
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
 
         assertThat(result.spaces()).isEmpty();
@@ -79,10 +79,10 @@ class SpaceRecommendationServiceTest {
         given(spaceImageRepository.findThumbnailsBySpaceIds(any())).willReturn(List.of());
         given(wishlistRepository.findByUserId(userId)).willReturn(List.of());
 
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
 
-        assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
+        assertThat(result.spaces()).extracting(AiRecommendationResDTO.AiRecommendedSpaceRes::spaceId)
                 .containsExactly(1L, 2L);
     }
 
@@ -96,7 +96,7 @@ class SpaceRecommendationServiceTest {
                 .willReturn(List.of(farSpace));
         given(wishlistRepository.findByUserId(userId)).willReturn(List.of());
 
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
 
         assertThat(result.spaces()).isEmpty();
@@ -118,10 +118,10 @@ class SpaceRecommendationServiceTest {
         ));
         given(spaceImageRepository.findThumbnailsBySpaceIds(any())).willReturn(List.of());
 
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
 
-        assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
+        assertThat(result.spaces()).extracting(AiRecommendationResDTO.AiRecommendedSpaceRes::spaceId)
                 .containsExactly(2L);
         assertThat(result.spaces()).allMatch(space -> !space.isWishlisted());
     }
@@ -141,10 +141,10 @@ class SpaceRecommendationServiceTest {
         ));
         given(spaceImageRepository.findThumbnailsBySpaceIds(any())).willReturn(List.of());
 
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, null, 10);
 
-        assertThat(result.spaces()).extracting(SpaceResDTO.AiRecommendedSpaceRes::spaceId)
+        assertThat(result.spaces()).extracting(AiRecommendationResDTO.AiRecommendedSpaceRes::spaceId)
                 .containsExactly(2L);
     }
 

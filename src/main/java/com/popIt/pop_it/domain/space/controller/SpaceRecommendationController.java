@@ -1,6 +1,6 @@
 package com.popIt.pop_it.domain.space.controller;
 
-import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
+import com.popIt.pop_it.domain.space.dto.AiRecommendationResDTO;
 import com.popIt.pop_it.domain.space.exception.SpaceSuccessCode;
 import com.popIt.pop_it.domain.space.service.SpaceRecommendationService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
@@ -42,7 +42,7 @@ public class SpaceRecommendationController {
             security = @SecurityRequirement(name = "bearerAuth")
     )
     @GetMapping("/ai-recommended")
-    public ApiResponse<SpaceResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
+    public ApiResponse<AiRecommendationResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") @Min(1) @Max(10) int size
@@ -53,7 +53,7 @@ public class SpaceRecommendationController {
 
         BaseSuccessCode code = SpaceSuccessCode.AI_RECOMMENDED_SPACE_LIST;
         Long userId = authUser.getUser().getUserId();
-        SpaceResDTO.AiRecommendedSpaceListRes result =
+        AiRecommendationResDTO.AiRecommendedSpaceListRes result =
                 spaceRecommendationService.getRecommendedSpaces(userId, cursor, size);
 
         return ApiResponse.onSuccess(code, result);
