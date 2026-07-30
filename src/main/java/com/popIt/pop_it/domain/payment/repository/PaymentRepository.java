@@ -72,4 +72,15 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     default int markExpiredIfPending(Long paymentId) {
         return compareAndSetStatus(paymentId, PaymentStatus.EXPIRED, PaymentStatus.PENDING);
     }
+
+    // 정산 단계(호스트 지급/보증금 환불) 중 하나라도 FAILED로 남아있는 결제 건을 재시도 대상으로 조회한다.
+    @Query("select p from Payment p where p.status = :status "
+            + "and (p.hostPayoutStatus = :failed or p.depositRefundStatus = :failed)")
+    List<Payment> findAllBySettlementStepFailed(
+            @Param("status") PaymentStatus status,
+            @Param("failed") SettlementStepStatus failed);
+
+    default List<Payment> findAllWithFailedSettlementStep() {
+        return findAllBySettlementStepFailed(PaymentStatus.PAID, SettlementStepStatus.FAILED);
+    }
 }

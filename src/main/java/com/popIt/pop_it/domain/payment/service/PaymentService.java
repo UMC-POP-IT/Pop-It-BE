@@ -196,7 +196,6 @@ public class PaymentService {
      * 이 메서드가 최종적으로 예외를 던져도 이미 완료된 단계의 기록은 롤백되지 않는다.
      * 이미 DONE인 단계는 건너뛰므로, 실패했던 단계만 골라 안전하게 재시도할 수 있다.
      */
-    // @TODO: 정산 실패 단계 재시도 필요
     @Transactional(readOnly = true)
     public void settle(Long paymentId) {
         Payment payment = paymentRepository.findById(paymentId)
