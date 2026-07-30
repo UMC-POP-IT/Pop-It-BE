@@ -47,7 +47,8 @@ public class WishlistServiceImpl implements WishlistService {
         // 이미 찜한 상태면 해제 (벌크 삭제라 동시 해제에도 멱등)
         if (wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)) {
             wishlistRepository.deleteByUserIdAndSpaceId(userId, spaceId);
-            userEventRepository.deleteByUserIdAndSpaceIdAndEventType(userId, spaceId, UserEventType.WISHLIST);
+            // 삭제 시점에도 여전히 찜 해제 상태일 때만 이벤트를 지운다 (해제/재등록 경합 시 새 이벤트 보존)
+            userEventRepository.deleteByUserIdAndSpaceIdAndEventTypeIfNotWishlisted(userId, spaceId, UserEventType.WISHLIST);
             eventPublisher.publishEvent(new UserEngagementEvent(userId));
             return WishlistConverter.toToggle(spaceId, false);
         }

@@ -6,7 +6,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.popIt.pop_it.domain.space.entity.Space;
@@ -73,9 +72,10 @@ class UserActivityServiceTest {
 
         userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
-        // insert 실패 후에는 그 행에 이번 조회분을 다시 반영해야 한다 (최초 1회 + 재시도 1회 = 총 2회 호출)
-        verify(userActivityRepository, times(2))
-                .incrementViewCount(eq(userId), eq(spaceId), any());
+        // insert 실패 후에는 그 행에 이번 조회분을 다시 반영해야 한다 - saveAndFlush 실패로 바깥 트랜잭션이
+        // rollback-only가 되었으므로, 재시도는 별도 트랜잭션의 incrementViewCountInNewTransaction으로 반영된다
+        verify(userActivityRepository).incrementViewCount(eq(userId), eq(spaceId), any());
+        verify(userActivityRepository).incrementViewCountInNewTransaction(eq(userId), eq(spaceId), any());
     }
 
     @Test

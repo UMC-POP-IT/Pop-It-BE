@@ -60,7 +60,7 @@ public class UserActivityService {
                         .build());
             } catch (DataIntegrityViolationException e) {
                 // 첫 조회가 동시에 겹쳐 다른 요청이 먼저 행을 만든 경우 +1을 반영
-                userActivityRepository.incrementViewCount(userId, spaceId, now);
+                userActivityRepository.incrementViewCountInNewTransaction(userId, spaceId, now);
             }
         }
 

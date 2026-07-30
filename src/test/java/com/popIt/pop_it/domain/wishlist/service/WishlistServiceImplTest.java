@@ -94,7 +94,7 @@ class WishlistServiceImplTest {
 
         wishlistService.toggle(userId, spaceId);
 
-        verify(userEventRepository).deleteByUserIdAndSpaceIdAndEventType(userId, spaceId, UserEventType.WISHLIST);
+        verify(userEventRepository).deleteByUserIdAndSpaceIdAndEventTypeIfNotWishlisted(userId, spaceId, UserEventType.WISHLIST);
         verify(userEventRepository, never()).save(any());
     }
 
