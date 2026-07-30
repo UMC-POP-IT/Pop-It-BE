@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.scene.dto;
 
+import com.popIt.pop_it.domain.hotspot.dto.HotspotResDTO;
 import lombok.Builder;
 
 import java.util.List;
@@ -40,7 +41,7 @@ public class SceneResDTO {
             String modelUrl,
             Boolean isDefault,
             SceneCameraRes camera,
-            List<Object> hotspots // TODO: Hotspot 도메인 구현 후 List<HotspotResDTO.Summary>로 교체
+            List<HotspotResDTO.HotspotSummaryRes> hotspots
     ) {
     }
 

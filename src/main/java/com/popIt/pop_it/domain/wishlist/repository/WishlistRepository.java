@@ -58,4 +58,7 @@ public interface WishlistRepository extends JpaRepository<Wishlist, Long> {
               and w.spaceId in :spaceIds
             """)
     List<Long> findWishlistedSpaceIds(@Param("userId") Long userId, @Param("spaceIds") List<Long> spaceIds);
+
+    // AI 추천용 취향 벡터 계산 - 기간 제한 없이 전체 찜 이력 조회 (오래된 이력은 TimeDecayCalculator가 가중치로 반영)
+    List<Wishlist> findByUserId(Long userId);
 }

@@ -18,6 +18,20 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: popit-redis
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - popit-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   app:
     image: ghcr.io/umc-pop-it/pop-it-be:latest
     container_name: popit-app
@@ -25,6 +39,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy       # MySQL이 준비된 뒤에 앱 기동
+      redis:
+        condition: service_healthy
     environment:
       JAVA_TOOL_OPTIONS: "-Xmx512m"       # t3.micro용 힙 제한 (재빌드 없이 튜닝 가능)
       SPRING_PROFILES_ACTIVE: prod        # EC2 배포 전용이라 prod로 고정
@@ -45,6 +61,9 @@ services:
       AWS_REGION: ${AWS_REGION}
       AWS_S3_BUCKET: ${AWS_S3_BUCKET}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     networks:
       - popit-net
 
@@ -66,6 +85,7 @@ services:
 
 volumes:
   mysql-data:
+  redis-data:
 
 networks:
   popit-net:

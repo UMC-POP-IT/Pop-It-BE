@@ -102,8 +102,39 @@ public class ReservationQueryService {
             throw new ProjectException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
         }
 
-        List<CheckoutImage> images = checkoutImageRepository.findAllByReservationIdOrderBySortOrder(reservationId);
+        List<CheckoutImage> images = checkoutImageRepository.findAllByReservationIdAndIsActiveTrueOrderBySortOrder(reservationId);
         return ReservationConverter.toCheckoutImages(images);
+    }
+
+    //게스트 본인 퇴실 증빙 사진 조회 - 거절 상태면 가장 최근 거절 배치, 아니면 현재 유효한 제출 사진을 반환
+    public ReservationResDTO.ReservationCheckoutPhotosRes getCheckoutPhotosForGuest(Long reservationId, Long guestId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        if (!reservation.getUser().getUserId().equals(guestId)) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
+        }
+
+        boolean rejected = reservation.getCheckoutRejected();
+        List<CheckoutImage> images = rejected
+                ? checkoutImageRepository.findLatestRejectedByReservationId(reservationId)
+                : checkoutImageRepository.findAllByReservationIdAndIsActiveTrueOrderBySortOrder(reservationId);
+
+        return ReservationConverter.toCheckoutPhotos(rejected, images);
+    }
+
+    //퇴실 승인 여부 조회 - 게스트 또는 호스트 본인만 조회 가능
+    public ReservationResDTO.ReservationCheckoutApprovalRes getCheckoutApproval(Long reservationId, Long userId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+
+        boolean isGuest = reservation.getUser().getUserId().equals(userId);
+        boolean isHost = reservation.getSpace().getHostId().equals(userId);
+        if (!isGuest && !isHost) {
+            throw new ProjectException(ReservationErrorCode.RESERVATION_ACCESS_DENIED);
+        }
+
+        return ReservationConverter.toCheckoutApproval(reservation);
     }
 
     //페이징

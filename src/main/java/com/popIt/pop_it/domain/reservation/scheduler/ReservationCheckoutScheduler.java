@@ -72,6 +72,10 @@ public class ReservationCheckoutScheduler {
         List<Reservation> skipped = reservationRepository
                 .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNullAndEndDateLessThanEqual(ReservationStatus.USAGE_COMPLETED, cutoffDate);
 
+        // 호스트가 퇴실 거절했는데 게스트가 재제출 안 한 경우 - 거절 시각 기준 24h
+        List<Reservation> rejectedTimeout = reservationRepository
+                .findAllByStatusAndCheckoutRejectedTrueAndCheckoutRejectedAtBefore(ReservationStatus.USAGE_COMPLETED, cutoff);
+
         submitted.forEach(r -> {
             try {
                 reservationCommandService.completeCheckoutForSchedule(r.getId());
@@ -84,6 +88,14 @@ public class ReservationCheckoutScheduler {
             try {
                 reservationCommandService.completeCheckoutForSchedule(r.getId());
                 log.info("퇴실 자동 승인(증빙 스킵) - reservationId: {}", r.getId());
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("퇴실 자동 승인 중 낙관적 락 충돌 - reservationId: {}", r.getId());
+            }
+        });
+        rejectedTimeout.forEach(r -> {
+            try {
+                reservationCommandService.completeCheckoutForRejectedSchedule(r.getId(), cutoff);
+                log.info("퇴실 자동 승인(거절 후 재제출 타임아웃) - reservationId: {}", r.getId());
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.warn("퇴실 자동 승인 중 낙관적 락 충돌 - reservationId: {}", r.getId());
             }

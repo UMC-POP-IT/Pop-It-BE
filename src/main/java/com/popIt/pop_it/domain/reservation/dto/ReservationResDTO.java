@@ -4,6 +4,7 @@ import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import lombok.Builder;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -92,6 +93,26 @@ public class ReservationResDTO {
     @Builder
     public record ReservationCheckoutImagesRes(
             List<String> photoUrls
+    ) {
+    }
+
+    @Builder
+    public record ReservationCheckoutPhotosRes(
+            // 게스트 본인의 퇴실 증빙 사진 조회용. 거절 상태면 가장 최근 거절 배치, 아니면 현재 유효한 제출 사진을 반환
+            Boolean checkoutRejected,
+            List<String> photoUrls
+    ) {
+    }
+
+    @Builder
+    public record ReservationCheckoutApprovalRes(
+            // 퇴실 승인 여부 조회용. status/checkoutRejected 조합으로 미제출/대기/거절/승인 완료 상태를 판별
+            Long reservationId,
+            ReservationStatus status,
+            String statusDescription,
+            Boolean checkoutRejected,
+            LocalDateTime checkoutSubmittedAt,
+            LocalDateTime checkoutRejectedAt
     ) {
     }
 

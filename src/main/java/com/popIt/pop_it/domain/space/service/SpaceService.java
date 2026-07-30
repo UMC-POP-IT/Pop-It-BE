@@ -17,15 +17,14 @@ import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
-import com.popIt.pop_it.domain.space.repository.SpaceUtilizationRepository;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
-import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
-import com.popIt.pop_it.domain.user_activity.entity.enums.ActivityType;
-import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import com.popIt.pop_it.global.embedding.event.SpaceCreatedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -37,6 +36,7 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -48,8 +48,8 @@ public class SpaceService {
     private final HostProfileRepository hostProfileRepository;
     private final WishlistRepository wishlistRepository;
     private final KakaoLocalService kakaoLocalService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ReservationRepository reservationRepository;
-    private final UserActivityRepository userActivityRepository;
     private final SpaceUtilizationCalculator spaceUtilizationCalculator;
 
     // 공간 삭제를 막아야하는 예약 상태
@@ -110,11 +110,13 @@ public class SpaceService {
             spaceFacilityRepository.saveAll(spaceFacilities);
         }
 
+        // 6. AI 추천용 임베딩 생성 - 커밋 후(AFTER_COMMIT)에 처리해야 함.
+        eventPublisher.publishEvent(new SpaceCreatedEvent(space.getId()));
+
         return SpaceConverter.toCreateResult(space);
     }
 
     // 공간 상세 조회
-    @Transactional
     public SpaceResDTO.SpaceDetailRes getSpaceDetail(Long userId, Long spaceId) {
         // 1. 공간 조회
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
@@ -134,11 +136,6 @@ public class SpaceService {
         if (userId != null) {
             isMine = space.getHostId().equals(userId);
             isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
-        }
-
-        // 5. 조회 누적 기록 (실시간 추천의 가동률 판정 지표로 사용 - user_activity.user_id가 NOT NULL이라 비로그인 조회는 집계에 담지 못함)
-        if (userId != null) {
-            recordSpaceView(userId, spaceId);
         }
 
         return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
@@ -488,21 +485,5 @@ public class SpaceService {
     ) {
         RealtimeRecommendType type = typeBySpaceId.get(space.getId());
         return type != null && type.isFrontSlotType();
-    }
-
-    private void recordSpaceView(Long userId, Long spaceId) {
-        LocalDateTime now = LocalDateTime.now();
-
-        int updated = userActivityRepository.incrementViewCount(userId, spaceId, ActivityType.VIEW, now);
-
-        if (updated == 0) {
-            userActivityRepository.save(UserActivity.builder()
-                    .userId(userId)
-                    .spaceId(spaceId)
-                    .activityType(ActivityType.VIEW)
-                    .viewCount(1)
-                    .lastViewedAt(now)
-                    .build());
-        }
     }
 }

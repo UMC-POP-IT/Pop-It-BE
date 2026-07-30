@@ -7,6 +7,7 @@ import com.popIt.pop_it.domain.reservation.exception.code.ReservationSuccessCode
 import com.popIt.pop_it.domain.reservation.service.ReservationCommandService;
 import com.popIt.pop_it.domain.reservation.service.ReservationQueryService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
+import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -28,25 +29,25 @@ public class ReservationController {
             + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/me")
     public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getMyReservations(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(required = false) ReservationStatus status,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getMyReservations(userId, status, cursor, size)
+                reservationQueryService.getMyReservations(authUser.getUser().getUserId(), status, cursor, size)
         );
     }
 
     @Operation(summary = "게스트 예약 상태별 개수 조회", description = "게스트 예약관리 화면 상단 탭(승인대기/계약대기/사용중 등)에 붙는 배지 숫자를 상태별로 반환합니다.")
     @GetMapping("/me/status-counts")
     public ApiResponse<ReservationResDTO.ReservationStatusCountsRes> getMyStatusCounts(
-            @AuthenticationPrincipal Long userId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getMyStatusCounts(userId)
+                reservationQueryService.getMyStatusCounts(authUser.getUser().getUserId())
         );
     }
 
@@ -55,25 +56,25 @@ public class ReservationController {
             + "(status 미전달 시 전체 조회, cursor 미전달 시 첫 페이지)")
     @GetMapping("/host")
     public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getHostReservations(
-            @AuthenticationPrincipal Long hostId,
+            @AuthenticationPrincipal AuthUser authUser,
             @RequestParam(required = false) ReservationStatus status,
             @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "10") int size
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getHostReservations(hostId, status, cursor, size)
+                reservationQueryService.getHostReservations(authUser.getUser().getUserId(), status, cursor, size)
         );
     }
 
     @Operation(summary = "호스트 예약 상태별 개수 조회", description = "호스트 예약관리 화면 상단 탭에 붙는 배지 숫자를 상태별로 반환합니다.")
     @GetMapping("/host/status-counts")
     public ApiResponse<ReservationResDTO.ReservationStatusCountsRes> getHostStatusCounts(
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
-                reservationQueryService.getHostStatusCounts(hostId)
+                reservationQueryService.getHostStatusCounts(authUser.getUser().getUserId())
         );
     }
 
@@ -82,12 +83,12 @@ public class ReservationController {
             + "(이용 기간 최대 90일, 공간의 대여 가능 기간 범위 내에서만 요청 가능)")
     @PostMapping
     public ApiResponse<ReservationResDTO.ReservationCreateRes> createReservation(
-            @AuthenticationPrincipal Long userId,
+            @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody ReservationReqDTO.ReservationCreateReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_REQUEST,
-                reservationCommandService.createReservation(userId, request)
+                reservationCommandService.createReservation(authUser.getUser().getUserId(), request)
         );
     }
 
@@ -96,11 +97,11 @@ public class ReservationController {
     @PostMapping("/{reservationId}/approve")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveReservation(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_OK,
-                reservationCommandService.approveReservation(reservationId, hostId)
+                reservationCommandService.approveReservation(reservationId, authUser.getUser().getUserId())
         );
     }
 
@@ -108,11 +109,11 @@ public class ReservationController {
     @PostMapping("/{reservationId}/reject")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectReservation(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_NO,
-                reservationCommandService.rejectReservation(reservationId, hostId)
+                reservationCommandService.rejectReservation(reservationId, authUser.getUser().getUserId())
         );
     }
 
@@ -121,11 +122,11 @@ public class ReservationController {
     @PostMapping("/{reservationId}/cancel")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> cancelReservation(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long guestId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_GUEST_CANCEL,
-                reservationCommandService.cancelByGuest(reservationId, guestId)
+                reservationCommandService.cancelByGuest(reservationId, authUser.getUser().getUserId())
         );
     }
 
@@ -135,12 +136,12 @@ public class ReservationController {
     @PostMapping("/{reservationId}/checkout")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> submitCheckout(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long guestId,
-            @RequestBody ReservationReqDTO.ReservationCheckoutReq request
+            @AuthenticationPrincipal AuthUser authUser,
+            @Valid @RequestBody ReservationReqDTO.ReservationCheckoutReq request
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTO,
-                reservationCommandService.submitCheckout(reservationId, guestId, request)
+                reservationCommandService.submitCheckout(reservationId, authUser.getUser().getUserId(), request)
         );
     }
 
@@ -149,24 +150,24 @@ public class ReservationController {
     @PostMapping("/{reservationId}/checkout/approve")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveCheckout(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_OK,
-                reservationCommandService.approveCheckout(reservationId, hostId)
+                reservationCommandService.approveCheckout(reservationId, authUser.getUser().getUserId())
         );
     }
 
     @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
-            + "거절 시 기존 제출 사진은 초기화되며, 반복 거절이 가능합니다. (게스트 재제출 전까지 자동승인 대상에서 제외됩니다.)")
+            + "거절 시 기존 제출 사진은 삭제되지 않고 비활성화되어 게스트가 조회할 수 있으며, 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
     @PostMapping("/{reservationId}/checkout/reject")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectCheckout(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_REJECT,
-                reservationCommandService.rejectCheckout(reservationId, hostId)
+                reservationCommandService.rejectCheckout(reservationId, authUser.getUser().getUserId())
         );
     }
 
@@ -174,11 +175,38 @@ public class ReservationController {
     @GetMapping("/{reservationId}/checkout-images")
     public ApiResponse<ReservationResDTO.ReservationCheckoutImagesRes> getCheckoutImages(
             @PathVariable Long reservationId,
-            @AuthenticationPrincipal Long hostId
+            @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_CHECKOUT_IMAGES,
-                reservationQueryService.getCheckoutImages(reservationId, hostId)
+                reservationQueryService.getCheckoutImages(reservationId, authUser.getUser().getUserId())
+        );
+    }
+
+    @Operation(summary = "게스트 퇴실 증빙 사진 조회", description = "게스트 본인이 제출한 퇴실 증빙 사진을 조회합니다.<br>"
+            + "거절된 상태(재인증 대기)라면 가장 최근 거절된 사진을, 그 외에는 현재 유효한(승인 대기/완료) 제출 사진을 반환합니다.")
+    @GetMapping("/{reservationId}/checkout-photos")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutPhotosRes> getCheckoutPhotos(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTOS,
+                reservationQueryService.getCheckoutPhotosForGuest(reservationId, authUser.getUser().getUserId())
+        );
+    }
+
+    @Operation(summary = "퇴실 승인 여부 조회", description = "예약의 퇴실 승인 진행 상태를 조회합니다. 게스트/호스트 모두 본인이 연관된 예약이면 조회 가능합니다.<br>"
+            + "status가 CHECKOUT_COMPLETED면 승인 완료, checkoutRejected가 true면 거절(재인증 대기), "
+            + "checkoutSubmittedAt만 있고 위 두 조건에 해당하지 않으면 제출 후 호스트 확인 대기 중입니다.")
+    @GetMapping("/{reservationId}/checkout-approval")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutApprovalRes> getCheckoutApproval(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        return ApiResponse.onSuccess(
+                ReservationSuccessCode.RESERVATION_CHECKOUT_APPROVAL,
+                reservationQueryService.getCheckoutApproval(reservationId, authUser.getUser().getUserId())
         );
     }
 

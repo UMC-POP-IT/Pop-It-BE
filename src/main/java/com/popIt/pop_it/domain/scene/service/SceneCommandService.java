@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.scene.service;
 
+import com.popIt.pop_it.domain.hotspot.repository.HotspotRepository;
 import com.popIt.pop_it.domain.scene.converter.SceneConverter;
 import com.popIt.pop_it.domain.scene.dto.SceneReqDTO;
 import com.popIt.pop_it.domain.scene.dto.SceneResDTO;
@@ -28,6 +29,7 @@ public class SceneCommandService {
     private final SceneRepository sceneRepository;
     private final SceneImageRepository sceneImageRepository;
     private final SpaceRepository spaceRepository;
+    private final HotspotRepository hotspotRepository;
 
     //씬 생성 (사전 제작된 모델 연결)
     public SceneResDTO.SceneIdRes createScene(Long spaceId, Long hostId, SceneReqDTO.SceneCreateReq request) {
@@ -111,15 +113,19 @@ public class SceneCommandService {
     }
 
     //씬 삭제 (soft delete)
+    //핫스팟의 targetSceneId 참조 검증(HotspotService.validateTargetSceneExists)과 같은 findByIdForUpdate를 써서
+    //"이 씬을 가리키는 핫스팟 생성"과 "이 씬 삭제"가 같은 row 락으로 직렬화되게 함
     public void deleteScene(Long sceneId, Long hostId) {
-        Scene scene = sceneRepository.findByIdAndNotDeleted(sceneId)
+        Scene scene = sceneRepository.findByIdForUpdate(sceneId)
                 .orElseThrow(() -> new SceneException(SceneErrorCode.SCENE_NOT_FOUND));
 
         validateHost(scene.getSpace(), hostId);
 
-        // TODO: Hotspot 도메인 구현 후 - 다른 씬의 LINK 핫스팟이 이 씬을 targetSceneId로 참조 중이면
-        //       SceneErrorCode.SCENE_REFERENCED_BY_HOTSPOT 던지도록 참조 카운트 체크 추가
+        if (hotspotRepository.existsByTargetSceneId(sceneId)) {
+            throw new SceneException(SceneErrorCode.SCENE_REFERENCED_BY_HOTSPOT);
+        }
 
+        hotspotRepository.deleteAllBySceneId(sceneId);
         scene.markDeleted();
     }
 

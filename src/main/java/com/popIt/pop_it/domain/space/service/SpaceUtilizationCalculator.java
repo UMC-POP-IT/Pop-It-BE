@@ -3,12 +3,8 @@ package com.popIt.pop_it.domain.space.service;
 import com.popIt.pop_it.domain.payment.enums.PaymentStatus;
 import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.space.entity.Space;
-import com.popIt.pop_it.domain.space.repository.SpacePaidCount;
-import com.popIt.pop_it.domain.space.repository.SpacePaidPeriod;
-import com.popIt.pop_it.domain.space.repository.SpaceUtilizationRepository;
-import com.popIt.pop_it.domain.user_activity.entity.enums.ActivityType;
-import com.popIt.pop_it.domain.user_activity.repository.SpaceViewCount;
-import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
+import com.popIt.pop_it.domain.space.repository.*;
+import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class SpaceUtilizationCalculator {
 
-    private final UserActivityRepository userActivityRepository;
+    private final SpaceViewCountRepository spaceViewCountRepository;
     private final SpaceUtilizationRepository spaceUtilizationRepository;
 
     // 조회수, 결제 집계 기간
@@ -106,8 +102,8 @@ public class SpaceUtilizationCalculator {
     }
 
     private Map<Long, Long> loadViewCounts(List<Long> spaceIds, LocalDateTime since) {
-        return userActivityRepository
-                .sumViewCountBySpaceId(ActivityType.VIEW, spaceIds, since).stream()
+        return spaceViewCountRepository
+                .countViewsBySpaceIds(UserEventType.VIEW, spaceIds, since).stream()
                 .collect(Collectors.toMap(
                         SpaceViewCount::getSpaceId,
                         row -> row.getViewCount() == null ? 0L : row.getViewCount()));

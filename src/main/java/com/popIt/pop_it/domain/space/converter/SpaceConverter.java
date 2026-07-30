@@ -169,7 +169,7 @@ public class SpaceConverter {
                 .build();
     }
 
-    private static List<String> toKeywords(Space space) {
+    public static List<String> toKeywords(Space space) {
         List<String> keywords = new ArrayList<>();
 
         if (space.getDong() != null && !space.getDong().isEmpty()) {

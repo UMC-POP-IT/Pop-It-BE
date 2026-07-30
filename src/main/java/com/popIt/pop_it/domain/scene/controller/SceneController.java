@@ -34,8 +34,7 @@ public class SceneController {
         );
     }
 
-    @Operation(summary = "씬 상세 조회", description = "모델 URL, 카메라 초기 설정, 핫스팟 목록을 조회합니다.<br>"
-            + "(핫스팟 도메인 구현 전까지 hotspots는 빈 배열로 내려갑니다.)")
+    @Operation(summary = "씬 상세 조회", description = "모델 URL, 카메라 초기 설정, 핫스팟 목록을 조회합니다.")
     @GetMapping("/scenes/{sceneId}")
     public ApiResponse<SceneResDTO.SceneDetailRes> getSceneDetail(
             @PathVariable Long sceneId
@@ -88,7 +87,7 @@ public class SceneController {
     }
 
     @Operation(summary = "씬 삭제", description = "씬을 삭제합니다. (soft delete)<br>"
-            + "다른 씬의 링크 핫스팟이 참조 중이면 삭제할 수 없습니다. (핫스팟 도메인 구현 후 적용)")
+            + "다른 씬의 링크 핫스팟이 참조 중이면 삭제할 수 없습니다.")
     @DeleteMapping("/scenes/{sceneId}")
     public ApiResponse<Void> deleteScene(
             @PathVariable Long sceneId,

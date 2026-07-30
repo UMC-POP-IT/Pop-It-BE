@@ -1,6 +1,8 @@
 package com.popIt.pop_it.domain.reservation.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -17,7 +19,7 @@ public class ReservationReqDTO {
     }
 
     public record ReservationCheckoutReq(
-            List<String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
+            @NotEmpty List<@NotBlank String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
     ) {
     }
 }
