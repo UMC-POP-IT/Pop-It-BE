@@ -43,4 +43,17 @@ public class UserServiceImpl implements UserService {
 
         return UserConverter.toUserInfo(user, isHost);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UserResDTO.UserInfoRes getMyInfo(Long userId) {
+        // 인증 주체는 존재해야 정상이나, 방어적으로 명시 조회
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ProjectException(GeneralErrorCode.UNAUTHORIZED));
+
+        // 호스트 프로필 보유 여부 → 프론트의 모드 전환/호스트 온보딩 분기용 (기존 선검사 메서드 재사용)
+        boolean hasHostProfile = hostProfileRepository.existsByUserId(userId);
+
+        return UserConverter.toUserInfo(user, hasHostProfile);
+    }
 }

@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -59,5 +60,35 @@ public class UserController {
         UserResDTO.UserInfoRes result = userService.switchMode(userId, request.mode());
 
         return ResponseEntity.ok(ApiResponse.onSuccess(UserSuccessCode.USER_MODE_SWITCH, result));
+    }
+
+    @Operation(
+            summary = "내 정보 조회",
+            description = """
+                    로그인한 사용자의 기본 정보를 조회합니다. (새로고침 후 세션 복구/토큰 유효성 프로브 용도)
+                    - 인증 필요: 우측 상단 Authorize에 로그인으로 발급받은 Access Token을 입력하세요.
+                    - hasHostProfile: 호스트 프로필 등록 여부입니다. 현재 활동 모드(currentMode)와 별개로,
+                      프론트의 "모드 전환" 노출 / "호스트 등록" 온보딩 분기에 사용합니다.
+                      (예: currentMode=GUEST 이면서 hasHostProfile=true 가능)
+                    """,
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증되지 않음", content = @io.swagger.v3.oas.annotations.media.Content)
+    })
+    @GetMapping("/me")
+    public ResponseEntity<ApiResponse<UserResDTO.UserInfoRes>> getMyInfo(
+            @AuthenticationPrincipal AuthUser authUser
+    ) {
+        // Security 오류 등으로 인증 주체가 비어있을 경우 NPE(500) 대신 표준 401로 처리
+        if (authUser == null || authUser.getUser() == null) {
+            throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
+        }
+
+        Long userId = authUser.getUser().getUserId();
+        UserResDTO.UserInfoRes result = userService.getMyInfo(userId);
+
+        return ResponseEntity.ok(ApiResponse.onSuccess(UserSuccessCode.USER_GET_ME, result));
     }
 }
