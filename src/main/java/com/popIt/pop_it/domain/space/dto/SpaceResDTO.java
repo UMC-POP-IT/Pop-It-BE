@@ -221,28 +221,4 @@ public class SpaceResDTO {
             @Schema(description = "삭제된 공간 ID", example = "10")
             Long spaceId
     ) {}
-
-    @Builder
-    public record AiRecommendedSpaceRes(
-            Long spaceId,
-            String buildingName,
-            String tag,
-            String district,
-            String roadAddress,
-            Double exclusiveArea,
-            String basicInfo,
-            Integer pricePerDay,
-            Integer pricePerWeek,
-            Integer pricePerMonth,
-            String thumbnailUrl,
-            Boolean parkingAvailable,
-            Boolean isWishlisted
-    ) {}
-
-    @Builder
-    public record AiRecommendedSpaceListRes(
-            List<AiRecommendedSpaceRes> spaces,
-            Boolean hasNext,
-            String nextCursor
-    ) {}
 }

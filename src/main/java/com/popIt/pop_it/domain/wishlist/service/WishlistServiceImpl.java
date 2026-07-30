@@ -8,8 +8,13 @@ import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.wishlist.converter.WishlistConverter;
 import com.popIt.pop_it.domain.wishlist.dto.WishlistResDTO;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
+import com.popIt.pop_it.domain.user_event.entity.UserEvent;
+import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
+import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import com.popIt.pop_it.global.embedding.event.UserEngagementEvent;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -27,6 +32,8 @@ public class WishlistServiceImpl implements WishlistService {
     private final WishlistRepository wishlistRepository;
     private final SpaceRepository spaceRepository;
     private final SpaceImageRepository spaceImageRepository;
+    private final UserEventRepository userEventRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     // toggle은 의도적으로 @Transactional을 두지 않는다: exists/delete/save를 각각 독립된 짧은
     // 트랜잭션으로 즉시 커밋해야 (1) hot key 락 보유시간이 짧아 동시 토글 경합에 강하고,
@@ -34,13 +41,15 @@ public class WishlistServiceImpl implements WishlistService {
     @Override
     public WishlistResDTO.WishlistToggleRes toggle(Long userId, Long spaceId) {
         // 존재하지 않거나 삭제된 공간은 찜할 수 없음
-        if (spaceRepository.findByIdAndDeletedAtIsNull(spaceId).isEmpty()) {
-            throw new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND);
-        }
+        Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
 
         // 이미 찜한 상태면 해제 (벌크 삭제라 동시 해제에도 멱등)
         if (wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId)) {
             wishlistRepository.deleteByUserIdAndSpaceId(userId, spaceId);
+            // 삭제 시점에도 여전히 찜 해제 상태일 때만 이벤트를 지운다 (해제/재등록 경합 시 새 이벤트 보존)
+            userEventRepository.deleteByUserIdAndSpaceIdAndEventTypeIfNotWishlisted(userId, spaceId, UserEventType.WISHLIST);
+            eventPublisher.publishEvent(new UserEngagementEvent(userId));
             return WishlistConverter.toToggle(spaceId, false);
         }
 
@@ -51,7 +60,22 @@ public class WishlistServiceImpl implements WishlistService {
         } catch (DataIntegrityViolationException e) {
             return WishlistConverter.toToggle(spaceId, true);
         }
+        recordWishlistEvent(userId, spaceId, space);
+        eventPublisher.publishEvent(new UserEngagementEvent(userId));
         return WishlistConverter.toToggle(spaceId, true);
+    }
+
+    // AI 추천 사유 태그(REGION_PIVOT의 "이 지역 찜했는지" 판단)용 이벤트
+    private void recordWishlistEvent(Long userId, Long spaceId, Space space) {
+        if (space.getDong() == null) {
+            return;
+        }
+        userEventRepository.save(UserEvent.builder()
+                .userId(userId)
+                .spaceId(spaceId)
+                .eventType(UserEventType.WISHLIST)
+                .region(space.getDong())
+                .build());
     }
 
     @Override

@@ -13,7 +13,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "user_activity")
+@Table(
+    name = "user_activity",
+    uniqueConstraints = @UniqueConstraint(
+        name = "uk_user_activity_user_space",
+        columnNames = {"user_id", "space_id"})
+)
 public class UserActivity {
 
     @Id
@@ -35,4 +40,9 @@ public class UserActivity {
 
     @Column(name = "space_id", nullable = false)
     private Long spaceId;
+
+    public void recordView() {
+        this.viewCount += 1;
+        this.lastViewedAt = LocalDateTime.now();
+    }
 }

@@ -16,6 +16,7 @@ public enum SpaceErrorCode implements BaseErrorCode {
     HOST_PROFILE_REQUIRED(HttpStatus.FORBIDDEN, "SPACE403_1", "호스트 권한이 없습니다. 호스트 등록을 먼저 완료해주세요."),
     NOT_SPACE_OWNER(HttpStatus.FORBIDDEN, "SPACE403_2", "본인이 등록한 공간만 수정하거나 삭제할 수 있습니다."),
     SPACE_NOT_FOUND(HttpStatus.NOT_FOUND, "SPACE404_1", "해당 공간을 찾을 수 없습니다."),
+    INVALID_CURSOR(HttpStatus.BAD_REQUEST, "SPACE400_3", "잘못된 커서 값입니다."),
     ;
 
     private final HttpStatus status;

@@ -48,6 +48,10 @@ spring:
       path: "/h2-console"
       settings:
         web-allow-others: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
 
 jwt:
   token:
@@ -62,19 +66,24 @@ app:
 cloud:
   aws:
     credentials:
-        access-key: ${AWS_ACCESS_KEY_ID}
-        secret-key: ${AWS_SECRET_ACCESS_KEY}
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
     region: ${AWS_REGION}
     s3:
-        bucket: ${AWS_S3_BUCKET}
-        host-document-bucket: ${AWS_HOST_DOCUMENT_BUCKET}
-
+      bucket: ${AWS_S3_BUCKET}
+      host-document-bucket: ${AWS_HOST_DOCUMENT_BUCKET}
 
 portone:
   api-secret: ${PORTONE_API_SECRET_KEY}
 
 toss:
   secret-key: ${TOSS_SECRET_KEY}
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  model: gemini-embedding-2
+  output-dimensionality: 768
 
 management:
   endpoints:

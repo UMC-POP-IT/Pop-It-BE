@@ -20,7 +20,10 @@ import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import com.popIt.pop_it.global.embedding.event.SpaceCreatedEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -31,6 +34,7 @@ import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -42,6 +46,7 @@ public class SpaceService {
     private final HostProfileRepository hostProfileRepository;
     private final WishlistRepository wishlistRepository;
     private final KakaoLocalService kakaoLocalService;
+    private final ApplicationEventPublisher eventPublisher;
     private final ReservationRepository reservationRepository;
 
     // 공간 삭제를 막아야하는 예약 상태
@@ -96,6 +101,9 @@ public class SpaceService {
                     .toList();
             spaceFacilityRepository.saveAll(spaceFacilities);
         }
+
+        // 6. AI 추천용 임베딩 생성 - 커밋 후(AFTER_COMMIT)에 처리해야 함.
+        eventPublisher.publishEvent(new SpaceCreatedEvent(space.getId()));
 
         return SpaceConverter.toCreateResult(space);
     }
