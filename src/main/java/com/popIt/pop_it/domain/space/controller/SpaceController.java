@@ -113,12 +113,12 @@ public class SpaceController {
         // 조회 기록은 부가 기능이라 실패해도 상세 조회 응답 자체에 영향을 주면 안 됨
         if (userId != null) {
             try {
-                spaceVisitLogService.recordVisit(spaceId, userId);
+                spaceVisitLogService.recordVisit(spaceId, userId, authUser.getUser().getCurrentMode());
             } catch (Exception e) {
                 log.warn("공간(id={}) 방문 기록(UV) 실패 - userId={}", spaceId, userId, e);
             }
             try {
-                userActivityService.recordView(userId, spaceId);
+                userActivityService.recordView(userId, spaceId, authUser.getUser().getCurrentMode());
             } catch (Exception e) {
                 log.warn("공간(id={}) 조회 이력(개인화) 기록 실패 - userId={}", spaceId, userId, e);
             }

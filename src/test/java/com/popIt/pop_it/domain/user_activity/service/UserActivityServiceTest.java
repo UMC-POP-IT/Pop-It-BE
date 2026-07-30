@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verify;
 
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
 import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.user_event.entity.UserEvent;
@@ -51,7 +52,7 @@ class UserActivityServiceTest {
         // UPDATE 대상 행이 없어서 0건 반영됐다고 가정 - 처음 조회하는 경우
         given(userActivityRepository.incrementViewCount(eq(userId), eq(spaceId), any())).willReturn(0);
 
-        userActivityService.recordView(userId, spaceId);
+        userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
         ArgumentCaptor<UserActivity> captor = ArgumentCaptor.forClass(UserActivity.class);
         verify(userActivityRepository).saveAndFlush(captor.capture());
@@ -70,7 +71,7 @@ class UserActivityServiceTest {
         given(userActivityRepository.saveAndFlush(any(UserActivity.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate"));
 
-        userActivityService.recordView(userId, spaceId);
+        userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
         // insert 실패 후에는 그 행에 이번 조회분을 다시 반영해야 한다 (최초 1회 + 재시도 1회 = 총 2회 호출)
         verify(userActivityRepository, times(2))
@@ -85,7 +86,7 @@ class UserActivityServiceTest {
         // UPDATE가 1건 반영됐다고 가정 - 이미 있던 행의 조회수가 DB에서 곧바로 +1 됨
         given(userActivityRepository.incrementViewCount(eq(userId), eq(spaceId), any())).willReturn(1);
 
-        userActivityService.recordView(userId, spaceId);
+        userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
         verify(userActivityRepository).incrementViewCount(eq(userId), eq(spaceId), any(LocalDateTime.class));
         // read-modify-write가 아니므로, 이미 있던 행에 대해서는 save()를 다시 호출하지 않는다
@@ -99,7 +100,7 @@ class UserActivityServiceTest {
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, "성수동")));
         given(userActivityRepository.incrementViewCount(eq(userId), eq(spaceId), any())).willReturn(1);
 
-        userActivityService.recordView(userId, spaceId);
+        userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
         ArgumentCaptor<UserEvent> captor = ArgumentCaptor.forClass(UserEvent.class);
         verify(userEventRepository).save(captor.capture());
@@ -113,9 +114,35 @@ class UserActivityServiceTest {
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, "합정동")));
         given(userActivityRepository.incrementViewCount(eq(userId), eq(spaceId), any())).willReturn(1);
 
-        userActivityService.recordView(userId, spaceId);
+        userActivityService.recordView(userId, spaceId, UserMode.GUEST);
 
         verify(eventPublisher).publishEvent(new UserEngagementEvent(userId));
+    }
+
+    @Test
+    void 호스트_모드로_본인_공간을_조회하면_조회수를_기록하지_않는다() {
+        Long hostId = 1L;
+        Long spaceId = 10L;
+        given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, hostId, "합정동")));
+
+        userActivityService.recordView(hostId, spaceId, UserMode.HOST);
+
+        verify(userActivityRepository, never()).incrementViewCount(any(), any(), any());
+        verify(userActivityRepository, never()).save(any());
+        verify(userEventRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void 게스트_모드면_본인_공간이어도_조회수를_기록한다() {
+        Long hostId = 1L;
+        Long spaceId = 10L;
+        given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, hostId, "합정동")));
+        given(userActivityRepository.incrementViewCount(eq(hostId), eq(spaceId), any())).willReturn(1);
+
+        userActivityService.recordView(hostId, spaceId, UserMode.GUEST);
+
+        verify(userActivityRepository).incrementViewCount(eq(hostId), eq(spaceId), any());
     }
 
     @Test
@@ -124,7 +151,7 @@ class UserActivityServiceTest {
         Long spaceId = 999L;
         given(spaceRepository.findById(spaceId)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> userActivityService.recordView(userId, spaceId))
+        assertThatThrownBy(() -> userActivityService.recordView(userId, spaceId, UserMode.GUEST))
                 .isInstanceOf(ProjectException.class);
         verify(userActivityRepository, never()).incrementViewCount(any(), any(), any());
         verify(userActivityRepository, never()).save(any());
@@ -132,5 +159,9 @@ class UserActivityServiceTest {
 
     private Space space(Long id, String dong) {
         return Space.builder().id(id).dong(dong).build();
+    }
+
+    private Space space(Long id, Long hostId, String dong) {
+        return Space.builder().id(id).hostId(hostId).dong(dong).build();
     }
 }

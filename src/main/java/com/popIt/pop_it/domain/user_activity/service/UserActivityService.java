@@ -6,6 +6,7 @@ import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.user_activity.entity.UserActivity;
 import com.popIt.pop_it.domain.user_activity.entity.enums.ActivityType;
 import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user_event.entity.UserEvent;
 import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
@@ -35,9 +36,14 @@ public class UserActivityService {
     private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void recordView(Long userId, Long spaceId) {
+    public void recordView(Long userId, Long spaceId, UserMode mode) {
         Space space = spaceRepository.findById(spaceId)
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
+
+        // 호스트 모드로 자기 공간을 조회한 경우는 기록하지 않는다.
+        if (mode == UserMode.HOST && userId.equals(space.getHostId())) {
+            return;
+        }
 
         // DB에서 원자적으로 +1 - 동시 조회 시 lost update 방지
         LocalDateTime now = LocalDateTime.now();
