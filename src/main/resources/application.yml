@@ -58,6 +58,12 @@ jwt:
 
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  # 소셜 로그인 성공 후 돌려보낼 프론트 origin 화이트리스트 (frontend-url은 코드에서 항상 허용에 포함된다).
+  # 로컬 프론트(localhost)에서 배포 백엔드로 로그인을 시작해도, 시작 origin으로 그대로 복귀시키기 위함.
+  # TODO(데모 종료 후 제거): 프로덕션 화이트리스트에 localhost를 남겨둔 상태다.
+  #   PKCE verifier 검증(OAuthCodeStore)으로 code 탈취만으로는 토큰 교환이 불가해 실질 위험은 낮으나,
+  #   운영 URL이 고정된 뒤에는 ALLOWED_FRONTEND_ORIGINS에서 로컬 origin을 반드시 제거할 것.
+  allowed-frontend-origins: ${ALLOWED_FRONTEND_ORIGINS:http://localhost:5173,http://localhost:3000}
 
 cloud:
   aws:

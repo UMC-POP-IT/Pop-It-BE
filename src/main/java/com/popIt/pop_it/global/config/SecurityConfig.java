@@ -6,12 +6,12 @@ import com.popIt.pop_it.global.exception.CustomEntryPoint;
 import com.popIt.pop_it.global.handler.OAuthSuccessHandler;
 import com.popIt.pop_it.global.security.filter.JwtAuthFilter;
 import com.popIt.pop_it.global.security.filter.OAuthChallengeCaptureFilter;
+import com.popIt.pop_it.global.security.oauth.FrontendOriginResolver;
 import com.popIt.pop_it.global.security.oauth.OAuthCodeStore;
 import com.popIt.pop_it.global.security.service.CustomOAuthService;
 import com.popIt.pop_it.global.security.service.CustomUserDetailsService;
 import com.popIt.pop_it.global.security.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -42,9 +42,7 @@ public class SecurityConfig {
     private final CustomOAuthService customOAuthService;
     private final UserRepository userRepository;
     private final OAuthCodeStore oAuthCodeStore;
-
-    @Value("${app.frontend-url}")
-    private String frontendUrl;
+    private final FrontendOriginResolver frontendOriginResolver;
 
     @Bean
     public JwtAuthFilter jwtAuthFilter() {
@@ -53,7 +51,7 @@ public class SecurityConfig {
 
     @Bean
     public OAuthSuccessHandler oAuthSuccessHandler() {
-        return new OAuthSuccessHandler(jwtUtil, userRepository, oAuthCodeStore);
+        return new OAuthSuccessHandler(jwtUtil, userRepository, oAuthCodeStore, frontendOriginResolver);
     }
 
     @Bean
@@ -162,7 +160,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of(frontendUrl, "http://localhost:5173"));
+        // 목적지 허용 목록(FrontendOriginResolver)과 CORS 허용 목록이 갈라지지 않도록 단일 출처로 통일한다.
+        config.setAllowedOrigins(List.copyOf(frontendOriginResolver.getAllowedOrigins()));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
