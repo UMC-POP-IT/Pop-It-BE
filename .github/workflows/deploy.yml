@@ -65,6 +65,8 @@ jobs:
               sleep 5
             done
 
+            echo "헬스체크 실패. 컨테이너 상태:"
+            docker compose ps
             echo "헬스체크 실패. 앱 로그:"
             docker compose logs --tail=50 app
             exit 1
