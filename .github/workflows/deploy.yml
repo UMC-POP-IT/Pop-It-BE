@@ -30,6 +30,16 @@ jobs:
           platforms: linux/amd64      # EC2가 x86이라 반드시 amd64
           tags: ${{ env.IMAGE }}
 
+      - name: compose 파일 동기화
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "deploy/docker-compose.yml"
+          target: "~/popit/"
+          strip_components: 1
+
       - name: EC2 SSH 접속 → pull & 재기동
         uses: appleboy/ssh-action@v1.0.3
         with:
