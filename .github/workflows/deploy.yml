@@ -56,8 +56,7 @@ jobs:
             # 헬스체크: 최대 60초간 응답 대기
             echo "헬스체크 시작..."
             for i in $(seq 1 12); do
-              CODE=$(curl -k -L -s -o /dev/null -w "%{http_code}" http://localhost/actuator/health || true)
-              if [ "$CODE" = "200" ]; then
+              if docker compose exec -T nginx wget -q -O /dev/null http://app:8080/actuator/health; then
                 echo "배포 성공 (HTTP $CODE)"
                 exit 0
               fi
