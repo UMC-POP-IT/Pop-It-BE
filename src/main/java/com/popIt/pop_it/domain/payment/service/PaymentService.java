@@ -187,6 +187,15 @@ public class PaymentService {
         settle(payment.getId());
     }
 
+    // 퇴실이 정상 승인되지 않은 경로(증빙 미제출 타임아웃, 거절 후 재제출 없이 타임아웃)에서 호출된다.
+    // 이 경우 보증금 환불은 시도하지 않고 호스트 정산만 진행한다.
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW)
+    public void settleHostPayoutOnlyByReservation(Long reservationId) {
+        Payment payment = paymentRepository.findByContractReservationIdAndStatus(reservationId, PaymentStatus.PAID)
+                .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+        settleHostPayoutOnly(payment.getId());
+    }
+
     /**
      * 퇴실 승인 시 내부적으로 호출되는 정산 처리.
      * (1) 임대료를 호스트에게 지급 (2) 보증금을 게스트에게 부분취소(환불)
@@ -215,6 +224,27 @@ public class PaymentService {
         }
     }
 
+    // 보증금 환불 단계는 건드리지 않고 SKIPPED로 고정한 채 호스트 정산만 진행한다.
+    // SKIPPED로 표시해두면 이후 재시도 스케줄러가 FAILED 단계만 골라 재시도할 때도 이 결제의
+    // 보증금 환불은 건드리지 않는다.
+    @Transactional(readOnly = true)
+    public void settleHostPayoutOnly(Long paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
+
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_NOT_PAID);
+        }
+
+        if (payment.getDepositRefundStatus() == SettlementStepStatus.PENDING) {
+            paymentSettlementRecorder.update(paymentId, Payment::markDepositRefundSkipped);
+        }
+
+        if (!settleHostPayout(payment, payment.getContract())) {
+            throw new ProjectException(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
+        }
+    }
+
     private boolean settleHostPayout(Payment payment, Contract contract) {
         if (payment.getHostPayoutStatus() == SettlementStepStatus.DONE) {
             return true;
@@ -239,7 +269,8 @@ public class PaymentService {
     }
 
     private boolean settleDepositRefund(Payment payment, Contract contract) {
-        if (payment.getDepositRefundStatus() == SettlementStepStatus.DONE) {
+        if (payment.getDepositRefundStatus() == SettlementStepStatus.DONE
+                || payment.getDepositRefundStatus() == SettlementStepStatus.SKIPPED) {
             return true;
         }
         if (!paymentSettlementRecorder.claimDepositRefund(payment.getId())) {

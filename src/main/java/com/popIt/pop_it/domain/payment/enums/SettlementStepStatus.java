@@ -10,7 +10,8 @@ public enum SettlementStepStatus {
     PENDING("대기중"),
     PROCESSING("처리중"),
     DONE("완료"),
-    FAILED("실패")
+    FAILED("실패"),
+    SKIPPED("제외됨")
     ;
 
     private final String description;

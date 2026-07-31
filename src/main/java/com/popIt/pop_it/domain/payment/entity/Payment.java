@@ -94,4 +94,9 @@ public class Payment {
     public void markDepositRefundFailed() {
         this.depositRefundStatus = SettlementStepStatus.FAILED;
     }
+
+    // 퇴실이 정상 승인(증빙 제출 후 승인)되지 않은 경우 보증금은 자동환불 대상에서 제외한다.
+    public void markDepositRefundSkipped() {
+        this.depositRefundStatus = SettlementStepStatus.SKIPPED;
+    }
 }
