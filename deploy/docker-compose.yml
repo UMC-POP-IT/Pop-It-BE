@@ -3,6 +3,8 @@ services:
     image: mysql:8.0
     container_name: popit-mysql
     restart: always
+    ports:
+      - "127.0.0.1:3306:3306"
     environment:
       MYSQL_DATABASE: popit
       MYSQL_USER: ${DB_USERNAME}

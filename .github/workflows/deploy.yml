@@ -30,8 +30,18 @@ jobs:
           platforms: linux/amd64      # EC2가 x86이라 반드시 amd64
           tags: ${{ env.IMAGE }}
 
+      - name: compose 파일 동기화
+        uses: appleboy/scp-action@917f8b81dfc1ccd331fef9e2d61bdc6c8be94634
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "deploy/docker-compose.yml"
+          target: "~/popit/"
+          strip_components: 1
+
       - name: EC2 SSH 접속 → pull & 재기동
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USER }}
@@ -46,8 +56,7 @@ jobs:
             # 헬스체크: 최대 60초간 응답 대기
             echo "헬스체크 시작..."
             for i in $(seq 1 12); do
-              CODE=$(curl -k -L -s -o /dev/null -w "%{http_code}" http://localhost/actuator/health || true)
-              if [ "$CODE" = "200" ]; then
+              if docker compose exec -T nginx wget -q -O /dev/null http://app:8080/actuator/health; then
                 echo "배포 성공 (HTTP $CODE)"
                 exit 0
               fi
@@ -55,6 +64,8 @@ jobs:
               sleep 5
             done
 
+            echo "헬스체크 실패. 컨테이너 상태:"
+            docker compose ps
             echo "헬스체크 실패. 앱 로그:"
             docker compose logs --tail=50 app
             exit 1
