@@ -364,8 +364,8 @@ public class SpaceService {
         }
 
         // 2. 가동률 하위 공간 판정
-        Set<Long> lowUtilizationSpaceIds =
-                spaceUtilizationCalculator.findLowUtilizationSpaceIds(candidates, now);
+        SpaceUtilizationCalculator.UtilizationResult utilization =
+                spaceUtilizationCalculator.calculate(candidates, now);
 
         // 3. 추천 유형 분류
         Map<Long, RealtimeRecommendType> typeBySpaceId = candidates.stream()
@@ -374,10 +374,10 @@ public class SpaceService {
                         space -> RealtimeRecommendType.classify(
                                 space.getCreatedAt(),
                                 now,
-                                lowUtilizationSpaceIds.contains(space.getId()))));
+                                utilization.isLowUtilization(space.getId()))));
 
         // 4. 슬롯 배치 후 캐러셀에 내려줄 개수만큼 자르기
-        List<Space> orderedSpaces = placeIntoSlots(candidates, typeBySpaceId).stream()
+        List<Space> orderedSpaces = placeIntoSlots(candidates, typeBySpaceId, utilization).stream()
                 .limit(REALTIME_RECOMMENDED_POOL_SIZE)
                 .toList();
 
@@ -439,7 +439,8 @@ public class SpaceService {
     // 슬롯 배치
     private static List<Space> placeIntoSlots(
             List<Space> spaces,
-            Map<Long, RealtimeRecommendType> typeBySpaceId
+            Map<Long, RealtimeRecommendType> typeBySpaceId,
+            SpaceUtilizationCalculator.UtilizationResult utilization
     ) {
         // 앞단 (Slot 1~3) 후보
         List<Space> frontCandidates = new ArrayList<>();
@@ -458,6 +459,8 @@ public class SpaceService {
         ordered.addAll(spaces.stream()
                 .filter(space -> !placeIds.contains(space.getId()))
                 .filter(space -> !isFrontSlotType(typeBySpaceId, space))
+                .sorted(Comparator.comparingLong(
+                        (Space space) -> utilization.viewCountOf(space.getId())).reversed())
                 .toList());
 
         // 기본 공간이 부족하면 앞단에 못 들어간 추천 공간으로 마저 채움

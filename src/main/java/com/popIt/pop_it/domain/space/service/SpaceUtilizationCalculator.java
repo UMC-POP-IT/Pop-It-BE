@@ -24,6 +24,19 @@ public class SpaceUtilizationCalculator {
     private final SpaceViewCountRepository spaceViewCountRepository;
     private final SpaceUtilizationRepository spaceUtilizationRepository;
 
+    public record UtilizationResult(
+            Set<Long> lowUtilizationSpaceIds,
+            Map<Long, Long> viewCountBySpaceId
+    ) {
+        public boolean isLowUtilization(Long spaceId) {
+            return lowUtilizationSpaceIds.contains(spaceId);
+        }
+
+        public long viewCountOf(Long spaceId) {
+            return viewCountBySpaceId.getOrDefault(spaceId, 0L);
+        }
+    }
+
     // 조회수, 결제 집계 기간
     private static final int METRIC_WINDOW_DAYS = 30;
 
@@ -33,10 +46,10 @@ public class SpaceUtilizationCalculator {
     // 조건 B - 예약률 기준 (30% 미만이면 공실률이 높음)
     private static final double OCCUPANCY_RATE_THRESHOLD = 0.30;
 
-    // 가동률 하위 공간 ID 집합 반환
-    public Set<Long> findLowUtilizationSpaceIds(List<Space> spaces, LocalDateTime now) {
+    // 가동률 하위 공간 ID 집합 및 조회수 반환
+    public UtilizationResult calculate(List<Space> spaces, LocalDateTime now) {
         if (spaces == null || spaces.isEmpty()) {
-            return Set.of();
+            return new UtilizationResult(Set.of(), Map.of());
         }
 
         List<Long> spaceIds = spaces.stream()
@@ -55,11 +68,13 @@ public class SpaceUtilizationCalculator {
         // 조건 A의 상위 50% 판정을 위한 조회수 기준선
         long viewCountThreshold = calculateTopHalfThreshold(spaceIds, viewCountBySpaceId);
 
-        return spaces.stream()
+       Set<Long> lowUtilizationSpaceIds = spaces.stream()
                 .filter(space -> isHighInterestLowConversion(space, viewCountBySpaceId, paidCountBySpaceId, viewCountThreshold)
                         || isHighVacancy(space, paidDaysBySpaceId, monthStart, monthEnd))
                 .map(Space::getId)
                 .collect(Collectors.toSet());
+
+       return new UtilizationResult(lowUtilizationSpaceIds, viewCountBySpaceId);
     }
 
     // 조건 A - 조회수는 상위 50% 안에 들지만 결제 전환율이 2% 미만인 경우
