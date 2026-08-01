@@ -13,6 +13,27 @@ spring:
           google:
             client-id: test-client-id
             client-secret: test-client-secret
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+
+          kakao:
+            client-id: test-kakao-client-id
+            client-secret: test-kakao-client-secret
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+            scope:
+              - profile_nickname
+            provider: kakao
+
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
     crypto:
       secret-key: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 
@@ -45,3 +66,10 @@ kakao:
 
 app:
   frontend-url: http://localhost:5173
+  allowed-frontend-origins: http://localhost:5173,http://localhost:3000
+
+gemini:
+  api-key: test-gemini-api-key
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  model: gemini-embedding-2
+  output-dimensionality: 768

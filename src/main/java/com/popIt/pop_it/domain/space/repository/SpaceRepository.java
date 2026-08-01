@@ -16,6 +16,13 @@ import java.util.Optional;
 
 public interface SpaceRepository extends JpaRepository<Space, Long> {
 
+    // 추천 사유 태그 판별용 - 특정 지역(동) 중심 좌표 계산 재료
+    List<Space> findAllByDongAndDeletedAtIsNull(String dong);
+
+    // 추천 사유 태그 판별용 - 특정 지역(동) 평균 대관료 (REGION_CHEAPER_NEARBY 기준가)
+    @Query("select avg(s.pricePerDay) from Space s where s.dong = :dong and s.deletedAt is null")
+    Double findAvgPricePerDayByDong(@Param("dong") String dong);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "0")) // 즉시실패
     @Query("select s from Space s where s.id = :spaceId")
@@ -103,4 +110,8 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
                                  @Param("dong") String dong,
                                  @Param("latitude") Double latitude,
                                  @Param("longitude") Double longitude);
+
+    // 실시간 추천 공간 후보
+    @Query("select s from Space s where s.deletedAt is null order by s.createdAt desc, s.id desc")
+    List<Space> findAllActiveForRecommendation();
 }

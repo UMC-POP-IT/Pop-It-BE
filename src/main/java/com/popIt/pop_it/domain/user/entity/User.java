@@ -64,4 +64,8 @@ public class User {
     public void switchToHost() {
         this.currentMode = UserMode.HOST;
     }
+
+    public void switchToGuest() {
+        this.currentMode = UserMode.GUEST;
+    }
 }

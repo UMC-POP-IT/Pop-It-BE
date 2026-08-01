@@ -4,8 +4,9 @@ import com.popIt.pop_it.domain.space.dto.SpaceReqDTO;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.exception.SpaceSuccessCode;
 import com.popIt.pop_it.domain.space.service.SpaceService;
+import com.popIt.pop_it.domain.space.service.SpaceVisitLogService;
+import com.popIt.pop_it.domain.user_activity.service.UserActivityService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
-import com.popIt.pop_it.global.apiPayload.code.BaseSuccessCode;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
@@ -18,6 +19,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -25,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@Slf4j
 @Tag(name = "공간")
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +35,8 @@ import java.util.List;
 public class SpaceController {
 
     private final SpaceService spaceService;
+    private final SpaceVisitLogService spaceVisitLogService;
+    private final UserActivityService userActivityService;
 
     @Operation(
             summary = "공간 등록",
@@ -87,6 +92,7 @@ public class SpaceController {
                     - isMine: 요청자가 이 공간을 등록한 호스트인지 여부. 프론트는 이 값으로 게스트/호스트 화면을 분기합니다.
                     - wishCount: 로그인 여부와 무관하게 항상 해당 공간의 총 찜 수입니다.
                     - imageUrls: 등록 시 저장한 노출 순서대로 내려가며, 첫 번째가 대표 이미지입니다.
+                    - 로그인 상태로 조회하면 방문 기록이 남아 UV(순방문자) 집계에 반영됩니다.
                     """
     )
     @ApiResponses({
@@ -105,6 +111,21 @@ public class SpaceController {
         Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
 
         SpaceResDTO.SpaceDetailRes result = spaceService.getSpaceDetail(userId, spaceId);
+
+        // 조회 기록은 부가 기능이라 실패해도 상세 조회 응답 자체에 영향을 주면 안 됨
+        if (userId != null) {
+            try {
+                spaceVisitLogService.recordVisit(spaceId, userId, authUser.getUser().getCurrentMode());
+            } catch (Exception e) {
+                log.warn("공간(id={}) 방문 기록(UV) 실패 - userId={}", spaceId, userId, e);
+            }
+            try {
+                userActivityService.recordView(userId, spaceId, authUser.getUser().getCurrentMode());
+            } catch (Exception e) {
+                log.warn("공간(id={}) 조회 이력(개인화) 기록 실패 - userId={}", spaceId, userId, e);
+            }
+        }
+
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
@@ -266,39 +287,18 @@ public class SpaceController {
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
     }
 
-    // @TODO: AI 맞춤 추천 공간 조회
-    @Operation(summary = "AI 맞춤 추천 공간 조회", description = "사용자의 찜/이용 이력을 바탕으로 AI가 추천하는 공간 목록을 조회합니다.<br>"
-            + "커서 기반 무한스크롤 방식입니다. (cursor 미전달 시 첫 페이지)")
-    @GetMapping("/ai-recommended")
-    public ApiResponse<SpaceResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
-            @AuthenticationPrincipal Long userId,
-            @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int size
-    ) {
-        BaseSuccessCode code = SpaceSuccessCode.AI_RECOMMENDED_SPACE_LIST;
+    @Operation(
+            summary = "실시간 추천 공간 조회",
+            description = "게스트 메인 화면의 '실시간 추천 공간' 캐러셀에 노출할 공간 목록입니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "실시간 추천 공간 조회 성공")
+    })
+    @GetMapping("/realtime-recommended")
+    public ApiResponse<SpaceResDTO.SpaceRealtimeRecommendedListRes> getRealtimeRecommendedSpaces() {
 
-        SpaceResDTO.AiRecommendedSpaceRes space = SpaceResDTO.AiRecommendedSpaceRes.builder()
-                .spaceId(15L)
-                .buildingName("홍대 팝업 스튜디오")
-                .tag("이전에 찜한 공간과 비슷해요")
-                .district("마포구")
-                .roadAddress("서울특별시 마포구 홍익로 123")
-                .exclusiveArea(50.0)
-                .basicInfo("POPUP")
-                .pricePerDay(700000)
-                .pricePerWeek(4200000)
-                .pricePerMonth(15000000)
-                .thumbnailUrl("https://s3.amazonaws.com/popIt/img5.jpg")
-                .parkingAvailable(false)
-                .isWishlisted(false)
-                .build();
-
-        SpaceResDTO.AiRecommendedSpaceListRes result = SpaceResDTO.AiRecommendedSpaceListRes.builder()
-                .spaces(List.of(space))
-                .hasNext(false)
-                .nextCursor(null)
-                .build();
-
-        return ApiResponse.onSuccess(code, result);
+        SpaceResDTO.SpaceRealtimeRecommendedListRes result = spaceService.getRealtimeRecommendedSpaces();
+        return ApiResponse.onSuccess(SpaceSuccessCode.REALTIME_RECOMMENDED_FETCHED, result);
     }
 }
