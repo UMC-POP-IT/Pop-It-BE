@@ -31,17 +31,17 @@ public class SpaceDongBackfillScheduler {
             return;
         }
 
-        int succeded = 0;
+        int succeeded = 0;
         for (Space space : targets) {
             try {
                 if (spaceDongBackfillService.backfillDong(space.getId())) {
-                    succeded++;
+                    succeeded++;
                 }
             } catch (Exception e) {
                 log.warn("동 백필 실패 - spaceId: {}", space.getId(), e);
             }
         }
 
-        log.info("동 백필 완료 - 대상: {}건, 성공: {}건", targets.size(), succeded);
+        log.info("동 백필 완료 - 대상: {}건, 성공: {}건", targets.size(), succeeded);
     }
 }
