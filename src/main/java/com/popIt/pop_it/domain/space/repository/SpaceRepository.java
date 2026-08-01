@@ -94,6 +94,7 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
             update Space s
             set s.dong = :dong
             where s.id = :spaceId
+                and s.dong is null
                 and s.deletedAt is null
                 and s.latitude = :latitude
                 and s.longitude = :longitude
