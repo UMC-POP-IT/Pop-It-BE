@@ -7,6 +7,8 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -16,22 +18,34 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class PaymentSettlementRetryScheduler {
 
+    private static final int BATCH_SIZE = 200;
+
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
 
     @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul") // 매일 오전 8시
     public void retryFailedSettlements() {
-        List<Payment> targets = paymentRepository.findAllWithFailedSettlementStep();
+        Pageable pageable = PageRequest.of(0, BATCH_SIZE);
+        long cursor = 0L;
+        List<Payment> batch;
 
-        for (Payment payment : targets) {
-            try {
-                paymentService.settle(payment.getId());
-                log.info("정산 실패 단계 재시도 성공 - paymentId: {}", payment.getId());
-            } catch (ProjectException e) {
-                log.warn("정산 실패 단계 재시도 실패 - paymentId: {}, code: {}", payment.getId(), e.getErrorCode(), e);
-            } catch (Exception e) {
-                log.error("정산 실패 단계 재시도 중 예상치 못한 오류 - paymentId: {}", payment.getId(), e);
+        do {
+            batch = paymentRepository.findNextFailedSettlementBatch(cursor, pageable);
+
+            for (Payment payment : batch) {
+                try {
+                    paymentService.settle(payment.getId());
+                    log.info("정산 실패 단계 재시도 성공 - paymentId: {}", payment.getId());
+                } catch (ProjectException e) {
+                    log.warn("정산 실패 단계 재시도 실패 - paymentId: {}, code: {}", payment.getId(), e.getErrorCode(), e);
+                } catch (Exception e) {
+                    log.error("정산 실패 단계 재시도 중 예상치 못한 오류 - paymentId: {}", payment.getId(), e);
+                }
             }
-        }
+
+            if (!batch.isEmpty()) {
+                cursor = batch.get(batch.size() - 1).getId();
+            }
+        } while (batch.size() == BATCH_SIZE);
     }
 }

@@ -236,9 +236,8 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_NOT_PAID);
         }
 
-        if (payment.getDepositRefundStatus() == SettlementStepStatus.PENDING) {
-            paymentSettlementRecorder.update(paymentId, Payment::markDepositRefundSkipped);
-        }
+        // PENDING일 때만 SKIPPED로 원자적(조건부 UPDATE)으로 전환한다.
+        paymentSettlementRecorder.skipDepositRefundIfPending(paymentId);
 
         if (!settleHostPayout(payment, payment.getContract())) {
             throw new ProjectException(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
@@ -299,7 +298,8 @@ public class PaymentService {
 
     private boolean isDepositRefundDone(Long paymentId) {
         return paymentRepository.findById(paymentId)
-                .map(p -> p.getDepositRefundStatus() == SettlementStepStatus.DONE)
+                .map(p -> p.getDepositRefundStatus() == SettlementStepStatus.DONE
+                        || p.getDepositRefundStatus() == SettlementStepStatus.SKIPPED)
                 .orElse(false);
     }
 

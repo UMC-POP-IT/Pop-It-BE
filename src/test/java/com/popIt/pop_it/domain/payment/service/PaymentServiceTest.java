@@ -90,6 +90,7 @@ class PaymentServiceTest {
                 .rentalFee(100_000L)
                 .deposit(50_000L)
                 .insuranceFee(5_000L)
+                .platformFee(10_000L)
                 .totalPrice(155_000L)
                 .reservation(reservation)
                 .build();
@@ -557,6 +558,36 @@ class PaymentServiceTest {
                 .isEqualTo(PaymentErrorCode.PAYMENT_SETTLEMENT_FAILED);
 
         verify(hostPayoutClient, never()).payout(any(), any(), any());
+        verify(tossPaymentClient, never()).cancelPartial(any(), any(), any(), any());
+    }
+
+    @Test
+    void 보증금환불_선점_실패_직후_다른_트랜잭션이_SKIPPED로_기록했으면_정산_실패로_처리하지_않는다() {
+        Contract contract = contractOf(CONTRACT_ID, ContractStatus.PENDING_PAYMENT, USER_ID);
+        // settle()의 최초 조회 시점 스냅샷: 아직 보증금환불 단계를 시도하기 전(PENDING)
+        Payment payment = approvedPaymentOf(contract, "ORDER_1_abc");
+        // claimDepositRefund가 선점에 실패한 뒤 isDepositRefundDone()이 재조회하는 시점의 스냅샷:
+        // 그 사이 다른 트랜잭션(호스트 정산 전용 경로)이 이미 SKIPPED로 전환해놓은 상태
+        Payment skippedSnapshot = Payment.builder()
+                .id(PAYMENT_ID)
+                .status(PaymentStatus.PAID)
+                .orderId("ORDER_1_abc")
+                .paymentKey("paymentKey-1")
+                .idempotencyKey(IDEMPOTENCY_KEY)
+                .contract(contract)
+                .depositRefundStatus(SettlementStepStatus.SKIPPED)
+                .build();
+        stubSettlementRecorderToMutate(payment);
+
+        given(paymentRepository.findById(PAYMENT_ID))
+                .willReturn(Optional.of(payment), Optional.of(skippedSnapshot));
+        given(paymentSettlementRecorder.claimHostPayout(PAYMENT_ID)).willReturn(true);
+        given(paymentSettlementRecorder.claimDepositRefund(PAYMENT_ID)).willReturn(false);
+
+        paymentService.settle(PAYMENT_ID);
+
+        assertThat(payment.getHostPayoutStatus()).isEqualTo(SettlementStepStatus.DONE);
+        verify(hostPayoutClient).payout(any(), any(), any());
         verify(tossPaymentClient, never()).cancelPartial(any(), any(), any(), any());
     }
 }
