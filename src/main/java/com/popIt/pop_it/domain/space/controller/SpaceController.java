@@ -44,7 +44,7 @@ public class SpaceController {
                     호스트가 새로운 공간을 등록합니다.
                     - Authorize에 로그인으로 발급받은 Access Token을 입력하세요.
                     - 호스트 등록(POST /api/v1/hosts)을 완료한 사용자만 호출할 수 있습니다. (미등록 시 403)
-                    - imageUrls: presigned URL 발급(POST /uploads/presigned-url)으로 S3에 직접 업로드한 뒤 받은 fileUrl 목록입니다.
+                    - imageUrls: presigned URL 발급(POST /api/v1/presigned-url)으로 S3에 직접 업로드한 뒤 받은 fileUrl 목록입니다.
                       배열 순서가 그대로 노출 순서가 되며, 첫 번째 이미지가 대표 이미지입니다.
                     - facilityIds: 전체 시설 목록 조회(GET /api/v1/facilities) 응답의 facilityId 목록입니다. 선택 안 하면 생략 가능합니다.
                     - latitude/longitude: 프론트에서 카카오 지도 SDK geocoder로 주소를 변환해 전송합니다.
