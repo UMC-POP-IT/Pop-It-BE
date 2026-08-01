@@ -11,6 +11,9 @@ import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.user_event.entity.UserEvent;
+import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
+import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,6 +39,8 @@ class SpaceRealtimeRecommendTest {
     private SpaceImageRepository spaceImageRepository;
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private UserEventRepository userEventRepository;
 
     @Test
     @DisplayName("등록 30일 이내 공간은 신규 공간 문구로 노출된다")
@@ -134,6 +139,28 @@ class SpaceRealtimeRecommendTest {
         assertThat(spaceService.getRealtimeRecommendedSpaces().spaces()).isEmpty();
     }
 
+    @Test
+    @DisplayName("기본 공간끼리는 조회수가 많은 순으로 정렬된다")
+    void defaultSpaces_orderedByViewCount() {
+        // 등록일은 더 오래됐지만 조회수가 많은 공간이 앞에 와야 한다
+        Space olderButPopular = saveSpace("조회수 많은 공간", "마포구", "연남동",
+                LocalDate.now().minusMonths(6), LocalDate.now().minusMonths(5));
+        makeOld(olderButPopular.getId(), 90);
+
+        Space newerButQuiet = saveSpace("조회수 없는 공간", "마포구", "연남동",
+                LocalDate.now().minusMonths(6), LocalDate.now().minusMonths(5));
+        makeOld(newerButQuiet.getId(), 60);
+
+        saveViewEvents(olderButPopular.getId(), 5);
+
+        List<Long> spaceIds = spaceService.getRealtimeRecommendedSpaces().spaces().stream()
+                .map(SpaceResDTO.SpaceRealtimeRecommendedRes::spaceId)
+                .toList();
+
+        assertThat(spaceIds.indexOf(olderButPopular.getId()))
+                .isLessThan(spaceIds.indexOf(newerButQuiet.getId()));
+    }
+
     private SpaceResDTO.SpaceRealtimeRecommendedRes findCard(
             SpaceResDTO.SpaceRealtimeRecommendedListRes result, Long spaceId) {
         return result.spaces().stream()
@@ -203,5 +230,18 @@ class SpaceRealtimeRecommendTest {
                 .imageUrl(imageUrl)
                 .sortOrder(sortOrder)
                 .build());
+    }
+
+    // 조회 이벤트를 쌓는다 (가동률 조회수 집계 대상)
+    private void saveViewEvents(Long spaceId, int count) {
+        for (int i = 0; i < count; i++) {
+            userEventRepository.save(UserEvent.builder()
+                    .userId((long) (i + 1))
+                    .spaceId(spaceId)
+                    .eventType(UserEventType.VIEW)
+                    .region("연남동")
+                    .build());
+        }
+        userEventRepository.flush();
     }
 }
