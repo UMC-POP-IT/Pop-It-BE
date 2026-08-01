@@ -47,6 +47,9 @@ class RealtimeRecommendTypeTest {
     void classify_boundary() {
         assertThat(RealtimeRecommendType.classify(NOW.minusDays(29), NOW, false))
                 .isEqualTo(RealtimeRecommendType.NEW);
+        // "30일 이내"는 초과 비교(isAfter)라 정확히 30일 전은 포함되지 않는다
+        assertThat(RealtimeRecommendType.classify(NOW.minusDays(30), NOW, false))
+                .isNotEqualTo(RealtimeRecommendType.NEW);
         assertThat(RealtimeRecommendType.classify(NOW.minusDays(31), NOW, false))
                 .isNotEqualTo(RealtimeRecommendType.NEW);
     }
