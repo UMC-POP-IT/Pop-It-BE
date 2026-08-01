@@ -7,10 +7,7 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
@@ -91,4 +88,18 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
      * - 최근 등록분부터 처리해 새로 실패한 공간이 먼저 복구되도록 한다.
      */
     List<Space> findTop50ByDongIsNullAndDeletedAtIsNullAndCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime createdAfter);
+
+    @Modifying
+    @Query("""
+            update Space s
+            set s.dong = :dong
+            where s.id = :spaceId
+                and s.deletedAt is null
+                and s.latitude = :latitude
+                and s.longitude = :longitude
+            """)
+    int updateDongIfStillMissing(@Param("spaceId") Long spaceId,
+                                 @Param("dong") String dong,
+                                 @Param("latitude") Double latitude,
+                                 @Param("longitude") Double longitude);
 }

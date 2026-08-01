@@ -2,6 +2,7 @@ package com.popIt.pop_it.domain.space.scheduler;
 
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.space.service.KakaoLocalService;
 import com.popIt.pop_it.domain.space.service.SpaceDongBackfillService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -18,6 +20,7 @@ public class SpaceDongBackfillScheduler {
 
     private final SpaceRepository spaceRepository;
     private final SpaceDongBackfillService spaceDongBackfillService;
+    private final KakaoLocalService kakaoLocalService;
 
     private static final int RETRY_WINDOW_DAYS = 7;
 
@@ -34,7 +37,15 @@ public class SpaceDongBackfillScheduler {
         int succeeded = 0;
         for (Space space : targets) {
             try {
-                if (spaceDongBackfillService.backfillDong(space.getId())) {
+                // 카카오 호출은 트랜잭션 밖에서 수행 (HTTP 대기 중 DB 커넥션, 락 점유 방지)
+                Optional<String> dong = kakaoLocalService.resolveDong(space.getLatitude(), space.getLongitude());
+                if (dong.isEmpty()) {
+                    continue;
+                }
+
+                if (spaceDongBackfillService.applyDongIfStillMissing(
+                        space.getId(), dong.get(), space.getLatitude(), space.getLongitude())
+                ) {
                     succeeded++;
                 }
             } catch (Exception e) {

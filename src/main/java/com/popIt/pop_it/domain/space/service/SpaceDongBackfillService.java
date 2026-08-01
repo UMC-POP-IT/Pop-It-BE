@@ -20,21 +20,7 @@ public class SpaceDongBackfillService {
     // 공간 1개의 동을 다시 변환해 채우기
     // 스케줄러 전용, 독립 트랜젝션으로 처리 (한 건의 실패가 다른 건에 영향을 주자 않도록)
     @Transactional(Transactional.TxType.REQUIRES_NEW)
-    public boolean backfillDong(Long spaceId) {
-        Space space = spaceRepository.findById(spaceId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
-
-        if (space.getDong() != null || space.getDeletedAt() != null) {
-            return false;
-        }
-
-        Optional<String> dong = kakaoLocalService.resolveDong(space.getLatitude(), space.getLongitude());
-        if (dong.isEmpty()) {
-            return false;
-        }
-
-        space.applyDong(dong.get());
-        spaceRepository.saveAndFlush(space);
-        return true;
+    public boolean applyDongIfStillMissing(Long spaceId, String dong, Double latitude, Double longitude) {
+        return spaceRepository.updateDongIfStillMissing(spaceId, dong, latitude, longitude) > 0;
     }
 }

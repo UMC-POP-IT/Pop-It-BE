@@ -177,9 +177,4 @@ public class Space {
     public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
-
-    // 동만 채워넣기 (좌표는 그대로) (공간 등록, 수정할 때 카카오 API 장애로 비어있던 dong을 스케줄러가 나중에 채워넣을 때 사용)
-    public void applyDong(String dong) {
-        this.dong = dong;
-    }
 }
