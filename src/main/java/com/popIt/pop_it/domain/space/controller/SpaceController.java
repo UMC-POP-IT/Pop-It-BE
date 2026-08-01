@@ -25,6 +25,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @Slf4j
 @Tag(name = "공간")
 @RestController
@@ -283,5 +285,20 @@ public class SpaceController {
         Long userId = authuser.getUser().getUserId();
         SpaceResDTO.SpaceDeleteRes result = spaceService.deleteSpace(userId, spaceId);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
+    }
+
+    @Operation(
+            summary = "실시간 추천 공간 조회",
+            description = "게스트 메인 화면의 '실시간 추천 공간' 캐러셀에 노출할 공간 목록입니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "실시간 추천 공간 조회 성공")
+    })
+    @GetMapping("/realtime-recommended")
+    public ApiResponse<SpaceResDTO.SpaceRealtimeRecommendedListRes> getRealtimeRecommendedSpaces() {
+
+        SpaceResDTO.SpaceRealtimeRecommendedListRes result = spaceService.getRealtimeRecommendedSpaces();
+        return ApiResponse.onSuccess(SpaceSuccessCode.REALTIME_RECOMMENDED_FETCHED, result);
     }
 }

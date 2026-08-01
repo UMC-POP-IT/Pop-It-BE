@@ -221,4 +221,52 @@ public class SpaceResDTO {
             @Schema(description = "삭제된 공간 ID", example = "10")
             Long spaceId
     ) {}
+
+    @Schema(description = "실시간 공간 추천 카드")
+    @Builder
+    public record SpaceRealtimeRecommendedRes(
+            @Schema(description = "공간 ID)", example = "21")
+            Long spaceId,
+
+            @Schema(description = "카드 타이틀", example = "팝잇에 새로 찾아온 따끈따끈한 신규 공간")
+            String title,
+
+            @Schema(description = "카드 서브 타이틀", example = "깨끗하게 정돈된 신규 공간에서 첫 번째 리뷰의 주인공이 되어보세요.")
+            String subtitle,
+
+            @Schema(description = "카드 배경 이미지 URL",
+                    example = "https://pop-it-images.s3.ap-northeast-2.amazonaws.com/SPACE_IMAGE/1/uuid1.jpg")
+            String thumbnailUrl
+    ) {}
+
+    @Schema(description = "실시간 추천 공간 조회 응답")
+    @Builder
+    public record SpaceRealtimeRecommendedListRes(
+            @Schema(description = "춫천 공간 목록")
+            List<SpaceRealtimeRecommendedRes> spaces
+    ) {}
+
+    @Builder
+    public record AiRecommendedSpaceRes(
+            Long spaceId,
+            String buildingName,
+            String tag,
+            String district,
+            String roadAddress,
+            Double exclusiveArea,
+            String basicInfo,
+            Integer pricePerDay,
+            Integer pricePerWeek,
+            Integer pricePerMonth,
+            String thumbnailUrl,
+            Boolean parkingAvailable,
+            Boolean isWishlisted
+    ) {}
+
+    @Builder
+    public record AiRecommendedSpaceListRes(
+            List<AiRecommendedSpaceRes> spaces,
+            Boolean hasNext,
+            String nextCursor
+    ) {}
 }

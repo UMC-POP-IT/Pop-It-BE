@@ -10,6 +10,7 @@ import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceFacility;
 import com.popIt.pop_it.domain.space.entity.SpaceImage;
+import com.popIt.pop_it.domain.space.enums.RealtimeRecommendType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -48,6 +50,7 @@ public class SpaceService {
     private final KakaoLocalService kakaoLocalService;
     private final ApplicationEventPublisher eventPublisher;
     private final ReservationRepository reservationRepository;
+    private final SpaceUtilizationCalculator spaceUtilizationCalculator;
 
     // 공간 삭제를 막아야하는 예약 상태
     private static final List<ReservationStatus> BLOCKING_RESERVATION_STATUSES = List.of(
@@ -57,6 +60,11 @@ public class SpaceService {
             ReservationStatus.IN_USE,
             ReservationStatus.USAGE_COMPLETED
     );
+
+    // 실시간 추천 캐러셀에 한 번에 내려줄 최대 공간 수
+    private static final int REALTIME_RECOMMENDED_POOL_SIZE = 20;
+    // 캐러셀 앞단에 추천 유형 공간을 배치할 슬롯 수 (Slot 1~3)
+    private static final int FRONT_SLOT_SIZE = 3;
 
     @Transactional
     public SpaceResDTO.SpaceCreateRes createSpace(Long userId, SpaceReqDTO.SpaceCreateReq request) {
@@ -344,6 +352,49 @@ public class SpaceService {
         return SpaceConverter.toDeleteResult(space);
     }
 
+    // 실시간 추천 공간 목록 조회
+    public SpaceResDTO.SpaceRealtimeRecommendedListRes getRealtimeRecommendedSpaces() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 추천 풀 조회
+        List<Space> candidates = spaceRepository.findAllActiveForRecommendation();
+
+        if (candidates.isEmpty()) {
+            return SpaceConverter.toRealtimeRecommendedList(List.of(), Map.of(), Map.of());
+        }
+
+        // 2. 가동률 하위 공간 판정
+        SpaceUtilizationCalculator.UtilizationResult utilization =
+                spaceUtilizationCalculator.calculate(candidates, now);
+
+        // 3. 추천 유형 분류
+        Map<Long, RealtimeRecommendType> typeBySpaceId = candidates.stream()
+                .collect(Collectors.toMap(
+                        Space::getId,
+                        space -> RealtimeRecommendType.classify(
+                                space.getCreatedAt(),
+                                now,
+                                utilization.isLowUtilization(space.getId()))));
+
+        // 4. 슬롯 배치 후 캐러셀에 내려줄 개수만큼 자르기
+        List<Space> orderedSpaces = placeIntoSlots(candidates, typeBySpaceId, utilization).stream()
+                .limit(REALTIME_RECOMMENDED_POOL_SIZE)
+                .toList();
+
+        // 5. 최종 선정된 공간의 대표 이미지 조회
+        List<Long> spaceIds = orderedSpaces.stream()
+                .map(Space::getId)
+                .toList();
+
+        Map<Long, String> thumbnailUrlBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
+                .collect(Collectors.toMap(
+                        image -> image.getSpace().getId(),
+                        image -> image.getImageUrl(),
+                        (existing, duplicate) -> existing));
+
+        return SpaceConverter.toRealtimeRecommendedList(orderedSpaces, typeBySpaceId, thumbnailUrlBySpaceId);
+    }
+
 
     // 검색어와 공간 용도(카테고리)의 한글 이름 대조 예) "팝업" -> POPUP_STORE
     private static SpaceCategory matchCategory(String keyword) {
@@ -383,5 +434,59 @@ public class SpaceService {
 
     private String blankToNull(String value) {
         return (value == null || value.isBlank()) ? null : value.trim();
+    }
+
+    // 슬롯 배치
+    private static List<Space> placeIntoSlots(
+            List<Space> spaces,
+            Map<Long, RealtimeRecommendType> typeBySpaceId,
+            SpaceUtilizationCalculator.UtilizationResult utilization
+    ) {
+        // 앞단 (Slot 1~3) 후보
+        List<Space> frontCandidates = new ArrayList<>();
+        frontCandidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.LOW_UTILIZATION));
+        frontCandidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.NEW));
+
+        List<Space> ordered = new ArrayList<>(frontCandidates.stream()
+                .limit(FRONT_SLOT_SIZE)
+                .toList());
+
+        Set<Long> placeIds = ordered.stream()
+                .map(Space::getId)
+                .collect(Collectors.toSet());
+
+        // 남는 칸: 기본 공간 먼저
+        ordered.addAll(spaces.stream()
+                .filter(space -> !placeIds.contains(space.getId()))
+                .filter(space -> !isFrontSlotType(typeBySpaceId, space))
+                .sorted(Comparator.comparingLong(
+                        (Space space) -> utilization.viewCountOf(space.getId())).reversed())
+                .toList());
+
+        // 기본 공간이 부족하면 앞단에 못 들어간 추천 공간으로 마저 채움
+        ordered.addAll(spaces.stream()
+                .filter(space -> !placeIds.contains(space.getId()))
+                .filter(space -> isFrontSlotType(typeBySpaceId, space))
+                .toList());
+
+        return ordered;
+    }
+
+    private static List<Space> filterByType(
+            List<Space> spaces,
+            Map<Long, RealtimeRecommendType> typeBySpaceId,
+            RealtimeRecommendType type
+    ) {
+        return spaces.stream()
+                .filter(space -> typeBySpaceId.get(space.getId()) == type)
+                .toList();
+    }
+
+    private static boolean isFrontSlotType(
+            Map<Long, RealtimeRecommendType> typeBySpaceId,
+            Space space
+    ) {
+        RealtimeRecommendType type = typeBySpaceId.get(space.getId());
+        return type != null && type.isFrontSlotType();
     }
 }
