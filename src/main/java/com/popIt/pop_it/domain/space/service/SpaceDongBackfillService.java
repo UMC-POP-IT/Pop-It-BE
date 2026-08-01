@@ -14,8 +14,6 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class SpaceDongBackfillService {
-
-    private final SpaceService spaceService;
     private final KakaoLocalService kakaoLocalService;
     private final SpaceRepository spaceRepository;
 
@@ -24,7 +22,7 @@ public class SpaceDongBackfillService {
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public boolean backfillDong(Long spaceId) {
         Space space = spaceRepository.findById(spaceId)
-                .orElseThrow(() -> new ProjectException(SpaceErrorCode.FACILITY_NOT_FOUND));
+                .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
 
         if (space.getDong() != null || space.getDeletedAt() != null) {
             return false;
