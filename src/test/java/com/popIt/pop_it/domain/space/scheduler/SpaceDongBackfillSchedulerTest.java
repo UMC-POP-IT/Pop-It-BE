@@ -142,11 +142,39 @@ class SpaceDongBackfillSchedulerTest {
         verify(kakaoLocalService, never()).resolveDong(any(), any());
     }
 
+    @Test
+    @DisplayName("카카오 응답을 기다리는 사이 좌표가 바뀌면 동을 추가하지 않는다")
+    void backfill_whenCoordinatesChanged_doesNotApplyStaleDong() {
+        Space space = saveSpace("좌표 변경 공간", null, LAT_SEONGSU, LNG_SEONGSU, null);
+
+        // 카카오가 응답하는 동안 다른 트랜잭션이 좌표를 바꾼 상황을 흉내낸다
+        given(kakaoLocalService.resolveDong(LAT_SEONGSU, LNG_SEONGSU))
+                .willAnswer(invocation -> {
+                    updateCoordinates(space.getId(), LAT_YEONNAM, LNG_YEONNAM);
+                    return Optional.of("성수동");
+                });
+
+        scheduler.backfillMissingDong();
+
+        assertThat(spaceRepository.findById(space.getId()).orElseThrow().getDong()).isNull();
+    }
+
     private void updateCreatedAt(Long spaceId, LocalDateTime createdAt) {
         new TransactionTemplate(transactionManager).executeWithoutResult(status ->
                 entityManager.createNativeQuery("update space set created_at = ?1 where id = ?2")
                         .setParameter(1, createdAt)
                         .setParameter(2, spaceId)
+                        .executeUpdate()
+        );
+    }
+
+    private void updateCoordinates(Long spaceId, double latitude, double longitude) {
+        new TransactionTemplate(transactionManager).executeWithoutResult(status ->
+                entityManager.createNativeQuery(
+                                "update space set latitude = ?1, longitude = ?2 where id = ?3")
+                        .setParameter(1, latitude)
+                        .setParameter(2, longitude)
+                        .setParameter(3, spaceId)
                         .executeUpdate()
         );
     }
