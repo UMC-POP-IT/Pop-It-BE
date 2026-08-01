@@ -21,7 +21,7 @@ public class SpaceDongBackfillScheduler {
 
     private static final int RETRY_WINDOW_DAYS = 7;
 
-    @Scheduled(cron = "0 30 4 * * *")
+    @Scheduled(cron = "0 30 4 * * *", zone = "Asia/Seoul")
     public void backfillMissingDong() {
         LocalDateTime createdAfter = LocalDateTime.now().minusDays(RETRY_WINDOW_DAYS);
 
