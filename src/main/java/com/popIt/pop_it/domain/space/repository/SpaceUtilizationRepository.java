@@ -21,13 +21,13 @@ public interface SpaceUtilizationRepository extends JpaRepository<Payment, Long>
                 join c.reservation r
                 join r.space s
             where p.status = :paidStatus
-                and s.id in :spacdIds
+                and s.id in :spaceIds
                 and p.paidAt >= :since
             group by s.id
             """)
     List<SpacePaidCount> countPaidBySpaceIds(
             @Param("paidStatus")PaymentStatus paidStatus,
-            @Param("spacdIds") List<Long> spaceIds,
+            @Param("spaceIds") List<Long> spaceIds,
             @Param("since") LocalDateTime since
     );
 

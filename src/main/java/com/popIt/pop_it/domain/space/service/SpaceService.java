@@ -442,11 +442,11 @@ public class SpaceService {
             Map<Long, RealtimeRecommendType> typeBySpaceId
     ) {
         // 앞단 (Slot 1~3) 후보
-        List<Space> frontCamdidates = new ArrayList<>();
-        frontCamdidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.LOW_UTILIZATION));
-        frontCamdidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.NEW));
+        List<Space> frontCandidates = new ArrayList<>();
+        frontCandidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.LOW_UTILIZATION));
+        frontCandidates.addAll(filterByType(spaces, typeBySpaceId, RealtimeRecommendType.NEW));
 
-        List<Space> ordered = new ArrayList<>(frontCamdidates.stream()
+        List<Space> ordered = new ArrayList<>(frontCandidates.stream()
                 .limit(FRONT_SLOT_SIZE)
                 .toList());
 
