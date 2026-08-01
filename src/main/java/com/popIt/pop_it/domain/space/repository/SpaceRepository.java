@@ -7,12 +7,10 @@ import jakarta.persistence.LockModeType;
 import jakarta.persistence.QueryHint;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.jpa.repository.QueryHints;
+import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -87,6 +85,31 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
             @Param("keywordType") SpaceType keywordType,
             Pageable pageable
     );
+
+    /**
+     * < 행정동 백필 대상 조회 >
+     *
+     * 공간 등록, 수정 시 카카오 로컬 API 장애로 dong이 비어 있는 공간을 다시 채우기 위한 조회
+     * - 좌표 자체가 잘못돼 영구히 변환되지 않는 공간이 배치를 계속 점유하지 않도록 최근 등록분만 대상으로 한다.
+     * - 외부 API 부하를 제한하기 위해 한 번에 최대 50건만 가져온다.
+     * - 최근 등록분부터 처리해 새로 실패한 공간이 먼저 복구되도록 한다.
+     */
+    List<Space> findTop50ByDongIsNullAndDeletedAtIsNullAndCreatedAtAfterOrderByCreatedAtDesc(LocalDateTime createdAfter);
+
+    @Modifying
+    @Query("""
+            update Space s
+            set s.dong = :dong
+            where s.id = :spaceId
+                and s.dong is null
+                and s.deletedAt is null
+                and s.latitude = :latitude
+                and s.longitude = :longitude
+            """)
+    int updateDongIfStillMissing(@Param("spaceId") Long spaceId,
+                                 @Param("dong") String dong,
+                                 @Param("latitude") Double latitude,
+                                 @Param("longitude") Double longitude);
 
     // 실시간 추천 공간 후보
     @Query("select s from Space s where s.deletedAt is null order by s.createdAt desc, s.id desc")
