@@ -237,16 +237,16 @@ public class SpaceController {
     })
     @PatchMapping("/{spaceId}")
     public ApiResponse<SpaceResDTO.SpaceUpdateRes> updateSpace(
-            @AuthenticationPrincipal AuthUser authuser,
+            @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId,
             @Valid @RequestBody SpaceReqDTO.SpaceUpdateReq request
     ) {
-        if (authuser == null || authuser.getUser() == null) {
+        if (authUser == null || authUser.getUser() == null) {
             throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
         }
 
-        Long userId = authuser.getUser().getUserId();
+        Long userId = authUser.getUser().getUserId();
         SpaceResDTO.SpaceUpdateRes result = spaceService.updateSpace(userId, spaceId, request);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_UPDATED, result);
     }
@@ -274,15 +274,15 @@ public class SpaceController {
     })
     @DeleteMapping("/{spaceId}")
     public ApiResponse<SpaceResDTO.SpaceDeleteRes> deleteSpace(
-            @AuthenticationPrincipal AuthUser authuser,
+            @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
     ) {
-        if (authuser == null || authuser.getUser() == null) {
+        if (authUser == null || authUser.getUser() == null) {
             throw new ProjectException(GeneralErrorCode.UNAUTHORIZED);
         }
 
-        Long userId = authuser.getUser().getUserId();
+        Long userId = authUser.getUser().getUserId();
         SpaceResDTO.SpaceDeleteRes result = spaceService.deleteSpace(userId, spaceId);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DELETED, result);
     }

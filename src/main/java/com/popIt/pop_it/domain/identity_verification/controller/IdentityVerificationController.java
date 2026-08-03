@@ -48,7 +48,7 @@ public class IdentityVerificationController {
     public ApiResponse<IdentityVerificationResDTO.IdentityVerificationVerifyRes> isVerified(
             @AuthenticationPrincipal AuthUser authUser
     ) {
-        BaseSuccessCode code = IdentityVerificationSuccessCode.ISVERIFIED;
+        BaseSuccessCode code = IdentityVerificationSuccessCode.IS_VERIFIED;
         return ApiResponse.onSuccess(code, identityVerificationService.isVerified(authUser.getUser()));
     }
 

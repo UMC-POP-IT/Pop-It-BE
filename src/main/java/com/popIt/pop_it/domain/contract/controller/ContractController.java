@@ -23,7 +23,7 @@ public class ContractController {
     private final ContractService contractService;
 
     // 결제/임대 예정 계약 정보 조회
-    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "계약서를 보기 전, “공간 + 기간 + 결제 예정(게스트)/입금 예정(호스트) 금액”을 조회합니다. 호스트/게스트가 받는 응답이 다릅니다. ")
+    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "계약서를 보기 전, [게스트(공간 + 기간 + 결제 예정)]/[호스트(입금 예정)] 금액을 조회합니다. 호스트/게스트가 받는 응답이 다릅니다. ")
     @GetMapping("/payment-preview")
     public ApiResponse<ContractResDTO.ContractPaymentInfoRes> getContractPaymentInfo(
             @AuthenticationPrincipal AuthUser authUser,
