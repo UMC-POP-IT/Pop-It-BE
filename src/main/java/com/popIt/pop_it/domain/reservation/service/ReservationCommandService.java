@@ -226,9 +226,6 @@ public class ReservationCommandService {
             if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
             }
-            if (request.photoUrls() == null || request.photoUrls().isEmpty()) {
-                throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
-            }
 
             List<CheckoutImage> images = IntStream.range(0, request.photoUrls().size())
                     .mapToObj(i -> CheckoutImage.builder()

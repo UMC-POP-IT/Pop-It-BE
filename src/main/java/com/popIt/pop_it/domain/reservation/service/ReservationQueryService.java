@@ -33,8 +33,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReservationQueryService {
 
-    private static final int MAX_PAGE_SIZE = 100;
-
     private final ReservationRepository reservationRepository;
     private final SpaceImageRepository spaceImageRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -62,11 +60,8 @@ public class ReservationQueryService {
         return toPagedSummary(slice, true);
     }
 
-    //size 값 상한/하한 검증 후 PageRequest 생성
+    //PageRequest 생성
     private PageRequest pageRequest(int size) {
-        if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_PAGE_SIZE);
-        }
         return PageRequest.of(0, size);
     }
 

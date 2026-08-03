@@ -9,12 +9,17 @@ import com.popIt.pop_it.domain.reservation.service.ReservationQueryService;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+@Validated
 @Tag(name = "예약")
 @RestController
 @RequestMapping("/api/v1/reservations")
@@ -30,9 +35,13 @@ public class ReservationController {
     @GetMapping("/me")
     public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getMyReservations(
             @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "예약 상태 필터 (미전달 시 전체 조회)", example = "PENDING_APPROVAL")
             @RequestParam(required = false) ReservationStatus status,
+            @Parameter(description = "페이지네이션 커서. 직전 응답의 nextCursor 값을 그대로 전달 (미전달 시 첫 페이지)",
+                    example = "2026-08-04T10:30:00|42")
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "페이지당 조회 개수 (1~100)", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
@@ -57,9 +66,13 @@ public class ReservationController {
     @GetMapping("/host")
     public ApiResponse<ReservationResDTO.ReservationPagedSummaryRes> getHostReservations(
             @AuthenticationPrincipal AuthUser authUser,
+            @Parameter(description = "예약 상태 필터 (미전달 시 전체 조회)", example = "PENDING_APPROVAL")
             @RequestParam(required = false) ReservationStatus status,
+            @Parameter(description = "페이지네이션 커서. 직전 응답의 nextCursor 값을 그대로 전달 (미전달 시 첫 페이지)",
+                    example = "2026-08-04T10:30:00|42")
             @RequestParam(required = false) String cursor,
-            @RequestParam(defaultValue = "10") int size
+            @Parameter(description = "페이지당 조회 개수 (1~100)", example = "10")
+            @RequestParam(defaultValue = "10") @Min(1) @Max(100) int size
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_LIST,
