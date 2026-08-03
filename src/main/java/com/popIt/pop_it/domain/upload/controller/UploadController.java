@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/uploads")
+@RequestMapping("/api/v1/uploads")
 @RequiredArgsConstructor
 @Tag(name = "Upload", description = "파일 업로드 공통 API")
 public class UploadController {
