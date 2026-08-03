@@ -25,7 +25,7 @@ public class ReservationCheckoutScheduler {
     private final ReservationCommandService reservationCommandService;
 
     // 1. 이용 시작일 도래 → 사용중(IN_USE) 자동 전환
-    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void startUsagePeriod() {
         List<Reservation> targets = reservationRepository
                 .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now());
@@ -41,7 +41,7 @@ public class ReservationCheckoutScheduler {
     }
 
     // 2. 이용 기간 종료 → 이용완료(USAGE_COMPLETED) 자동 전환 (종료일 다음날 00:00 기준)
-    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void completeUsagePeriod() {
         List<Reservation> targets = reservationRepository
                 .findAllByStatusAndEndDateBefore(ReservationStatus.IN_USE, LocalDate.now());
@@ -57,7 +57,7 @@ public class ReservationCheckoutScheduler {
     }
 
     // 3-1. 예약일까지 호스트가 승인/거절 안 한 경우 자동 취소
-    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void cancelUnapprovedReservations() {
         List<Reservation> targets = reservationRepository
                 .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PENDING_APPROVAL, LocalDate.now());
@@ -73,7 +73,7 @@ public class ReservationCheckoutScheduler {
     }
 
     // 3-2. 승인완료 상태에서 예약일까지 게스트가 계약 안 한 경우 자동 취소
-    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void cancelUncontractedReservations() {
         List<Reservation> targets = reservationRepository
                 .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.APPROVED, LocalDate.now());
