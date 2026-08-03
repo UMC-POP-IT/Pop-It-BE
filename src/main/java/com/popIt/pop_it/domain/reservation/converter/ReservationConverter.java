@@ -22,6 +22,7 @@ public class ReservationConverter {
                 .usagePurpose(reservation.getUsagePurpose())
                 .totalPrice(reservation.getTotalPrice())
                 .isPhotoVerified(isPhotoVerified)
+                .checkoutRejected(reservation.getCheckoutRejected())
                 .space(toSpaceSummary(reservation.getSpace(), thumbnailUrl))
                 .guest(includeGuest ? toGuestSummary(reservation.getUser()) : null)
                 .build();

@@ -225,4 +225,46 @@ public class ReservationCheckoutSchedulerTest {
         Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
         assertThat(result.getStatus()).isEqualTo(ReservationStatus.USAGE_COMPLETED);
     }
+
+    @Test
+    void 예약일까지_승인_안하면_자동취소된다() {
+        // given: 승인대기 상태, 예약 시작일이 오늘(이미 도래)
+        Reservation reservation = saveReservation(
+                ReservationStatus.PENDING_APPROVAL, LocalDate.now(), LocalDate.now().plusDays(5));
+
+        // when
+        scheduler.cancelUnapprovedReservations();
+
+        // then
+        Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+    }
+
+    @Test
+    void 예약일_전이면_승인_안해도_취소되지_않는다() {
+        // given: 승인대기 상태, 예약 시작일이 아직 안 옴
+        Reservation reservation = saveReservation(
+                ReservationStatus.PENDING_APPROVAL, LocalDate.now().plusDays(1), LocalDate.now().plusDays(5));
+
+        // when
+        scheduler.cancelUnapprovedReservations();
+
+        // then
+        Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.PENDING_APPROVAL);
+    }
+
+    @Test
+    void 예약일까지_계약_안하면_자동취소된다() {
+        // given: 승인완료 상태, 예약 시작일이 오늘(이미 도래), 계약 미체결
+        Reservation reservation = saveReservation(
+                ReservationStatus.APPROVED, LocalDate.now(), LocalDate.now().plusDays(5));
+
+        // when
+        scheduler.cancelUncontractedReservations();
+
+        // then
+        Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+    }
 }

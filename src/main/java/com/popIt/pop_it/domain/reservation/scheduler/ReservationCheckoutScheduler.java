@@ -19,8 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 //호스트가 승인 안 하면 퇴실 시간 기준 24h 후 시스템이 자동 승인하는 기능 및
 // 시간 변화에 따른 상태변환을 구현하기 위한 스케줄러입니다.
-// 예약 1건당 별도 트랜잭션(REQUIRES_NEW)으로 처리해, 한 건이 낙관적 락 충돌로 실패해도
-// 나머지 예약 처리에 영향 없도록 함
+// 예약 1건당 별도 트랜잭션(REQUIRES_NEW)으로 처리해, 한 건이 낙관적 락 충돌로 실패해도 나머지 예약 처리에 영향 없도록 함
 public class ReservationCheckoutScheduler {
     private final ReservationRepository reservationRepository;
     private final ReservationCommandService reservationCommandService;
@@ -57,7 +56,39 @@ public class ReservationCheckoutScheduler {
         }
     }
 
-    // 3. 퇴실 승인 24h 자동 처리 (사진 제출했든 스킵했든 둘 다 커버)
+    // 3-1. 예약일까지 호스트가 승인/거절 안 한 경우 자동 취소
+    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    public void cancelUnapprovedReservations() {
+        List<Reservation> targets = reservationRepository
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PENDING_APPROVAL, LocalDate.now());
+
+        for (Reservation reservation : targets) {
+            try {
+                reservationCommandService.cancelUnapprovedForSchedule(reservation.getId());
+                log.info("예약일 도래 - 승인 지연으로 자동 취소 - reservationId: {}", reservation.getId());
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("자동 취소 중 낙관적 락 충돌 - reservationId: {}", reservation.getId());
+            }
+        }
+    }
+
+    // 3-2. 승인완료 상태에서 예약일까지 게스트가 계약 안 한 경우 자동 취소
+    @Scheduled(cron = "0 0 * * * *") // 매시 정각
+    public void cancelUncontractedReservations() {
+        List<Reservation> targets = reservationRepository
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.APPROVED, LocalDate.now());
+
+        for (Reservation reservation : targets) {
+            try {
+                reservationCommandService.cancelUncontractedForSchedule(reservation.getId());
+                log.info("예약일 도래 - 계약 미체결로 자동 취소 - reservationId: {}", reservation.getId());
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("자동 취소 중 낙관적 락 충돌 - reservationId: {}", reservation.getId());
+            }
+        }
+    }
+
+    // 4. 퇴실 승인 24h 자동 처리 (사진 제출했든 스킵했든 둘 다 커버)
     @Scheduled(fixedRate = 30 * 60 * 1000) // 30분마다
     public void autoApproveCheckouts() {
         LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
