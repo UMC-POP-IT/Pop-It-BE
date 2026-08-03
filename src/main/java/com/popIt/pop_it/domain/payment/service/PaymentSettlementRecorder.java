@@ -39,6 +39,11 @@ class PaymentSettlementRecorder {
         return paymentRepository.claimDepositRefundForProcessing(paymentId) > 0;
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void skipDepositRefundIfPending(Long paymentId) {
+        paymentRepository.skipDepositRefundIfPending(paymentId);
+    }
+
     // confirm()이 실패를 기록할 때 사용한다. 동시에 다른 confirm() 호출이 먼저 PAID로 커밋했다면
     // status가 더 이상 PENDING이 아니므로 이 UPDATE는 0건에 그쳐 PAID를 덮어쓰지 않는다.
     @Transactional(propagation = Propagation.REQUIRES_NEW)

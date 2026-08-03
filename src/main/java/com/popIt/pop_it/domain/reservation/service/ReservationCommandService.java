@@ -339,11 +339,18 @@ public class ReservationCommandService {
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
         if (reservation.getStatus() != ReservationStatus.USAGE_COMPLETED) return;
         if (reservation.getCheckoutRejected()) return; // 조회~처리 사이 호스트가 거절했으면 자동승인 스킵
+        boolean neverSubmitted = reservation.getCheckoutSubmittedAt() == null;
         reservation.completeCheckout();
         reservationRepository.saveAndFlush(reservation);
 
         try {
-            paymentService.settleByReservation(reservationId);
+            if (neverSubmitted) {
+                // 증빙 자체를 제출한 적 없는 무응답 타임아웃 - 보증금 자동환불 대상 아님
+                paymentService.settleHostPayoutOnlyByReservation(reservationId);
+            } else {
+                // 증빙은 제출했으나 호스트가 24h 무응답인 경우 - 정상 승인과 동일하게 전액 정산
+                paymentService.settleByReservation(reservationId);
+            }
         } catch (ProjectException e) {
             // 정산 일부 실패는 퇴실 자동 승인 자체를 막지 않음
             // 실패한 단계는 Payment에 이미 기록되어 있어 별도로 재시도할 수 있음
@@ -370,7 +377,8 @@ public class ReservationCommandService {
         reservationRepository.saveAndFlush(reservation);
 
         try {
-            paymentService.settleByReservation(reservationId);
+            // 호스트가 명시적으로 거절한 건이라 보증금 자동환불 대상 아님 - 호스트 정산만 진행
+            paymentService.settleHostPayoutOnlyByReservation(reservationId);
         } catch (ProjectException e) {
             log.warn("퇴실 자동 승인(거절 후 재제출 타임아웃) 후 정산 처리 중 일부 실패: reservationId={}", reservationId, e);
         }
