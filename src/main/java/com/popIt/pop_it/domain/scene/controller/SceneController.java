@@ -128,6 +128,9 @@ public class SceneController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "씬 수정 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400", description = "형식 오류(모델/썸네일 URL) 포함",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401", description = "인증되지 않음",
                     content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -144,7 +147,7 @@ public class SceneController {
     public ApiResponse<SceneResDTO.SceneIdRes> updateScene(
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,
-            @RequestBody SceneReqDTO.SceneUpdateReq request
+            @Valid @RequestBody SceneReqDTO.SceneUpdateReq request
     ) {
         return ApiResponse.onSuccess(
                 SceneSuccessCode.SCENE_UPDATED,

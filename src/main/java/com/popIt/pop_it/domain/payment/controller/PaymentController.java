@@ -29,7 +29,7 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final PaymentWebhookService paymentWebhookService;
 
-    @Operation(summary = "결제 요청(준비)", description = "계약을 완료하고 결제 요청를 요청합니다.")
+    @Operation(summary = "결제 요청(준비)", description = "계약에 대한 결제를 준비합니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201", description = "결제 준비 성공"),

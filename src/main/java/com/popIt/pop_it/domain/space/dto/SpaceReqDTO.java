@@ -39,7 +39,7 @@ public class SpaceReqDTO {
             @Size(max = 50)
             String district,
 
-            @Schema(description = "도로명 주소 (다음 우편번호 위젯 결과)", example = "서울특별시 마포구 합정동 130-3")
+            @Schema(description = "도로명 주소 (다음 우편번호 위젯 결과)", example = "서울특별시 마포구 양화로 45")
             @NotBlank
             String roadAddress,
 
