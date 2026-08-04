@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -41,6 +42,8 @@ public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
     private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
+    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜/시각 계산이 한국 기준으로 되도록 명시
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ReservationRepository reservationRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -109,7 +112,7 @@ public class ReservationCommandService {
 
     //예약 가능한 날짜인지 확인
     private void validateDateRange(Space space, LocalDate startDate, LocalDate endDate) {
-        if (startDate.isBefore(LocalDate.now())) {
+        if (!startDate.isAfter(LocalDate.now(KST))) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
@@ -291,7 +294,7 @@ public class ReservationCommandService {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_REJECTED);
             }
 
-            LocalDateTime rejectedAt = LocalDateTime.now();
+            LocalDateTime rejectedAt = LocalDateTime.now(KST);
             checkoutImageRepository.deactivateAllByReservationId(reservationId, rejectedAt);
             reservation.rejectCheckout(rejectedAt);
             reservationRepository.saveAndFlush(reservation);
@@ -311,6 +314,28 @@ public class ReservationCommandService {
         if (reservation.getStatus() != ReservationStatus.CONTRACT_COMPLETED) return; // 이미 처리됨
         reservation.startUsage();
         reservationRepository.saveAndFlush(reservation);
+    }
+
+    // 예약일까지 호스트가 승인/거절을 안 한 경우 자동 취소
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void cancelUnapprovedForSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.PENDING_APPROVAL) return; // 이미 처리됨
+        reservation.cancel();
+        reservationRepository.saveAndFlush(reservation);
+        // 결제 전 상태라 환불 로직 없음
+    }
+
+    // 승인완료 상태에서 예약일까지 게스트가 계약을 안 한 경우 자동 취소
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void cancelUncontractedForSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.APPROVED) return; // 이미 처리됨
+        reservation.cancel();
+        reservationRepository.saveAndFlush(reservation);
+        // 결제 전 상태라 환불 로직 없음
     }
 
     @Transactional(Transactional.TxType.REQUIRES_NEW)

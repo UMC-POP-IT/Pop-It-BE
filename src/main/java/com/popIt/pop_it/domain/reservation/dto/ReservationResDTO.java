@@ -38,6 +38,9 @@ public class ReservationResDTO {
             @Schema(description = "퇴실 증빙 사진 인증 여부. true: 인증 완료, false: 인증 필요", example = "false")
             Boolean isPhotoVerified, // true: 인증 완료, false: 인증 필요
 
+            @Schema(description = "퇴실 거부 여부. true: 퇴실 거절되어 게스트 재제출 대기 중", example = "true")
+            Boolean checkoutRejected, // true: 퇴실 거절되어 게스트 재제출 대기 중
+
             @Schema(description = "예약 대상 공간 요약 정보")
             ReservationSpaceSummaryRes space,
 
