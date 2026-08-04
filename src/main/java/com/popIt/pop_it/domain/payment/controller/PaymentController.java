@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequiredArgsConstructor
-@Tag(name = "결제", description = "토스페이먼츠로 계약에 대한 결제를 진행합니다.")
+@Tag(name = "결제", description = "토스페이먼츠 기반 계약 결제 API")
 public class PaymentController {
 
     private final PaymentService paymentService;

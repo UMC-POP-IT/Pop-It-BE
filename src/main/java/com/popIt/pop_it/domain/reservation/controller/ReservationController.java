@@ -20,7 +20,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 @Validated
-@Tag(name = "예약")
+@Tag(name = "예약", description = "예약 요청/승인/거절/취소 및 퇴실 처리 API")
 @RestController
 @RequestMapping("/api/v1/reservations")
 @RequiredArgsConstructor

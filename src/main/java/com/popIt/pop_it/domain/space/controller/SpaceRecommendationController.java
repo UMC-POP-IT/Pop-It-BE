@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "공간")
+@Tag(name = "공간", description = "공간 등록/조회/수정/삭제 및 탐색/추천 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/spaces")

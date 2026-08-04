@@ -13,7 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "공간 3D 큐레이션 - 핫스팟")
+@Tag(name = "공간 3D 큐레이션 - 핫스팟", description = "씬 위 핫스팟(정보/이동 마커) 관리 API")
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

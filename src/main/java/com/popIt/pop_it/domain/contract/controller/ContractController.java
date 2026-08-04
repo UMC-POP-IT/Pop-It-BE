@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "계약")
+@Tag(name = "계약", description = "계약 정보/계약서 조회 및 전자서명 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/reservations/{reservationId}/contracts")

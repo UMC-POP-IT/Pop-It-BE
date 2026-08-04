@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @Slf4j
-@Tag(name = "공간")
+@Tag(name = "공간", description = "공간 등록/조회/수정/삭제 및 탐색/추천 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/spaces")

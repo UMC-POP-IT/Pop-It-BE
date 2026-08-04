@@ -14,7 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "본인인증", description = "")
+@Tag(name = "본인인증", description = "포트원 기반 본인인증 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("api/v1/users/me/verifications")

@@ -23,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Host", description = "호스트 등록 API")
+@Tag(name = "호스트", description = "호스트 등록/프로필 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/hosts")
