@@ -73,7 +73,16 @@ public class ContractController {
 
 
     // 전자서명 제출
-    @Operation(summary = "전자서명 제출", description = "호스트/게스트가 계약서에 전자 서명합니다. 양측 서명 완료 시 계약이 체결됩니다. 본인인증이 선행되어야하며, 호스트가 먼저 서명해야 게스트가 서명할 수 있습니다. ")
+    @Operation(
+            summary = "전자서명 제출",
+            description = """
+                    호스트/게스트가 계약서에 전자 서명합니다.
+                    - 양측 서명 완료 시 계약이 체결됩니다.
+                    - 본인인증이 선행되어야 합니다.
+                    - 호스트가 먼저 서명해야 게스트가 서명할 수 있습니다.
+                    - 계약 상태 전이: HOST_SIGNATURE_PENDING(호스트 서명대기) → GUEST_SIGNATURE_PENDING(게스트 서명대기) → PENDING_PAYMENT(결제 대기) → COMPLETED(결제 완료)
+                    """
+    )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201", description = "전자서명 제출 성공"),
