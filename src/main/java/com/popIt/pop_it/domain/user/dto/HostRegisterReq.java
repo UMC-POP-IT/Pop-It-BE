@@ -20,7 +20,7 @@ public record HostRegisterReq(
         @Pattern(regexp = "^\\d{3}-?\\d{2}-?\\d{5}$", message = "사업자등록번호는 숫자 10자리여야 합니다.")
         String businessRegistrationNumber,
 
-        @Schema(description = "사업자등록증 사본 URL(S3)", example = "https://s3.example.com/business-license.png")
+        @Schema(description = "사업자등록증 사본 URL(S3)", example = "https://pop-it-host-documents.s3.ap-northeast-2.amazonaws.com/host-document/10/uuid.png")
         @NotBlank(message = "사업자등록증 사본 URL은 필수입니다.")
         // S3 업로드 URL은 항상 https → http 허용 시 평문 전송 위험이 있어 https만 강제
         @Pattern(regexp = "^https://.+", message = "유효한 https URL이어야 합니다.")
@@ -48,7 +48,7 @@ public record HostRegisterReq(
         @Size(max = 20, message = "예금주는 20자 이내여야 합니다.")
         String accountHolder,
 
-        @Schema(description = "통장 사본 URL(S3)", example = "https://s3.example.com/bankbook.png")
+        @Schema(description = "통장 사본 URL(S3)", example = "https://pop-it-host-documents.s3.ap-northeast-2.amazonaws.com/host-document/10/uuid.png")
         @NotBlank(message = "통장 사본 URL은 필수입니다.")
         // S3 업로드 URL은 항상 https → http 허용 시 평문 전송 위험이 있어 https만 강제
         @Pattern(regexp = "^https://.+", message = "유효한 https URL이어야 합니다.")
