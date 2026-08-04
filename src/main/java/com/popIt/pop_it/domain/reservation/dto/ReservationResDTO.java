@@ -21,6 +21,7 @@ public class ReservationResDTO {
             String usagePurpose, // 호스트 목록에 노출
             Long totalPrice,
             Boolean isPhotoVerified, // true: 인증 완료, false: 인증 필요
+            Boolean checkoutRejected, // true: 퇴실 거절되어 게스트 재제출 대기 중
             ReservationSpaceSummaryRes space,
             // 호스트 목록에서만 필요 (게스트 목록에선 null)
             ReservationGuestSummaryRes guest

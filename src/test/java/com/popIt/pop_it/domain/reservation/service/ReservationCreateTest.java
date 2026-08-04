@@ -112,4 +112,16 @@ public class ReservationCreateTest {
                 .satisfies(e -> assertThat(((ProjectException) e).getErrorCode())
                         .isEqualTo(ReservationErrorCode.RESERVATION_SELF_BOOKING_NOT_ALLOWED));
     }
+
+    @Test
+    void 당일_예약은_불가능하다() {
+        ReservationReqDTO.ReservationCreateReq request = new ReservationReqDTO.ReservationCreateReq(
+                spaceId, LocalDate.now(), LocalDate.now().plusDays(2), "당일 예약 시도"
+        );
+
+        assertThatThrownBy(() -> reservationCommandService.createReservation(guestId, request))
+                .isInstanceOf(ProjectException.class)
+                .satisfies(e -> assertThat(((ProjectException) e).getErrorCode())
+                        .isEqualTo(ReservationErrorCode.RESERVATION_INVALID_DATE));
+    }
 }
