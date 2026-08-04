@@ -11,11 +11,9 @@ public enum ReservationErrorCode implements BaseErrorCode {
 
     // ===== 400 BAD REQUEST : 요청 자체가 잘못된 경우 =====
     RESERVATION_INVALID_DATE(HttpStatus.BAD_REQUEST, "RESERVATION400_1", "예약 가능한 날짜/시간이 아닙니다."),
-    RESERVATION_INVALID_PERIOD(HttpStatus.BAD_REQUEST, "RESERVATION400_2", "예약 시작일이 종료일보다 늦을 수 없습니다."),
     RESERVATION_AMOUNT_MISMATCH(HttpStatus.BAD_REQUEST, "RESERVATION400_3", "결제 금액이 예약 금액과 일치하지 않습니다."),
     RESERVATION_NOT_MODIFIABLE(HttpStatus.BAD_REQUEST, "RESERVATION400_4", "취소 또는 완료된 예약은 수정할 수 없습니다."),
     RESERVATION_HOLD_EXPIRED(HttpStatus.BAD_REQUEST, "RESERVATION400_5", "예약 대기(hold) 시간이 만료되어 결제를 진행할 수 없습니다."),
-    RESERVATION_PERIOD_EXCEEDED(HttpStatus.BAD_REQUEST, "RESERVATION400_6", "예약 가능 기간은 최대 90일입니다."),
     RESERVATION_INVALID_CURSOR(HttpStatus.BAD_REQUEST, "RESERVATION400_7", "잘못된 페이징 커서입니다."),
 
     // ===== 403 FORBIDDEN : 권한 없음 =====

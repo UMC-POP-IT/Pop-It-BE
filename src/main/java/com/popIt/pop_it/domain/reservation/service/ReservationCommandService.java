@@ -41,7 +41,6 @@ public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
     private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
-    private static final int MAX_RESERVATION_DAYS = 90;
 
     private final ReservationRepository reservationRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -110,18 +109,11 @@ public class ReservationCommandService {
 
     //예약 가능한 날짜인지 확인
     private void validateDateRange(Space space, LocalDate startDate, LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_PERIOD);
-        }
         if (startDate.isBefore(LocalDate.now())) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
-        }
-        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        if (days > MAX_RESERVATION_DAYS) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_PERIOD_EXCEEDED);
         }
     }
 

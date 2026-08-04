@@ -74,17 +74,12 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.HOST_PROFILE_REQUIRED);
         }
 
-        // 2. 계약 가능 기간 검증
-        if (request.availableStartDate().isAfter(request.availableEndDate())) {
-            throw new ProjectException(SpaceErrorCode.INVALID_AVAILABLE_DATE_RANGE);
-        }
-
-        // 3. 좌표 -> 동 변환 후 공간 본체 저장 (space.host_id = user.id)
+        // 2. 좌표 -> 동 변환 후 공간 본체 저장 (space.host_id = user.id)
         // 카카오 api 실패 시 dong = null로 저장하고 등록은 정상 진행
         String dong = kakaoLocalService.resolveDong(request.latitude(), request.longitude()).orElse(null);
         Space space = spaceRepository.save(SpaceConverter.toSpace(request, userId, dong));
 
-        // 4. 공간 사진 저장 - 요청 배열 순서를 sortOrder로 보존
+        // 3. 공간 사진 저장 - 요청 배열 순서를 sortOrder로 보존
         List<String> imageUrls = request.imageUrls();
         List<SpaceImage> images = new ArrayList<>();
 
@@ -94,7 +89,7 @@ public class SpaceService {
 
         spaceImageRepository.saveAll(images);
 
-        // 5. 시설 연결 저장 - 요청에 없는 시설 ID가 섞이면 400
+        // 4. 시설 연결 저장 - 요청에 없는 시설 ID가 섞이면 400
         List<Long> facilityIds = request.facilityIds();
         if (facilityIds != null && !facilityIds.isEmpty()) {
             List<Long> distinctIds = facilityIds.stream().distinct().toList();
@@ -110,7 +105,7 @@ public class SpaceService {
             spaceFacilityRepository.saveAll(spaceFacilities);
         }
 
-        // 6. AI 추천용 임베딩 생성 - 커밋 후(AFTER_COMMIT)에 처리해야 함.
+        // 5. AI 추천용 임베딩 생성 - 커밋 후(AFTER_COMMIT)에 처리해야 함.
         eventPublisher.publishEvent(new SpaceCreatedEvent(space.getId()));
 
         return SpaceConverter.toCreateResult(space);
@@ -229,15 +224,7 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.NOT_SPACE_OWNER);
         }
 
-        // 2. 좌표는 위도, 경도를 한 세트로만 수정 가능
-        boolean hasLatitude = request.latitude() != null;
-        boolean hasLongitude = request.longitude() != null;
-
-        if (hasLatitude != hasLongitude) {
-            throw new ProjectException(SpaceErrorCode.INVALID_COORDINATE_PAIR);
-        }
-
-        // 3. 계약 가능 기간은 요청값 + 기존값을 합친 최종 상태로 검증
+        // 2. 계약 가능 기간은 요청값 + 기존값을 합친 최종 상태로 검증
         LocalDate startDate = (request.availableStartDate() != null)
                 ? request.availableStartDate()
                 : space.getAvailableStartDate();
@@ -249,7 +236,7 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.INVALID_AVAILABLE_DATE_RANGE);
         }
 
-        // 4. 교체할 시설을 먼저 검증 (지우고 나서 실패하는 상황을 만들지 않도록 삭제보다 앞에 둠)
+        // 3. 교체할 시설을 먼저 검증 (지우고 나서 실패하는 상황을 만들지 않도록 삭제보다 앞에 둠)
         List<Facility> facilities = null;
         if (request.facilityIds() != null) {
             List<Long> distinctIds = request.facilityIds().stream().distinct().toList();
@@ -260,12 +247,13 @@ public class SpaceService {
             }
         }
 
-        // 5. 좌표가 바뀌면 동도 다시 계산
+        // 4. 좌표가 바뀌면 동도 다시 계산
+        boolean hasLatitude = request.latitude() != null;
         String dong = hasLatitude
                 ? kakaoLocalService.resolveDong(request.latitude(), request.longitude()).orElse(null)
                 : null;
 
-        // 6. 공간 본체 수정
+        // 5. 공간 본체 수정
         space.update(
                 request.buildingName(),
                 request.registrantType(),
@@ -287,7 +275,7 @@ public class SpaceService {
         space.updateLocation(request.latitude(), request.longitude(), dong);
         space.updateFloorInfo(request.floorType(), request.floorNumber());
 
-        // 7. 시설 전체 교체 (요청에 facilityIds가 있는 경우에만)
+        // 6. 시설 전체 교체 (요청에 facilityIds가 있는 경우에만)
         if (facilities != null) {
             spaceFacilityRepository.deleteAllBySpaceId(spaceId);
 
@@ -298,7 +286,7 @@ public class SpaceService {
             }
         }
 
-        // 8. 사진 전체 교체 (요청 배열 순서를 sortOrder로 다시 부여)
+        // 7. 사진 전체 교체 (요청 배열 순서를 sortOrder로 다시 부여)
         if (request.imageUrls() != null) {
             spaceImageRepository.deleteAllBySpaceId(spaceId);
 
