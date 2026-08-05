@@ -38,7 +38,7 @@ public class IdentityVerification {
     private String birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 10)
     private Gender gender;
 
     // 암호화

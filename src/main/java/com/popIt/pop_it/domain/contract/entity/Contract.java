@@ -31,7 +31,7 @@ public class Contract {
     private Long id; // 계약서 식별자
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private ContractStatus status = ContractStatus.HOST_SIGNATURE_PENDING; // 계약 상태 (기본값: 호스트서명대기)
 

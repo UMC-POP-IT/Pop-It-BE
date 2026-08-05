@@ -34,6 +34,7 @@ public class Payment {
     private String paymentKey; // 토스 결제 고유 키 (confirm 성공 후 저장)
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 50)
     private PaymentMethod method; // 결제 수단 (confirm 성공 후 저장)
 
     @Column(nullable = false, unique = true, length = 100)
@@ -54,12 +55,12 @@ public class Payment {
     private Contract contract; // 대상 계약
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private SettlementStepStatus hostPayoutStatus = SettlementStepStatus.PENDING; // 호스트 임대료 지급 상태
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private SettlementStepStatus depositRefundStatus = SettlementStepStatus.PENDING; // 게스트 보증금 환불 상태
 

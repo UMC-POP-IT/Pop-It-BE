@@ -33,7 +33,7 @@ public class Reservation {
     private Long id; // 예약 식별자
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @Builder.Default
     private ReservationStatus status = ReservationStatus.PENDING_APPROVAL; // 예약 상태 (기본값: 승인대기)
 

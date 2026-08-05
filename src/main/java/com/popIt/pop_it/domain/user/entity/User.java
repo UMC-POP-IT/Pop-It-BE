@@ -31,7 +31,7 @@ public class User {
     private Long userId;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, updatable = false)
+    @Column(nullable = false, updatable = false, length = 20)
     private SocialProvider socialProvider;
 
     @Column(nullable = false, updatable = false)
@@ -41,7 +41,7 @@ public class User {
     private String nickname;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private UserMode currentMode;
 
     @CreationTimestamp
