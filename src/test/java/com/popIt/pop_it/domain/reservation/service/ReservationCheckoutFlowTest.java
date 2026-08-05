@@ -189,7 +189,7 @@ public class ReservationCheckoutFlowTest {
     }
 
     @Test
-    void 게스트_사진_조회는_거절_상태가_아니면_현재_유효한_사진을_반환한다() {
+    void 게스트_이미지_조회는_거절_상태가_아니면_현재_유효한_이미지를_반환한다() {
         // given
         Reservation reservation = saveUsageCompletedReservation();
         reservationCommandService.submitCheckout(reservation.getId(), guestId, photoReq("https://s3/1.jpg"));
@@ -204,7 +204,7 @@ public class ReservationCheckoutFlowTest {
     }
 
     @Test
-    void 게스트_사진_조회는_거절_상태면_가장_최근_거절_배치만_반환한다() {
+    void 게스트_이미지_조회는_거절_상태면_가장_최근_거절_배치만_반환한다() {
         // given: 1차 제출 -> 거절 -> 2차 제출 -> 거절 (거절 이력 2번, 최근 배치만 보여야 함)
         Reservation reservation = saveUsageCompletedReservation();
         reservationCommandService.submitCheckout(reservation.getId(), guestId, photoReq("https://s3/first.jpg"));
@@ -222,7 +222,7 @@ public class ReservationCheckoutFlowTest {
     }
 
     @Test
-    void 본인_예약이_아니면_게스트_사진_조회시_접근이_거부된다() {
+    void 본인_예약이_아니면_게스트_이미지_조회시_접근이_거부된다() {
         // given
         Reservation reservation = saveUsageCompletedReservation();
         reservationCommandService.submitCheckout(reservation.getId(), guestId, photoReq("https://s3/1.jpg"));
