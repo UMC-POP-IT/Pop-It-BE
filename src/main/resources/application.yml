@@ -39,11 +39,6 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        # @Enumerated(EnumType.STRING) 컬럼을 MySQL 네이티브 ENUM 대신 VARCHAR로 매핑.
-        # 네이티브 ENUM으로 잡히면 enum 값이 나중에 추가/변경돼도 ddl-auto=update가
-        # 기존 컬럼의 허용값 목록을 갱신해주지 않아 truncation 에러가 남 (contract.status 등에서 실제 발생).
-        type:
-          preferred_enum_jdbc_type: VARCHAR
     show-sql: true
   flyway:
     enabled: false # local/test는 H2 + hibernate ddl-auto가 스키마를 관리 (prod에서만 활성화)
