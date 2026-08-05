@@ -125,6 +125,9 @@ class UserWishlistControllerTest {
                 .andExpect(jsonPath("$.result.wishlist[0].pricePerMonth").doesNotExist())
                 .andExpect(jsonPath("$.result.wishlist[0].thumbnailUrl").value("https://s3.amazonaws.com/popIt/img1.jpg"))
                 .andExpect(jsonPath("$.result.wishlist[0].wishCount").value(1))
+                .andExpect(jsonPath("$.result.wishlist[0].spaceCategory").value("POPUP_STORE"))
+                .andExpect(jsonPath("$.result.wishlist[0].keywords.length()").value(1))     // dong 미설정 → 카테고리 키워드만
+                .andExpect(jsonPath("$.result.wishlist[0].keywords[0]").value("#팝업스토어"))
                 .andExpect(jsonPath("$.result.hasNext").value(false));
     }
 
