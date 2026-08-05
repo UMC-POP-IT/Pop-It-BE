@@ -30,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/refresh")
-    public ApiResponse<UserResDTO.TokenReissueRes> reissue(
+    public ApiResponse<UserResDTO.TokenReissueRes> refresh(
             @Valid @RequestBody AuthReqDTO.TokenReissueReq request
     ) {
         return ApiResponse.onSuccess(
