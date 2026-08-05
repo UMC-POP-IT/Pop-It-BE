@@ -106,16 +106,6 @@ public class PaymentController {
 
     @Hidden
     @Operation(summary = "토스페이먼츠 웹훅", description = "결제 상태 변경 시 토스페이먼츠 서버가 호출하는 웹훅입니다. 가상결제는 지원하지 않습니다.")
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200", description = "웹훅 수신 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "400", description = "지원하지 않는 결제 수단, 토스 결제 조회 실패 포함",
-                    content = @io.swagger.v3.oas.annotations.media.Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "502", description = "결제 게이트웨이(토스페이먼츠)와 통신할 수 없음",
-                    content = @io.swagger.v3.oas.annotations.media.Content)
-    })
     @PostMapping("/api/v1/payments/webhook")
     public ApiResponse<Void> webhook(@RequestBody PaymentReqDTO.PaymentWebhookReq payload) {
         paymentWebhookService.handle(payload);
