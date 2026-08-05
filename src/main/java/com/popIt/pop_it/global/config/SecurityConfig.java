@@ -67,7 +67,6 @@ public class SecurityConfig {
             "/api/v1/auth/refresh",
             "/api/v1/auth/exchange",
             "/api/v1/payments/webhook",
-            "/api/v1/auth/refresh",
             "/api/v1/facilities",
             "/actuator/health"
     };
