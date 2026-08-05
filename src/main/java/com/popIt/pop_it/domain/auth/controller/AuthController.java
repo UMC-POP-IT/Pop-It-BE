@@ -29,7 +29,7 @@ public class AuthController {
         return ApiResponse.onSuccess(UserSuccessCode.USER_LOGOUT, null);
     }
 
-    @PostMapping("/reissue")
+    @PostMapping("/refresh")
     public ApiResponse<UserResDTO.TokenReissueRes> reissue(
             @Valid @RequestBody AuthReqDTO.TokenReissueReq request
     ) {

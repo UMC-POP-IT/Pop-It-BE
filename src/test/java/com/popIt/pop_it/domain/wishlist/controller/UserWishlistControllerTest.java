@@ -111,7 +111,7 @@ class UserWishlistControllerTest {
                 .build());
         wish(user.getUserId(), space.getId());
 
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isSuccess").value(true))
@@ -131,7 +131,7 @@ class UserWishlistControllerTest {
     @Test
     @DisplayName("찜한 공간이 없으면 빈 목록과 hasNext=false를 반환한다")
     void getMyWishlist_empty() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("WISH200_3"))
@@ -147,7 +147,7 @@ class UserWishlistControllerTest {
         wish(user.getUserId(), alive.getId());
         wish(user.getUserId(), deleted.getId());
 
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.wishlist.length()").value(1))
@@ -163,7 +163,7 @@ class UserWishlistControllerTest {
         wish(user.getUserId(), second.getId());
 
         // size=1 → 최근 찜한 second가 먼저, 다음 페이지 존재
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken)
                         .param("page", "0")
                         .param("size", "1"))
@@ -185,7 +185,7 @@ class UserWishlistControllerTest {
         Space space = saveSpace("남의 찜 공간", null);
         wish(other.getUserId(), space.getId()); // 다른 사용자가 찜
 
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.result.wishlist").isEmpty());
@@ -194,14 +194,14 @@ class UserWishlistControllerTest {
     @Test
     @DisplayName("인증 토큰이 없으면 401을 반환한다")
     void getMyWishlist_unauthorized() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/wishlist"))
+        mockMvc.perform(get("/api/v1/users/me/wishlists"))
                 .andExpect(status().isUnauthorized());
     }
 
     @Test
     @DisplayName("page가 음수면 500이 아니라 400을 반환한다")
     void getMyWishlist_invalidPage() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken)
                         .param("page", "-1"))
                 .andExpect(status().isBadRequest());
@@ -210,12 +210,12 @@ class UserWishlistControllerTest {
     @Test
     @DisplayName("size가 범위 밖(0 또는 12 초과)이면 400을 반환한다")
     void getMyWishlist_invalidSize() throws Exception {
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken)
                         .param("size", "0"))
                 .andExpect(status().isBadRequest());
 
-        mockMvc.perform(get("/api/v1/users/me/wishlist")
+        mockMvc.perform(get("/api/v1/users/me/wishlists")
                         .header("Authorization", accessToken)
                         .param("size", "13"))
                 .andExpect(status().isBadRequest());

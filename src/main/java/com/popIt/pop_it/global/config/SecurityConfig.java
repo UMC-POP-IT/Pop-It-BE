@@ -64,10 +64,10 @@ public class SecurityConfig {
             "/swagger-ui/**",
             "/swagger-resources/**",
             "/v3/api-docs/**",
-            "/api/v1/auth/reissue",
+            "/api/v1/auth/refresh",
             "/api/v1/auth/exchange",
             "/api/v1/payments/webhook",
-            "/api/v1/auth/reissue",
+            "/api/v1/auth/refresh",
             "/api/v1/facilities",
             "/actuator/health"
     };
@@ -87,7 +87,7 @@ public class SecurityConfig {
     };
 
     private final String[] publicAPI = {
-            "/api/v1/auth/reissue"
+            "/api/v1/auth/refresh"
     };
 
     // H2 콘솔 전용 체인 (로컬 개발용): permitAll과 sameOrigin을 이 범위에만 한정

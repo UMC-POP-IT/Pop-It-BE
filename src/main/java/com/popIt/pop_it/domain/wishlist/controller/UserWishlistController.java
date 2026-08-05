@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @Validated
 @RequiredArgsConstructor
-@RequestMapping("/api/v1/users/me/wishlist")
+@RequestMapping("/api/v1/users/me/wishlists")
 public class UserWishlistController {
 
     private final WishlistService wishlistService;
