@@ -200,7 +200,7 @@ public class ReservationCheckoutFlowTest {
 
         // then
         assertThat(result.checkoutRejected()).isFalse();
-        assertThat(result.photoUrls()).containsExactly("https://s3/1.jpg");
+        assertThat(result.imageUrls()).containsExactly("https://s3/1.jpg");
     }
 
     @Test
@@ -218,7 +218,7 @@ public class ReservationCheckoutFlowTest {
 
         // then: 1차(first.jpg)가 아니라 가장 최근인 2차(second.jpg)만 반환
         assertThat(result.checkoutRejected()).isTrue();
-        assertThat(result.photoUrls()).containsExactly("https://s3/second.jpg");
+        assertThat(result.imageUrls()).containsExactly("https://s3/second.jpg");
     }
 
     @Test
