@@ -98,7 +98,7 @@ public class ReservationResDTO {
     }
 
     @Builder
-    public record ReservationCheckoutPhotosRes(
+    public record ReservationCheckoutImagesMeRes(
             // 게스트 본인의 퇴실 증빙 사진 조회용. 거절 상태면 가장 최근 거절 배치, 아니면 현재 유효한 제출 사진을 반환
             Boolean checkoutRejected,
             List<String> photoUrls

@@ -195,8 +195,8 @@ public class ReservationCheckoutFlowTest {
         reservationCommandService.submitCheckout(reservation.getId(), guestId, photoReq("https://s3/1.jpg"));
 
         // when
-        ReservationResDTO.ReservationCheckoutPhotosRes result =
-                reservationQueryService.getCheckoutPhotosForGuest(reservation.getId(), guestId);
+        ReservationResDTO.ReservationCheckoutImagesMeRes result =
+                reservationQueryService.getCheckoutImagesForGuest(reservation.getId(), guestId);
 
         // then
         assertThat(result.checkoutRejected()).isFalse();
@@ -213,8 +213,8 @@ public class ReservationCheckoutFlowTest {
         reservationCommandService.rejectCheckout(reservation.getId(), hostId);
 
         // when
-        ReservationResDTO.ReservationCheckoutPhotosRes result =
-                reservationQueryService.getCheckoutPhotosForGuest(reservation.getId(), guestId);
+        ReservationResDTO.ReservationCheckoutImagesMeRes result =
+                reservationQueryService.getCheckoutImagesForGuest(reservation.getId(), guestId);
 
         // then: 1차(first.jpg)가 아니라 가장 최근인 2차(second.jpg)만 반환
         assertThat(result.checkoutRejected()).isTrue();
@@ -228,7 +228,7 @@ public class ReservationCheckoutFlowTest {
         reservationCommandService.submitCheckout(reservation.getId(), guestId, photoReq("https://s3/1.jpg"));
 
         // when & then
-        assertThatThrownBy(() -> reservationQueryService.getCheckoutPhotosForGuest(reservation.getId(), otherUserId))
+        assertThatThrownBy(() -> reservationQueryService.getCheckoutImagesForGuest(reservation.getId(), otherUserId))
                 .isInstanceOf(ProjectException.class)
                 .satisfies(e -> assertThat(((ProjectException) e).getErrorCode())
                         .isEqualTo(ReservationErrorCode.RESERVATION_ACCESS_DENIED));

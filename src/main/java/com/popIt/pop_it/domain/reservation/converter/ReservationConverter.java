@@ -87,14 +87,14 @@ public class ReservationConverter {
                 .build();
     }
 
-    public static ReservationResDTO.ReservationCheckoutPhotosRes toCheckoutPhotos(
+    public static ReservationResDTO.ReservationCheckoutImagesMeRes toCheckoutImagesMe(
             boolean checkoutRejected, List<CheckoutImage> images
     ) {
         List<String> photoUrls = images.stream()
                 .map(CheckoutImage::getCheckoutImageUrl)
                 .toList();
 
-        return ReservationResDTO.ReservationCheckoutPhotosRes.builder()
+        return ReservationResDTO.ReservationCheckoutImagesMeRes.builder()
                 .checkoutRejected(checkoutRejected)
                 .photoUrls(photoUrls)
                 .build();
