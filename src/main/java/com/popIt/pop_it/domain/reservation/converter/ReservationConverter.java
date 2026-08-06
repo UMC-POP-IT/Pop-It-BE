@@ -78,25 +78,25 @@ public class ReservationConverter {
     }
 
     public static ReservationResDTO.ReservationCheckoutImagesRes toCheckoutImages(List<CheckoutImage> images) {
-        List<String> photoUrls = images.stream()
+        List<String> imageUrls = images.stream()
                 .map(CheckoutImage::getCheckoutImageUrl)
                 .toList();
 
         return ReservationResDTO.ReservationCheckoutImagesRes.builder()
-                .photoUrls(photoUrls)
+                .imageUrls(imageUrls)
                 .build();
     }
 
-    public static ReservationResDTO.ReservationCheckoutPhotosRes toCheckoutPhotos(
+    public static ReservationResDTO.ReservationCheckoutImagesMeRes toCheckoutImagesMe(
             boolean checkoutRejected, List<CheckoutImage> images
     ) {
-        List<String> photoUrls = images.stream()
+        List<String> imageUrls = images.stream()
                 .map(CheckoutImage::getCheckoutImageUrl)
                 .toList();
 
-        return ReservationResDTO.ReservationCheckoutPhotosRes.builder()
+        return ReservationResDTO.ReservationCheckoutImagesMeRes.builder()
                 .checkoutRejected(checkoutRejected)
-                .photoUrls(photoUrls)
+                .imageUrls(imageUrls)
                 .build();
     }
 

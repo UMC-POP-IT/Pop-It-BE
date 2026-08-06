@@ -42,6 +42,7 @@ public class AuthController {
         return ApiResponse.onSuccess(UserSuccessCode.USER_LOGOUT, null);
     }
 
+    @PostMapping("/refresh")
     @Operation(summary = "액세스 토큰 재발급", description = "유효한 리프레시 토큰으로 새 액세스 토큰을 발급받습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -54,8 +55,7 @@ public class AuthController {
                     description = "유효하지 않거나 만료된 리프레시 토큰, 일치하지 않는 리프레시 토큰 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/reissue")
-    public ApiResponse<UserResDTO.TokenReissueRes> reissue(
+    public ApiResponse<UserResDTO.TokenReissueRes> refresh(
             @Valid @RequestBody AuthReqDTO.TokenReissueReq request
     ) {
         return ApiResponse.onSuccess(

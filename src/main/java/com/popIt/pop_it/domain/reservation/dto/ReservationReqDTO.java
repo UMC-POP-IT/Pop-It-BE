@@ -42,7 +42,7 @@ public class ReservationReqDTO {
 
     public record ReservationCheckoutReq(
             @Schema(description = "퇴실 증빙 사진 URL 목록. presigned URL로 S3에 이미 업로드 완료한 URL만 전달 (최소 1장, 여러 장 가능)")
-            @NotEmpty List<@NotBlank String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
+            @NotEmpty List<@NotBlank String> imageUrls // 여러 장 업로드 가능, 최소 한 장 필요
     ) {
     }
 }

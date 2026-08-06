@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.wishlist.converter;
 
+import com.popIt.pop_it.domain.space.converter.SpaceConverter;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.wishlist.dto.WishlistResDTO;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
@@ -38,7 +39,9 @@ public class WishlistConverter {
                         null, // pricePerWeek: 별도 컬럼 없음 → 프론트가 일 가격으로 환산
                         null, // pricePerMonth: 별도 컬럼 없음 → 프론트가 일 가격으로 환산
                         thumbnailUrlBySpaceId.get(space.getId()),
-                        wishCountBySpaceId.getOrDefault(space.getId(), 0)
+                        wishCountBySpaceId.getOrDefault(space.getId(), 0),
+                        space.getSpaceCategory(),        // spaceCategory: 검색 목록 응답과 동일 필드
+                        SpaceConverter.toKeywords(space) // keywords: 검색 목록과 동일 로직 재사용(포맷 일관성)
                 ))
                 .toList();
 

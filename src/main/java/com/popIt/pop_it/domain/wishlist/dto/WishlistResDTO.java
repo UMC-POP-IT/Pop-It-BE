@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.wishlist.dto;
 
+import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.util.List;
@@ -38,7 +39,13 @@ public class WishlistResDTO {
             String thumbnailUrl,
 
             @Schema(description = "해당 공간의 총 찜 수", example = "20")
-            Integer wishCount
+            Integer wishCount,
+
+            @Schema(description = "공간 카테고리(enum 이름). 검색 목록 응답의 spaceCategory와 동일", example = "POPUP_STORE")
+            SpaceCategory spaceCategory,
+
+            @Schema(description = "공간 키워드 해시태그 목록(동/카테고리). 동 정보가 없으면 카테고리만", example = "[\"#역삼동\", \"#팝업스토어\"]")
+            List<String> keywords
     ) {}
 
     @Schema(description = "내가 찜한 공간 목록 조회 응답")

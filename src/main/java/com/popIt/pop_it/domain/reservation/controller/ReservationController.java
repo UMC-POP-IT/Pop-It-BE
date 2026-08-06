@@ -313,7 +313,7 @@ public class ReservationController {
                     responseCode = "409", description = "다른 요청에 의해 이미 처리된 예약(동시성 충돌)",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/{reservationId}/checkout/approve")
+    @PostMapping("/{reservationId}/checkout-approve")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
@@ -347,7 +347,7 @@ public class ReservationController {
                     description = "이미 거절 처리되어 게스트의 재제출을 기다리고 있음, 다른 요청에 의해 이미 처리된 예약(동시성 충돌) 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/{reservationId}/checkout/reject")
+    @PostMapping("/{reservationId}/checkout-reject")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
@@ -398,14 +398,14 @@ public class ReservationController {
                     responseCode = "404", description = "존재하지 않는 예약",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @GetMapping("/{reservationId}/checkout-photos")
-    public ApiResponse<ReservationResDTO.ReservationCheckoutPhotosRes> getCheckoutPhotos(
+    @GetMapping("/{reservationId}/checkout-images/me")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutImagesMeRes> getMyCheckoutImages(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
-                ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTOS,
-                reservationQueryService.getCheckoutPhotosForGuest(reservationId, authUser.getUser().getUserId())
+                ReservationSuccessCode.RESERVATION_CHECKOUT_IMAGES_ME,
+                reservationQueryService.getCheckoutImagesForGuest(reservationId, authUser.getUser().getUserId())
         );
     }
 

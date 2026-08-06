@@ -222,9 +222,9 @@ public class ReservationCommandService {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
             }
 
-            List<CheckoutImage> images = IntStream.range(0, request.photoUrls().size())
+            List<CheckoutImage> images = IntStream.range(0, request.imageUrls().size())
                     .mapToObj(i -> CheckoutImage.builder()
-                            .checkoutImageUrl(request.photoUrls().get(i))
+                            .checkoutImageUrl(request.imageUrls().get(i))
                             .sortOrder(i)
                             .reservation(reservation)
                             .build())

@@ -153,18 +153,18 @@ public class ReservationResDTO {
     @Builder
     public record ReservationCheckoutImagesRes(
             @Schema(description = "퇴실 증빙 사진 URL 목록")
-            List<String> photoUrls
+            List<String> imageUrls
     ) {
     }
 
     @Builder
     @Schema(description = "게스트 본인의 퇴실 증빙 사진 조회용. 거절 상태면 가장 최근 거절 배치, 아니면 현재 유효한 제출 사진을 반환")
-    public record ReservationCheckoutPhotosRes(
+    public record ReservationCheckoutImagesMeRes(
             @Schema(description = "거절(재인증 대기) 상태 여부", example = "false")
             Boolean checkoutRejected,
 
             @Schema(description = "퇴실 증빙 사진 URL 목록")
-            List<String> photoUrls
+            List<String> imageUrls
     ) {
     }
 
