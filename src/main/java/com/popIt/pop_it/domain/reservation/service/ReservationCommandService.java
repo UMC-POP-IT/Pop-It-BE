@@ -42,7 +42,6 @@ public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
     private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
-    private static final int MAX_RESERVATION_DAYS = 90;
     // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜/시각 계산이 한국 기준으로 되도록 명시
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
@@ -113,18 +112,11 @@ public class ReservationCommandService {
 
     //예약 가능한 날짜인지 확인
     private void validateDateRange(Space space, LocalDate startDate, LocalDate endDate) {
-        if (startDate.isAfter(endDate)) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_PERIOD);
-        }
         if (!startDate.isAfter(LocalDate.now(KST))) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
-        }
-        long days = ChronoUnit.DAYS.between(startDate, endDate) + 1;
-        if (days > MAX_RESERVATION_DAYS) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_PERIOD_EXCEEDED);
         }
     }
 
@@ -228,9 +220,6 @@ public class ReservationCommandService {
             // 이미 유효한 제출이 있고(호스트가 아직 거절하지 않음) 대기 중이면 재제출 불가
             if (reservation.getCheckoutSubmittedAt() != null && !reservation.getCheckoutRejected()) {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_SUBMITTED);
-            }
-            if (request.imageUrls() == null || request.imageUrls().isEmpty()) {
-                throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_PHOTO_REQUIRED);
             }
 
             List<CheckoutImage> images = IntStream.range(0, request.imageUrls().size())

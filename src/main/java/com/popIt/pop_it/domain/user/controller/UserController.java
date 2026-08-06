@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "User", description = "사용자 API")
+@Tag(name = "사용자", description = "사용자 모드/정보 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/users")

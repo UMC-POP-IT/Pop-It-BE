@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReservationQueryService {
 
-    private static final int MAX_PAGE_SIZE = 100;
     // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜 계산이 한국 기준으로 되도록 명시
     private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
@@ -65,11 +64,8 @@ public class ReservationQueryService {
         return toPagedSummary(slice, true);
     }
 
-    //size 값 상한/하한 검증 후 PageRequest 생성
+    //PageRequest 생성
     private PageRequest pageRequest(int size) {
-        if (size < 1 || size > MAX_PAGE_SIZE) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_PAGE_SIZE);
-        }
         return PageRequest.of(0, size);
     }
 

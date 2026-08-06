@@ -3,8 +3,6 @@ package com.popIt.pop_it.domain.upload.service;
 import com.popIt.pop_it.domain.upload.dto.UploadReqDTO;
 import com.popIt.pop_it.domain.upload.dto.UploadResDTO;
 import com.popIt.pop_it.domain.upload.enums.UploadType;
-import com.popIt.pop_it.domain.upload.exception.code.UploadErrorCode;
-import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.config.AwsProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,9 +41,6 @@ public class UploadService {
 
     private UploadResDTO.PresignedUrlInfoRes issueOne(Long userId, UploadType uploadType, String contentType) {
         String extension = ALLOWED_CONTENT_TYPES.get(contentType);
-        if (extension == null) {
-            throw new ProjectException(UploadErrorCode.PRESIGNED_URL_UNSUPPORTED_CONTENT_TYPE);
-        }
 
         // 민감서류(HOST_DOCUMENT)는 프라이빗 전용 버킷으로, 일반 이미지는 기본 버킷으로 분기
         String bucket = resolveBucket(uploadType);

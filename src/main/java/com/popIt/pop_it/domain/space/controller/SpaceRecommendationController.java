@@ -9,6 +9,7 @@ import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.constraints.Max;
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "공간")
+@Tag(name = "공간", description = "공간 등록/조회/수정/삭제 및 탐색/추천 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/spaces")
@@ -41,6 +42,16 @@ public class SpaceRecommendationController {
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "AI 맞춤 추천 공간 조회 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400", description = "잘못된 커서 값, size 파라미터 범위(1~10) 초과 포함",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
     @GetMapping("/ai-recommended")
     public ApiResponse<AiRecommendationResDTO.AiRecommendedSpaceListRes> getAiRecommendedSpaces(
             @AuthenticationPrincipal AuthUser authUser,

@@ -63,7 +63,10 @@ public class ContractResDTO {
             @Schema(description = "계약 ID", example = "1")
             Long contractId,
 
-            @Schema(description = "계약 상태", example = "GUEST_SIGNATURE_PENDING")
+            @Schema(
+                    description = "계약 상태. HOST_SIGNATURE_PENDING(호스트 서명대기) → GUEST_SIGNATURE_PENDING(게스트 서명대기) → PENDING_PAYMENT(결제 대기) → COMPLETED(결제 완료) 순으로 전이",
+                    example = "GUEST_SIGNATURE_PENDING"
+            )
             ContractStatus contractStatus,
 
             @Schema(description = "호스트/게스트 양측 서명이 모두 완료됐는지 여부", example = "false")

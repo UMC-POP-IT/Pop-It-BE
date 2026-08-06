@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Wishlist", description = "찜 API")
+@Tag(name = "공간 찜", description = "찜 API")
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v1/spaces/{spaceId}/wishlists")

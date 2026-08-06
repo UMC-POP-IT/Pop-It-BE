@@ -225,7 +225,7 @@ public class SpaceResDTO {
     @Schema(description = "실시간 공간 추천 카드")
     @Builder
     public record SpaceRealtimeRecommendedRes(
-            @Schema(description = "공간 ID)", example = "21")
+            @Schema(description = "공간 ID", example = "21")
             Long spaceId,
 
             @Schema(description = "카드 타이틀", example = "팝잇에 새로 찾아온 따끈따끈한 신규 공간")
@@ -242,7 +242,7 @@ public class SpaceResDTO {
     @Schema(description = "실시간 추천 공간 조회 응답")
     @Builder
     public record SpaceRealtimeRecommendedListRes(
-            @Schema(description = "춫천 공간 목록")
+            @Schema(description = "추천 공간 목록")
             List<SpaceRealtimeRecommendedRes> spaces
     ) {}
 

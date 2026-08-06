@@ -9,6 +9,7 @@ import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.security.entity.AuthUser;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/uploads")
 @RequiredArgsConstructor
-@Tag(name = "Upload", description = "파일 업로드 공통 API")
+@Tag(name = "업로드", description = "파일 업로드 공통 API")
 public class UploadController {
 
     private final UploadService uploadService;
@@ -38,6 +39,17 @@ public class UploadController {
                     """,
             security = @SecurityRequirement(name = "bearerAuth")
     )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200", description = "presigned URL 발급 성공"),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "필수 입력값 누락/형식 오류(업로드 타입, 파일 목록, contentType), 최대 개수(10개) 초과 포함",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401", description = "인증되지 않음",
+                    content = @io.swagger.v3.oas.annotations.media.Content)
+    })
     public ApiResponse<UploadResDTO.PresignedUrlListRes> issuePresignedUrls(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody UploadReqDTO.PresignedUrlReq request
