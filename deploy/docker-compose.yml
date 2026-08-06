@@ -71,6 +71,18 @@ services:
     networks:
       - popit-net
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: popit-prometheus
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9091:9090"
+    networks:
+      - popit-net
+
   nginx:
     image: nginx:1.27-alpine
     container_name: popit-nginx
@@ -90,6 +102,7 @@ services:
 volumes:
   mysql-data:
   redis-data:
+  prometheus-data:
 
 networks:
   popit-net:
