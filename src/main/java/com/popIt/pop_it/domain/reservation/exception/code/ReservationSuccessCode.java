@@ -19,7 +19,7 @@ public enum ReservationSuccessCode implements BaseSuccessCode {
     RESERVATION_UNAVAILABLE_DATES(HttpStatus.OK, "RESERVATION200_8", "예약 불가 날짜가 조회되었습니다."),
     RESERVATION_CHECKOUT_IMAGES(HttpStatus.OK, "RESERVATION200_9", "퇴실 증빙 사진이 조회되었습니다."),
     RESERVATION_CHECKOUT_REJECT(HttpStatus.OK, "RESERVATION200_10", "퇴실 증빙을 거절했습니다."),
-    RESERVATION_CHECKOUT_PHOTOS(HttpStatus.OK, "RESERVATION200_11", "퇴실 증빙 사진이 조회되었습니다."),
+    RESERVATION_CHECKOUT_IMAGES_ME(HttpStatus.OK, "RESERVATION200_11", "퇴실 증빙 사진이 조회되었습니다."),
     RESERVATION_CHECKOUT_APPROVAL(HttpStatus.OK, "RESERVATION200_12", "퇴실 승인 여부가 조회되었습니다."),
     RESERVATION_REQUEST(HttpStatus.CREATED, "RESERVATION201_1", "예약 요청이 완료되었습니다.");
 

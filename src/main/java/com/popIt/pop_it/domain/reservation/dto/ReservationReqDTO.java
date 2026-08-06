@@ -19,7 +19,7 @@ public class ReservationReqDTO {
     }
 
     public record ReservationCheckoutReq(
-            @NotEmpty List<@NotBlank String> photoUrls // 여러 장 업로드 가능, 최소 한 장 필요
+            @NotEmpty List<@NotBlank String> imageUrls // 여러 장 업로드 가능, 최소 한 장 필요
     ) {
     }
 }

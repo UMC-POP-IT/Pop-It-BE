@@ -24,7 +24,7 @@ public class HostProfile {
     private Long id;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private TaxationType taxationType;
 
     // 사업자등록번호: 민감정보 → 암호화 저장 (평문 세팅, 암복호화는 CryptoConverter 위임)
@@ -50,7 +50,7 @@ public class HostProfile {
     private String bankbookCopyUrl;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private Bank bank;
 
     // 정산 계좌번호: 금융 민감정보 → 암호화 저장

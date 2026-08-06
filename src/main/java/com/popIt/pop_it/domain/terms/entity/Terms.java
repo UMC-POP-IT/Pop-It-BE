@@ -28,7 +28,7 @@ public class Terms {
     private String content;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private TermCode code;
 
     @Column(nullable = false)

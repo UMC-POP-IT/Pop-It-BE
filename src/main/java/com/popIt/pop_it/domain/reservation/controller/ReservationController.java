@@ -147,7 +147,7 @@ public class ReservationController {
 
     @Operation(summary = "퇴실 승인", description = "호스트가 제출된 퇴실 증빙을 확인하고 승인합니다. (USAGE_COMPLETED → CHECKOUT_COMPLETED)<br>"
             + "승인 즉시 정산되도록 연동 예정입니다.")
-    @PostMapping("/{reservationId}/checkout/approve")
+    @PostMapping("/{reservationId}/checkout-approve")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> approveCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
@@ -160,7 +160,7 @@ public class ReservationController {
 
     @Operation(summary = "퇴실 거절", description = "호스트가 제출된 퇴실 증빙을 거절하고 게스트에게 재인증을 요청합니다.<br>"
             + "거절 시 기존 제출 사진은 삭제되지 않고 비활성화되어 게스트가 조회할 수 있으며, 재제출하기 전까지는 다시 거절할 수 없습니다. (재제출 전까지 자동승인 대상에서 제외됩니다.)")
-    @PostMapping("/{reservationId}/checkout/reject")
+    @PostMapping("/{reservationId}/checkout-reject")
     public ApiResponse<ReservationResDTO.ReservationStatusChangeRes> rejectCheckout(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
@@ -185,14 +185,14 @@ public class ReservationController {
 
     @Operation(summary = "게스트 퇴실 증빙 사진 조회", description = "게스트 본인이 제출한 퇴실 증빙 사진을 조회합니다.<br>"
             + "거절된 상태(재인증 대기)라면 가장 최근 거절된 사진을, 그 외에는 현재 유효한(승인 대기/완료) 제출 사진을 반환합니다.")
-    @GetMapping("/{reservationId}/checkout-photos")
-    public ApiResponse<ReservationResDTO.ReservationCheckoutPhotosRes> getCheckoutPhotos(
+    @GetMapping("/{reservationId}/checkout-images/me")
+    public ApiResponse<ReservationResDTO.ReservationCheckoutImagesMeRes> getMyCheckoutImages(
             @PathVariable Long reservationId,
             @AuthenticationPrincipal AuthUser authUser
     ) {
         return ApiResponse.onSuccess(
-                ReservationSuccessCode.RESERVATION_CHECKOUT_PHOTOS,
-                reservationQueryService.getCheckoutPhotosForGuest(reservationId, authUser.getUser().getUserId())
+                ReservationSuccessCode.RESERVATION_CHECKOUT_IMAGES_ME,
+                reservationQueryService.getCheckoutImagesForGuest(reservationId, authUser.getUser().getUserId())
         );
     }
 

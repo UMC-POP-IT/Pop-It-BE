@@ -33,12 +33,12 @@ public class Space {
     private String buildingName; // 건물명
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     @Builder.Default
     private RegistrantType registrantType = RegistrantType.OWNER; // 등록자 유형 (기본값: 소유자)
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     @NotNull
     private BuildingType buildingType; // 건물 유형
 
@@ -76,18 +76,18 @@ public class Space {
     private LocalDate availableEndDate; // 대여 가능 종료일
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private SpaceCategory spaceCategory; // 공간 카테고리
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private SpaceType spaceType; // 공간 형태
 
     @Column(nullable = false)
     private Double exclusiveArea; // 전용 면적
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 30)
     private FloorType floorType; // 층 유형
 
     private Integer floorNumber; // 층수
