@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.space.enums.FloorType;
 import com.popIt.pop_it.domain.space.enums.RegistrantType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
+import com.popIt.pop_it.global.validation.MinTextLength;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.*;
 
@@ -16,9 +17,10 @@ public class SpaceReqDTO {
 
     @Schema(description = "공간 등록 요청")
     public record SpaceCreateReq(
-            @Schema(description = "건물명", example = "합정 메세나폴리스")
-            @NotBlank
-            @Size(max = 20)
+            @Schema(description = "건물명 (공백을 제외하고 4글자 이상, 저장 최대 길이 20자)", example = "합정 메세나폴리스")
+            @NotNull(message = "공간명은 필수입니다.")
+            @Size(min = 4, max = 20, message = "공간명은 4자 이상 20자 이하여야 합니다.")
+            @MinTextLength(value = 4, message = "공간명은 공백을 제외하고 4자 이상이어야 합니다.")
             String buildingName,
 
             @Schema(description = "등록자 유형 (현재 OWNER만 지원)", example = "OWNER")
@@ -102,9 +104,9 @@ public class SpaceReqDTO {
             @NotNull
             Boolean parkingAvailable,
 
-            @Schema(description = "공간 소개 (최대 1000자)", example = "홍대, 합정 중심지에 위치한 공간입니다.")
-            @NotBlank
-            @Size(max = 1000)
+            @Schema(description = "공간 소개 (앞뒤 공백 제거 후 10자 이상, 최대 1000자)", example = "홍대, 합정 중심지에 위치한 공간입니다.")
+            @NotNull
+            @Size(min = 10, max = 1000, message = "공간 설명은 10자 이상 1000자 이하여야 합니다.")
             String description,
 
             @Schema(
@@ -176,8 +178,9 @@ public class SpaceReqDTO {
 
     @Schema(description = "공간 수정 요청 (전달한 필드만 반영, 생략하면 기존 값 유지)")
     public record SpaceUpdateReq(
-            @Schema(description = "건물명", example = "합정 메세나폴리스")
-            @Size(min = 1, max = 20)
+            @Schema(description = "건물명 (공백을 제외하고 4자 이상, 저장 최대 길이 20자", example = "합정 메세나폴리스")
+            @Size(min = 4, max = 20, message = "건물명은 4자 이상 20자 이하여야 합니다.")
+            @MinTextLength(value = 4, message = "건물명은 공백을 제외하고 4자 이상이어야 합니다.")
             String buildingName,
 
             @Schema(description = "등록자 유형 (OWNER만 지원)", example = "OWNER")
@@ -245,8 +248,8 @@ public class SpaceReqDTO {
             @Schema(description = "주차 가능 여부", example = "true")
             Boolean parkingAvailable,
 
-            @Schema(description = "공간 소개 (최대 1000자)", example = "홍대, 합정 중심지에 위치한 공간입니다.")
-            @Size(min = 1, max = 1000)
+            @Schema(description = "공간 소개 (앞뒤 공백 제거 후 10자 이상, 최대 1000자)", example = "홍대, 합정 중심지에 위치한 공간입니다.")
+            @Size(min = 10, max = 1000, message = "공간 설명은 10자 이상 1000자 이하여야 합니다.")
             String description,
 
             @Schema(
