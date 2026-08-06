@@ -14,6 +14,17 @@ import java.util.List;
 
 public class SpaceReqDTO {
 
+    private static String trim(String value) {
+            return value == null ? null : value.trim();
+    }
+
+    private static String trimToNull(String value) {
+            if (value == null) {
+                    return null;
+            }
+            String trimmed = value.trim();
+            return trimmed.isBlank() ? null : trimmed;
+    }
 
     @Schema(description = "공간 등록 요청")
     public record SpaceCreateReq(
@@ -127,6 +138,15 @@ public class SpaceReqDTO {
             @Size(min = 3, max = 10)
             List<@NotBlank String> imageUrls
     ) {
+        public SpaceCreateReq {
+                buildingName = trim(buildingName);
+                city = trim(city);
+                district = trim(district);
+                roadAddress = trim(roadAddress);
+                addressDetail = trim(addressDetail);
+                description = trim(description);
+        }
+
         @AssertTrue(message = "대여 가능 기간의 시작일은 종료일보다 늦을 수 없습니다.")
         private boolean isValidDateRange() {
             if (availableStartDate == null || availableEndDate == null) return true; // null은 @NotNull이 따로 처리
@@ -166,6 +186,10 @@ public class SpaceReqDTO {
             Integer size
     ) {
             public SpaceSearchReq {
+
+                    keyword = trimToNull(keyword);
+                    district = trimToNull(district);
+
                     if (page == null) {
                             page = 0;
                     }
@@ -273,6 +297,16 @@ public class SpaceReqDTO {
             @Size(min = 3, max = 10)
             List<@NotBlank String> imageUrls
     ) {
+
+        public SpaceUpdateReq {
+                buildingName = trim(buildingName);
+                city = trim(city);
+                district = trim(district);
+                roadAddress = trim(roadAddress);
+                addressDetail = trim(addressDetail);
+                description = trim(description);
+        }
+
         @AssertTrue(message = "위도, 경도는 한 세트로만 수정할 수 있습니다.")
         private boolean isValidCoordinatePair() {
             return (latitude == null) == (longitude == null);
