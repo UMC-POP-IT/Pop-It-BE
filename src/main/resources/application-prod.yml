@@ -4,8 +4,6 @@ spring:
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
   jpa:
-    hibernate:
-      ddl-auto: validate   # prod는 절대 create/update 금지
     show-sql: false
   flyway:
     enabled: true
