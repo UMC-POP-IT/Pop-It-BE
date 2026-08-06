@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id "io.sentry.jvm.gradle" version "6.17.0"
 }
 
 group = 'com.popIt'
@@ -75,4 +76,17 @@ dependencies {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+sentry {
+	includeSourceContext = true
+
+	org = "popit"
+	projectName = "java-spring-boot"
+	authToken = System.getenv("SENTRY_AUTH_TOKEN")
+}
+
+// 로컬은 SENTRY_AUTH_TOKEN이 없으니 업로드 태스크를 건너뜀 (CI/prod에서는 실제 env로 주입되어 그대로 실행)
+tasks.named("sentryUploadSourceBundleJava") {
+	onlyIf { System.getenv("SENTRY_AUTH_TOKEN") != null }
 }

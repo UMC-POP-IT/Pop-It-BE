@@ -16,3 +16,13 @@ spring:
 springdoc:
   swagger-ui:
     enabled: true
+
+sentry:
+  dsn: https://99c494710c245790a4da465beefc7464@o4511863814356992.ingest.us.sentry.io/4511863820713984
+  send-default-pii: true
+  logs:
+    enabled: true
+  traces-sample-rate: 1.0
+  logging:
+    minimum-event-level: warn
+    minimum-breadcrumb-level: info
