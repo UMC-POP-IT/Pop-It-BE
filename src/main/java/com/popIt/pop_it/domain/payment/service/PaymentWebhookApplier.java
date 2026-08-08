@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.payment.service;
 
 import com.popIt.pop_it.domain.contract.entity.Contract;
+import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
@@ -39,20 +40,29 @@ class PaymentWebhookApplier {
         }
     }
 
+    // EXPIRED/ABORTED와 달리 PENDING 조건으로 좁히지 않고 PAID가 아니면 반영한다. 이미 FAILED된
+    // 결제가 뒤늦게 DONE으로 와도, 계약이 다른 결제로 이미 완료됐다면 아래 completeContractIfNeeded()가
+    // 그대로 스킵하므로 안전하다.
     private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirmRes actual) {
-        if (payment.getStatus() == PaymentStatus.PAID) {
+        if (payment.getStatus() != PaymentStatus.PAID) {
+            payment.markAsPaid(
+                    actual.paymentKey(),
+                    PaymentMethod.fromDescription(actual.method()),
+                    actual.approvedAt().toLocalDateTime()
+            );
+        }
+        completeContractIfNeeded(payment);
+        log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
+    }
+
+    // 이미 완료된 계약이면 아무것도 하지 않는 멱등 연산
+    private void completeContractIfNeeded(Payment payment) {
+        Contract contract = payment.getContract();
+        if (contract.getStatus() == ContractStatus.COMPLETED) {
             return;
         }
-        payment.markAsPaid(
-                actual.paymentKey(),
-                PaymentMethod.fromDescription(actual.method()),
-                actual.approvedAt().toLocalDateTime()
-        );
-        // 계약 결제 완료 및 예약 결제 완료 처리
-        Contract contract = payment.getContract();
         contract.markAsCompleted();
         contract.getReservation().markPaymentCompleted();
-        log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
     }
 
     // TOCTOU(check-then-act) 취약점을 방어하기 위해 조건과 반영을 조건부 UPDATE로 한 번에 처리해,
