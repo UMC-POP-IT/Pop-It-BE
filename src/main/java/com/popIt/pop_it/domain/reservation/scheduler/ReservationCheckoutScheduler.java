@@ -32,7 +32,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void startUsagePeriod() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(KST));
 
         for (Reservation reservation : targets) {
             try {

@@ -123,6 +123,14 @@ public class Reservation {
         this.status = ReservationStatus.CONTRACT_COMPLETED;
     }
 
+    //결제 완료 기록
+    public void markPaymentCompleted() {
+        if (this.status != ReservationStatus.CONTRACT_COMPLETED) {
+            throw new ReservationException(ReservationErrorCode.RESERVATION_NOT_MODIFIABLE);
+        }
+        this.status = ReservationStatus.PAYMENT_COMPLETED;
+    }
+
     //퇴실 증빙 제출 시간 기록
     public void markCheckoutSubmitted() {
         this.checkoutSubmittedAt = LocalDateTime.now(KST);

@@ -57,6 +57,7 @@ public class SpaceService {
             ReservationStatus.PENDING_APPROVAL,
             ReservationStatus.APPROVED,
             ReservationStatus.CONTRACT_COMPLETED,
+            ReservationStatus.PAYMENT_COMPLETED,
             ReservationStatus.IN_USE,
             ReservationStatus.USAGE_COMPLETED
     );

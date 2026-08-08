@@ -153,8 +153,10 @@ public class PaymentService {
                     PaymentMethod.fromDescription(tossConfirm.method()),
                     tossConfirm.approvedAt().toLocalDateTime()
             );
-            // 계약 완료 처리
-            payment.getContract().markAsCompleted();
+            // 계약 결제 완료 및 예약 결제 완료 처리
+            Contract contract = payment.getContract();
+            contract.markAsCompleted();
+            contract.getReservation().markPaymentCompleted();
             // Contract는 @Version이 걸려 있어, 웹훅 등 다른 경로가 동시에 완료 처리하면 버전
             // 충돌이 날 수 있다. 이 트랜잭션 안에서 즉시 감지해 catch할 수 있도록 명시적으로 flush한다.
             paymentRepository.saveAndFlush(payment);

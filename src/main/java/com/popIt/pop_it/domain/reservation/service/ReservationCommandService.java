@@ -311,7 +311,7 @@ public class ReservationCommandService {
     public void startUsageForSchedule(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
-        if (reservation.getStatus() != ReservationStatus.CONTRACT_COMPLETED) return; // 이미 처리됨
+        if (reservation.getStatus() != ReservationStatus.PAYMENT_COMPLETED) return; // 이미 처리됨
         reservation.startUsage();
         reservationRepository.saveAndFlush(reservation);
     }
