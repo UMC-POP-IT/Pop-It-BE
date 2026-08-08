@@ -338,6 +338,16 @@ public class ReservationCommandService {
         // 결제 전 상태라 환불 로직 없음
     }
 
+    // 계약체결 상태에서 예약일까지 게스트가 결제를 안 한 경우 자동 취소
+    @Transactional(Transactional.TxType.REQUIRES_NEW)
+    public void cancelUnpaidForSchedule(Long reservationId) {
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new ProjectException(ReservationErrorCode.RESERVATION_NOT_FOUND));
+        if (reservation.getStatus() != ReservationStatus.CONTRACT_COMPLETED) return; // 이미 처리됨
+        reservation.cancel();
+        reservationRepository.saveAndFlush(reservation);
+    }
+
     @Transactional(Transactional.TxType.REQUIRES_NEW)
     public void completeUsageForSchedule(Long reservationId) {
         Reservation reservation = reservationRepository.findById(reservationId)

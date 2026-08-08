@@ -92,6 +92,22 @@ public class ReservationCheckoutScheduler {
         }
     }
 
+    // 3-3. 계약체결 상태에서 예약일까지 게스트가 결제 안 한 경우 자동 취소
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
+    public void cancelUnpaidReservations() {
+        List<Reservation> targets = reservationRepository
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST));
+
+        for (Reservation reservation : targets) {
+            try {
+                reservationCommandService.cancelUnpaidForSchedule(reservation.getId());
+                log.info("예약일 도래 - 결제 미완료로 자동 취소 - reservationId: {}", reservation.getId());
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("자동 취소 중 낙관적 락 충돌 - reservationId: {}", reservation.getId());
+            }
+        }
+    }
+
     // 4. 퇴실 승인 24h 자동 처리 (사진 제출했든 스킵했든 둘 다 커버)
     @Scheduled(fixedRate = 30 * 60 * 1000) // 30분마다
     public void autoApproveCheckouts() {
