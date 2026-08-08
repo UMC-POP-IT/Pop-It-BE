@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequiredArgsConstructor
+@RequestMapping("/api/v1")
 @Tag(name = "결제", description = "토스페이먼츠 기반 계약 결제 API")
 public class PaymentController {
 
@@ -50,7 +51,7 @@ public class PaymentController {
                     description = "결제 가능한 계약 상태가 아님, 동일 Idempotency-Key로 다른 요청 처리 중 충돌, 이미 결제 완료, 이전 결제 실패/만료로 재시도 필요, 계약 내용 변조 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/api/v1/contracts/{contractId}/payments")
+    @PostMapping("/contracts/{contractId}/payments")
     public ApiResponse<PaymentResDTO.PaymentPrepareRes> prepare(
             @Parameter(description = "결제를 준비할 계약 ID", example = "1")
             @PathVariable Long contractId,
@@ -92,7 +93,7 @@ public class PaymentController {
                     responseCode = "502", description = "결제 게이트웨이(토스페이먼츠)와 통신할 수 없음",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @PostMapping("/api/v1/payments/{paymentId}/confirm")
+    @PostMapping("/payments/{paymentId}/confirm")
     public ApiResponse<PaymentResDTO.PaymentConfirmRes> confirm(
             @Parameter(description = "승인할 결제 ID", example = "1")
             @PathVariable Long paymentId,
@@ -106,7 +107,7 @@ public class PaymentController {
 
     @Hidden
     @Operation(summary = "토스페이먼츠 웹훅", description = "결제 상태 변경 시 토스페이먼츠 서버가 호출하는 웹훅입니다. 가상결제는 지원하지 않습니다.")
-    @PostMapping("/api/v1/payments/webhook")
+    @PostMapping("/payments/webhook")
     public ApiResponse<Void> webhook(@RequestBody PaymentReqDTO.PaymentWebhookReq payload) {
         paymentWebhookService.handle(payload);
         return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_WEBHOOK_RECEIVED, null);
