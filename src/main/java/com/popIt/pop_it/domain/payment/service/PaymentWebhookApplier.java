@@ -40,17 +40,26 @@ class PaymentWebhookApplier {
         }
     }
 
-    // EXPIRED/ABORTED와 달리 PENDING 조건으로 좁히지 않고 PAID가 아니면 반영한다. 이미 FAILED된
-    // 결제가 뒤늦게 DONE으로 와도, 계약이 다른 결제로 이미 완료됐다면 아래 completeContractIfNeeded()가
-    // 그대로 스킵하므로 안전하다.
+    // EXPIRED/ABORTED와 달리 PENDING 조건으로 좁히지 않고 PAID가 아니면 반영한다.
     private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirmRes actual) {
-        if (payment.getStatus() != PaymentStatus.PAID) {
+        boolean alreadyPaid = payment.getStatus() == PaymentStatus.PAID;
+        if (!alreadyPaid) {
             payment.markAsPaid(
                     actual.paymentKey(),
                     PaymentMethod.fromDescription(actual.method()),
                     actual.approvedAt().toLocalDateTime()
             );
         }
+
+        Contract contract = payment.getContract();
+        if (!alreadyPaid && contract.getStatus() == ContractStatus.COMPLETED) {
+            // 같은 계약에 토스 승인이 두 번 들어온 이중 청구 상황.
+            // 결제 자체는 PAID로 남기고 환불 등 운영 처리가 필요함을 ERROR로 알린다.
+            log.error("계약당 결제 중복 승인 감지(이중 청구 의심, 환불 필요): paymentId={}, contractId={}, amount={}",
+                payment.getId(), contract.getId(), actual.totalAmount());
+            return;
+        }
+
         completeContractIfNeeded(payment);
         log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
     }

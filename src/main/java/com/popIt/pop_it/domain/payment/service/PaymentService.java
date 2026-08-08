@@ -128,7 +128,7 @@ public class PaymentService {
 
         // 이미 승인된 결제면 토스 재승인 없이, 직전 시도에서 못 끝냈을 계약/예약 완료만 이어서 마무리한다.
         if (payment.getStatus() == PaymentStatus.PAID) {
-            completeContractSafely(payment, reqDTO);
+            completeContractSafely(payment, reqDTO, true);
             return PaymentResDTO.PaymentConfirmRes.of(payment);
         }
 
@@ -145,25 +145,36 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
-        PaymentResDTO.TossConfirmRes tossConfirm = confirmWithToss(reqDTO, payment.getId());
+        PaymentResDTO.TossConfirmRes tossConfirm;
+        try {
+            tossConfirm = confirmWithToss(reqDTO, payment.getId());
+        } catch (ProjectException e) {
+            if (e.getErrorCode() != PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING) {
+                paymentSettlementRecorder.markConfirmFailedIfPending(payment.getId());
+            }
+            throw e;
+        }
 
         // 토스 승인은 이미 확정됐으니, 계약/예약 완료 처리와 별개로 이 사실부터 별도
-        // 트랜잭션으로 durable하게 남긴다 - 뒤 단계가 실패해도 이 커밋은 롤백되지 않는다.
+        // 트랜잭션으로 durable하게 먼저 커밋한다 - 뒤 단계가 실패해도 이 커밋은 롤백되지 않는다.
         paymentSettlementRecorder.update(payment.getId(), p -> p.markAsPaid(
                 tossConfirm.paymentKey(),
                 PaymentMethod.fromDescription(tossConfirm.method()),
                 tossConfirm.approvedAt().toLocalDateTime()));
-        payment = paymentRepository.findById(paymentId)
-                .orElseThrow(() -> new ProjectException(PaymentErrorCode.PAYMENT_NOT_FOUND));
-        completeContractSafely(payment, reqDTO);
+        // 응답/이후 처리에 최신 PAID 상태를 쓰려면 같은 객체를 직접 갱신해야 한다.
+        payment.markAsPaid(
+                tossConfirm.paymentKey(),
+                PaymentMethod.fromDescription(tossConfirm.method()),
+                tossConfirm.approvedAt().toLocalDateTime());
+        completeContractSafely(payment, reqDTO, false);
 
         return PaymentResDTO.PaymentConfirmRes.of(payment);
     }
 
     // 계약/예약 완료 처리를 시도하고, 실패해도 결제(PAID)는 이미 확정돼 있으니 FAILED로 되돌리지 않는다.
-    private void completeContractSafely(Payment payment, PaymentReqDTO.PaymentConfirmReq reqDTO) {
+    private void completeContractSafely(Payment payment, PaymentReqDTO.PaymentConfirmReq reqDTO, boolean alreadyPaid) {
         try {
-            completeContractIfNeeded(payment);
+            completeContractIfNeeded(payment, alreadyPaid);
         } catch (ObjectOptimisticLockingFailureException e) {
             // 다른 경로(웹훅 등)가 같은 계약을 먼저 완료 처리해 버전이 충돌한 경우.
             // 이 결제 자체는 이미 성공했으므로 실패로 기록하지 않고, 재조회를 안내한다.
@@ -177,9 +188,15 @@ public class PaymentService {
         }
     }
 
-    private void completeContractIfNeeded(Payment payment) {
+    private void completeContractIfNeeded(Payment payment, boolean alreadyPaid) {
         Contract contract = payment.getContract();
         if (contract.getStatus() == ContractStatus.COMPLETED) {
+            if (!alreadyPaid) {
+                // 같은 계약에 토스 승인이 두 번 들어온 이중 청구 상황.
+                // 결제 자체는 PAID로 남기고 환불 등 운영 처리가 필요함을 ERROR로 알린다.
+                log.error("계약당 결제 중복 승인 감지(이중 청구 의심, 환불 필요): paymentId={}, contractId={}",
+                        payment.getId(), contract.getId());
+            }
             return;
         }
         // 계약 결제 완료 및 예약 결제 완료 처리
@@ -199,8 +216,18 @@ public class PaymentService {
             if (e.getErrorCode() != PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE) {
                 throw e;
             }
-            PaymentResDTO.TossConfirmRes actual = tossPaymentClient.getPayment(reqDTO.paymentKey());
-            if (!"DONE".equals(actual.status())) {
+            PaymentResDTO.TossConfirmRes actual;
+            try {
+                actual = tossPaymentClient.getPayment(reqDTO.paymentKey());
+            } catch (ProjectException verifyFailure) {
+                // 토스의 실제 승인 여부를 전혀 확인할 수 없다.
+                // FAILED로 단정해 새 결제 생성을 허용하면 이중 청구 위험이 있으므로 예외를 던진다.
+                log.error("토스 승인 확인 불가(원 요청/재조회 모두 실패): paymentId={}", paymentId, verifyFailure);
+                throw new ProjectException(PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING);
+            }
+            if (!"DONE".equals(actual.status())
+                    || !actual.orderId().equals(reqDTO.orderId())
+                    || !actual.totalAmount().equals(reqDTO.amount())) {
                 throw new ProjectException(PaymentErrorCode.PAYMENT_RETRYABLE);
             }
             log.warn("confirm 응답 유실 후 재조회로 실제 승인 확인됨(이중 결제 방지): paymentId={}", paymentId);
