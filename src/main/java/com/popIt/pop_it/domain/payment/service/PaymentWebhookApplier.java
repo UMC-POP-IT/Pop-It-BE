@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.payment.service;
 
+import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
@@ -47,8 +48,10 @@ class PaymentWebhookApplier {
                 PaymentMethod.fromDescription(actual.method()),
                 actual.approvedAt().toLocalDateTime()
         );
-        // 계약 완료 처리
-        payment.getContract().markAsCompleted();
+        // 계약 결제 완료 및 예약 결제 완료 처리
+        Contract contract = payment.getContract();
+        contract.markAsCompleted();
+        contract.getReservation().markPaymentCompleted();
         log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
     }
 

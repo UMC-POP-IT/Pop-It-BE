@@ -32,7 +32,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void startUsagePeriod() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(KST));
 
         for (Reservation reservation : targets) {
             try {
@@ -86,6 +86,22 @@ public class ReservationCheckoutScheduler {
             try {
                 reservationCommandService.cancelUncontractedForSchedule(reservation.getId());
                 log.info("예약일 도래 - 계약 미체결로 자동 취소 - reservationId: {}", reservation.getId());
+            } catch (ObjectOptimisticLockingFailureException e) {
+                log.warn("자동 취소 중 낙관적 락 충돌 - reservationId: {}", reservation.getId());
+            }
+        }
+    }
+
+    // 3-3. 계약체결 상태에서 예약일까지 게스트가 결제 안 한 경우 자동 취소
+    @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
+    public void cancelUnpaidReservations() {
+        List<Reservation> targets = reservationRepository
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST));
+
+        for (Reservation reservation : targets) {
+            try {
+                reservationCommandService.cancelUnpaidForSchedule(reservation.getId());
+                log.info("예약일 도래 - 결제 미완료로 자동 취소 - reservationId: {}", reservation.getId());
             } catch (ObjectOptimisticLockingFailureException e) {
                 log.warn("자동 취소 중 낙관적 락 충돌 - reservationId: {}", reservation.getId());
             }
