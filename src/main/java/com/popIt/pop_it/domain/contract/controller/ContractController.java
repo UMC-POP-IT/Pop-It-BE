@@ -24,7 +24,8 @@ public class ContractController {
     private final ContractService contractService;
 
     // 결제/임대 예정 계약 정보 조회
-    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "계약서를 보기 전, [게스트(공간 + 기간 + 결제 예정)]/[호스트(입금 예정)] 금액을 조회합니다. 호스트/게스트가 받는 응답이 다릅니다. ")
+    @Operation(summary = "결제/임대 예정 계약 정보 조회", description = "계약서를 보기 전, [게스트(공간 + 기간 + 결제 예정)]/[호스트(입금 예정)] 금액을 조회합니다. 호스트/게스트가 받는 응답이 다릅니다. "
+            + "contractId, contractStatus를 함께 반환하므로, 결제 화면을 벗어났다가 재진입할 때도 이 API로 계약 상태를 확인하고 결제(POST /contracts/{contractId}/payments)를 재개할 수 있습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "결제/입금 예정 정보 조회 성공"),

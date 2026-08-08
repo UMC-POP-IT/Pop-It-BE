@@ -31,6 +31,8 @@ public class ContractConverter {
     // 결제 예정(게스트) 정보 조회
     public static ContractResDTO.ContractGuestPaymentInfoRes toGetGuestContractPaymentInfoRes(Contract contract) {
         return ContractResDTO.ContractGuestPaymentInfoRes.builder()
+                .contractId(contract.getId())
+                .contractStatus(contract.getStatus())
                 .spaceName(contract.getSpaceName())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())
@@ -45,6 +47,8 @@ public class ContractConverter {
     // 임대 예정(호스트) 정보 조회
     public static ContractResDTO.ContractHostPaymentInfoRes toGetHostContractPaymentInfoRes(Contract contract) {
         return ContractResDTO.ContractHostPaymentInfoRes.builder()
+                .contractId(contract.getId())
+                .contractStatus(contract.getStatus())
                 .spaceName(contract.getSpaceName())
                 .startDate(contract.getStartDate())
                 .endDate(contract.getEndDate())

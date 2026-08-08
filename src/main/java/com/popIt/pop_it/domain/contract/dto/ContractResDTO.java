@@ -9,6 +9,15 @@ import java.time.LocalDate;
 public class ContractResDTO {
     @Builder
     public record ContractGuestPaymentInfoRes(
+            @Schema(description = "계약 ID. 결제 요청(POST /contracts/{contractId}/payments) 시 필요", example = "1")
+            Long contractId,
+
+            @Schema(
+                    description = "계약 상태. PENDING_PAYMENT일 때만 결제 가능",
+                    example = "PENDING_PAYMENT"
+            )
+            ContractStatus contractStatus,
+
             @Schema(description = "공간 건물명", example = "팝잇 빌딩")
             String spaceName,
 
@@ -36,6 +45,12 @@ public class ContractResDTO {
 
     @Builder
     public record ContractHostPaymentInfoRes(
+            @Schema(description = "계약 ID", example = "1")
+            Long contractId,
+
+            @Schema(description = "계약 상태", example = "PENDING_PAYMENT")
+            ContractStatus contractStatus,
+
             @Schema(description = "공간 건물명", example = "팝잇 빌딩")
             String spaceName,
 
