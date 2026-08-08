@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.*;
 @Tag(name = "본인인증", description = "포트원 기반 본인인증 API")
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/v1/users/me/verifications")
+@RequestMapping("/api/v1/users/me/verifications")
 public class IdentityVerificationController {
 
     private final IdentityVerificationService identityVerificationService;
