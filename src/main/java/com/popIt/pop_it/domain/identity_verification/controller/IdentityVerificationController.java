@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,12 +49,14 @@ public class IdentityVerificationController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ApiResponse<IdentityVerificationResDTO.IdentityVerificationVerifyRes> verify(
+    public ResponseEntity<ApiResponse<IdentityVerificationResDTO.IdentityVerificationVerifyRes>> verify(
             @AuthenticationPrincipal AuthUser authUser,
             @RequestBody @Valid IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto
             ) {
         BaseSuccessCode code = IdentityVerificationSuccessCode.VERIFIED;
-        return ApiResponse.onSuccess(code, identityVerificationService.verify(authUser.getUser(), dto));
+        IdentityVerificationResDTO.IdentityVerificationVerifyRes result =
+                identityVerificationService.verify(authUser.getUser(), dto);
+        return ResponseEntity.status(code.getStatus()).body(ApiResponse.onSuccess(code, result));
     }
 
     /**

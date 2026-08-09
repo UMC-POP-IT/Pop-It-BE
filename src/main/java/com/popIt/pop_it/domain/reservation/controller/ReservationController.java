@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -152,14 +153,14 @@ public class ReservationController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ApiResponse<ReservationResDTO.ReservationCreateRes> createReservation(
+    public ResponseEntity<ApiResponse<ReservationResDTO.ReservationCreateRes>> createReservation(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody ReservationReqDTO.ReservationCreateReq request
     ) {
-        return ApiResponse.onSuccess(
-                ReservationSuccessCode.RESERVATION_REQUEST,
-                reservationCommandService.createReservation(authUser.getUser().getUserId(), request)
-        );
+        ReservationResDTO.ReservationCreateRes result =
+                reservationCommandService.createReservation(authUser.getUser().getUserId(), request);
+        return ResponseEntity.status(ReservationSuccessCode.RESERVATION_REQUEST.getStatus())
+                .body(ApiResponse.onSuccess(ReservationSuccessCode.RESERVATION_REQUEST, result));
     }
 
     @Operation(summary = "예약 승인", description = "호스트가 승인대기 상태의 예약을 승인합니다. (PENDING_APPROVAL → APPROVED)<br>"

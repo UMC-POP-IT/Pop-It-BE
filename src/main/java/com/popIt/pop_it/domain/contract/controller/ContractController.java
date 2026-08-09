@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -109,13 +110,14 @@ public class ContractController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/signatures")
-    public ApiResponse<ContractResDTO.ContractSignatureRes> signature(
+    public ResponseEntity<ApiResponse<ContractResDTO.ContractSignatureRes>> signature(
             @AuthenticationPrincipal AuthUser authUser,
             @PathVariable Long reservationId,
             @RequestBody @Valid ContractReqDTO.ContractSignatureReq dto
             ) {
         BaseSuccessCode code = ContractSuccessCode.SIGNATURE_SUCCESS;
-        return ApiResponse.onSuccess(code, contractService.signature(authUser.getUser(), reservationId, dto));
+        ContractResDTO.ContractSignatureRes result = contractService.signature(authUser.getUser(), reservationId, dto);
+        return ResponseEntity.status(code.getStatus()).body(ApiResponse.onSuccess(code, result));
     }
 
 }

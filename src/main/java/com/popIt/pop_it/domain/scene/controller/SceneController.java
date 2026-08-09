@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -82,15 +83,15 @@ public class SceneController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/spaces/{spaceId}/scenes")
-    public ApiResponse<SceneResDTO.SceneIdRes> createScene(
+    public ResponseEntity<ApiResponse<SceneResDTO.SceneIdRes>> createScene(
             @PathVariable Long spaceId,
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody SceneReqDTO.SceneCreateReq request
     ) {
-        return ApiResponse.onSuccess(
-                SceneSuccessCode.SCENE_CREATED,
-                sceneCommandService.createScene(spaceId, authUser.getUser().getUserId(), request)
-        );
+        SceneResDTO.SceneIdRes result =
+                sceneCommandService.createScene(spaceId, authUser.getUser().getUserId(), request);
+        return ResponseEntity.status(SceneSuccessCode.SCENE_CREATED.getStatus())
+                .body(ApiResponse.onSuccess(SceneSuccessCode.SCENE_CREATED, result));
     }
 
     @Operation(summary = "씬 사진 등록", description = "프론트가 presigned URL로 이미 S3에 업로드 완료한 이미지 URL 목록을 받아 씬에 등록합니다. (기존 사진 뒤에 이어붙음)")
@@ -111,16 +112,16 @@ public class SceneController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/spaces/{spaceId}/scenes/{sceneId}/images")
-    public ApiResponse<SceneResDTO.ImageUploadResultRes> uploadSceneImages(
+    public ResponseEntity<ApiResponse<SceneResDTO.ImageUploadResultRes>> uploadSceneImages(
             @PathVariable Long spaceId,
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody SceneReqDTO.SceneImageUploadReq request
     ) {
-        return ApiResponse.onSuccess(
-                SceneSuccessCode.SCENE_IMAGES_UPLOADED,
-                sceneCommandService.uploadSceneImages(spaceId, sceneId, authUser.getUser().getUserId(), request.imageUrls())
-        );
+        SceneResDTO.ImageUploadResultRes result = sceneCommandService.uploadSceneImages(
+                spaceId, sceneId, authUser.getUser().getUserId(), request.imageUrls());
+        return ResponseEntity.status(SceneSuccessCode.SCENE_IMAGES_UPLOADED.getStatus())
+                .body(ApiResponse.onSuccess(SceneSuccessCode.SCENE_IMAGES_UPLOADED, result));
     }
 
     @Operation(summary = "씬 수정", description = "씬 이름/모델/썸네일/기본 씬 여부를 부분 수정합니다. (null인 필드는 기존 값 유지)")
