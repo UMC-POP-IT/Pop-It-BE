@@ -13,10 +13,12 @@ import com.popIt.pop_it.domain.space.entity.SpaceImage;
 import com.popIt.pop_it.domain.space.enums.RealtimeRecommendType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
+import com.popIt.pop_it.domain.space.event.SpaceViewedEvent;
 import com.popIt.pop_it.domain.space.exception.SpaceErrorCode;
 import com.popIt.pop_it.domain.space.repository.SpaceFacilityRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceImageRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user.repository.HostProfileRepository;
 import com.popIt.pop_it.domain.wishlist.repository.WishCountBySpace;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
@@ -113,7 +115,7 @@ public class SpaceService {
     }
 
     // 공간 상세 조회
-    public SpaceResDTO.SpaceDetailRes getSpaceDetail(Long userId, Long spaceId) {
+    public SpaceResDTO.SpaceDetailRes getSpaceDetail(Long userId, Long spaceId, UserMode viewerMode) {
         // 1. 공간 조회
         Space space = spaceRepository.findByIdAndDeletedAtIsNull(spaceId)
                 .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
@@ -132,6 +134,8 @@ public class SpaceService {
         if (userId != null) {
             isMine = space.getHostId().equals(userId);
             isWishlist = wishlistRepository.existsByUserIdAndSpaceId(userId, spaceId);
+
+            eventPublisher.publishEvent(new SpaceViewedEvent(spaceId, userId, viewerMode));
         }
 
         return SpaceConverter.toDetail(space, imageUrls, facilities, isMine, isWishlist, wishCount);
