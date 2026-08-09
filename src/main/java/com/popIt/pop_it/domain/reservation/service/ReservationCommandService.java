@@ -59,7 +59,9 @@ public class ReservationCommandService {
             space = spaceRepository.findByIdForUpdate(request.spaceId())
                     .orElseThrow(() -> new ProjectException(SpaceErrorCode.SPACE_NOT_FOUND));
         } catch (PessimisticLockingFailureException e) {
-            throw new ProjectException(ReservationErrorCode.RESERVATION_ALREADY_TAKEN);
+            // 같은 공간 row에 락이 걸린 원인이 동시 예약 시도뿐 아니라
+            // 호스트의 공간 정보 수정(SpaceService.updateSpace)일 수도 있어 "이미 예약됨"으로 단정하지 않음
+            throw new ProjectException(ReservationErrorCode.RESERVATION_SPACE_LOCKED);
         }
         User guest = userRepository.findById(userId)
                 .orElseThrow(() -> new ProjectException(UserErrorCode.USER_NOT_FOUND));

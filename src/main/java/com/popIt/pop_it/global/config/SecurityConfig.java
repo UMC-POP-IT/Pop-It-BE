@@ -82,7 +82,7 @@ public class SecurityConfig {
             "/api/v1/spaces/*",
             "/api/v1/spaces/{spaceId:[0-9]+}/scenes",
             "/api/v1/scenes/{sceneId:[0-9]+}",
-            "/api/v1/reservations/{spaceId:[0-9]+}/unavailable-dates"
+            "/api/v1/reservations/unavailable-dates"
     };
 
     private final String[] publicAPI = {

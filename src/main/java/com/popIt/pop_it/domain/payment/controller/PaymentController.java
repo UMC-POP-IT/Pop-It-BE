@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -52,7 +53,7 @@ public class PaymentController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/contracts/{contractId}/payments")
-    public ApiResponse<PaymentResDTO.PaymentPrepareRes> prepare(
+    public ResponseEntity<ApiResponse<PaymentResDTO.PaymentPrepareRes>> prepare(
             @Parameter(description = "결제를 준비할 계약 ID", example = "1")
             @PathVariable Long contractId,
             @Parameter(description = "중복 요청 방지를 위한 클라이언트 생성 키. 같은 키로 재요청 시 동일한 결제를 그대로 반환합니다.",
@@ -65,7 +66,8 @@ public class PaymentController {
     ) {
         PaymentResDTO.PaymentPrepareRes resDTO = paymentService.prepare(
                 contractId, idempotencyKey, authUser.getUser().getUserId());
-        return ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_PREPARED, resDTO);
+        return ResponseEntity.status(PaymentSuccessCode.PAYMENT_PREPARED.getStatus())
+                .body(ApiResponse.onSuccess(PaymentSuccessCode.PAYMENT_PREPARED, resDTO));
     }
 
     @Operation(summary = "결제 승인", description = "토스페이먼츠 결제창에서 인증 완료 후 전달받은 정보로 결제 승인을 요청합니다. 가상결제는 지원하지 않습니다.")

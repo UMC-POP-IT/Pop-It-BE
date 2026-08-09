@@ -122,7 +122,9 @@ public class ReservationConcurrencyTest {
                     reservationCommandService.createReservation(guestId, request);
                     successCount.incrementAndGet();
                 } catch (ProjectException e) {
-                    if (e.getErrorCode() == ReservationErrorCode.RESERVATION_ALREADY_TAKEN) {
+                    if (e.getErrorCode() == ReservationErrorCode.RESERVATION_ALREADY_TAKEN
+                            || e.getErrorCode() == ReservationErrorCode.RESERVATION_SPACE_LOCKED) {
+                        // ALREADY_TAKEN: 락 획득 후 겹치는 예약 발견 / SPACE_LOCKED: 락 즉시실패(lock.timeout=0)로 인한 경합 실패
                         conflictCount.incrementAndGet();
                     } else {
                         unexpectedCount.incrementAndGet();

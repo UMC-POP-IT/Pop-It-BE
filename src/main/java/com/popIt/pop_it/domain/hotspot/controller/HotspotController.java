@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,15 +42,15 @@ public class HotspotController {
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/scenes/{sceneId}/hotspots")
-    public ApiResponse<HotspotResDTO.HotspotIdRes> createHotspot(
+    public ResponseEntity<ApiResponse<HotspotResDTO.HotspotIdRes>> createHotspot(
             @PathVariable Long sceneId,
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody HotspotReqDTO.HotspotCreateReq request
     ) {
-        return ApiResponse.onSuccess(
-                HotspotSuccessCode.HOTSPOT_CREATED,
-                hotspotService.createHotspot(sceneId, authUser.getUser().getUserId(), request)
-        );
+        HotspotResDTO.HotspotIdRes result =
+                hotspotService.createHotspot(sceneId, authUser.getUser().getUserId(), request);
+        return ResponseEntity.status(HotspotSuccessCode.HOTSPOT_CREATED.getStatus())
+                .body(ApiResponse.onSuccess(HotspotSuccessCode.HOTSPOT_CREATED, result));
     }
 
     @Operation(summary = "핫스팟 수정", description = "핫스팟을 부분 수정합니다. type은 생성 후 변경할 수 없고, 기존 type과 안 맞는 필드(예: INFO인데 targetSceneId)를 보내면 400이 발생합니다.")

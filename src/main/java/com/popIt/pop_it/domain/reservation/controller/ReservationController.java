@@ -15,7 +15,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -148,18 +150,19 @@ public class ReservationController {
                     responseCode = "404", description = "존재하지 않는 공간, 존재하지 않는 사용자 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409", description = "이미 예약이 완료된 공간(동시성 충돌)",
+                    responseCode = "409",
+                    description = "이미 예약이 완료된 공간(동시성 충돌), 또는 호스트의 공간 정보 수정 등 다른 요청과의 락 경합으로 일시적으로 처리할 수 없음(잠시 후 재시도)",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
-    public ApiResponse<ReservationResDTO.ReservationCreateRes> createReservation(
+    public ResponseEntity<ApiResponse<ReservationResDTO.ReservationCreateRes>> createReservation(
             @AuthenticationPrincipal AuthUser authUser,
             @Valid @RequestBody ReservationReqDTO.ReservationCreateReq request
     ) {
-        return ApiResponse.onSuccess(
-                ReservationSuccessCode.RESERVATION_REQUEST,
-                reservationCommandService.createReservation(authUser.getUser().getUserId(), request)
-        );
+        ReservationResDTO.ReservationCreateRes result =
+                reservationCommandService.createReservation(authUser.getUser().getUserId(), request);
+        return ResponseEntity.status(ReservationSuccessCode.RESERVATION_REQUEST.getStatus())
+                .body(ApiResponse.onSuccess(ReservationSuccessCode.RESERVATION_REQUEST, result));
     }
 
     @Operation(summary = "예약 승인", description = "호스트가 승인대기 상태의 예약을 승인합니다. (PENDING_APPROVAL → APPROVED)<br>"
@@ -442,15 +445,12 @@ public class ReservationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "공간별 예약 불가 날짜 조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401", description = "인증되지 않음",
-                    content = @io.swagger.v3.oas.annotations.media.Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404", description = "존재하지 않는 공간",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @GetMapping("/{spaceId}/unavailable-dates")
+    @GetMapping("/unavailable-dates")
     public ApiResponse<ReservationResDTO.ReservationUnavailableDatesRes> getUnavailableDates(
-            @PathVariable Long spaceId
+            @RequestParam @Positive Long spaceId
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_UNAVAILABLE_DATES,
