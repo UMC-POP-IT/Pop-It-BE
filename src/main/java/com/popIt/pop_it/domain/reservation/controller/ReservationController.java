@@ -149,7 +149,8 @@ public class ReservationController {
                     responseCode = "404", description = "존재하지 않는 공간, 존재하지 않는 사용자 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "409", description = "이미 예약이 완료된 공간(동시성 충돌)",
+                    responseCode = "409",
+                    description = "이미 예약이 완료된 공간(동시성 충돌), 또는 호스트의 공간 정보 수정 등 다른 요청과의 락 경합으로 일시적으로 처리할 수 없음(잠시 후 재시도)",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping
