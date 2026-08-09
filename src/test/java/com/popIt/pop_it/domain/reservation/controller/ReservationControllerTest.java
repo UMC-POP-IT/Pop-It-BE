@@ -158,4 +158,16 @@ class ReservationControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("SPACE404_1"));
     }
+
+    @Test
+    @DisplayName("spaceId가 0 이하(음수/0)면 400을 반환한다")
+    void getUnavailableDates_nonPositiveSpaceId() throws Exception {
+        mockMvc.perform(get("/api/v1/reservations/unavailable-dates")
+                        .param("spaceId", "-1"))
+                .andExpect(status().isBadRequest());
+
+        mockMvc.perform(get("/api/v1/reservations/unavailable-dates")
+                        .param("spaceId", "0"))
+                .andExpect(status().isBadRequest());
+    }
 }

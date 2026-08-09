@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -449,7 +450,7 @@ public class ReservationController {
     })
     @GetMapping("/unavailable-dates")
     public ApiResponse<ReservationResDTO.ReservationUnavailableDatesRes> getUnavailableDates(
-            @RequestParam Long spaceId
+            @RequestParam @Positive Long spaceId
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_UNAVAILABLE_DATES,
