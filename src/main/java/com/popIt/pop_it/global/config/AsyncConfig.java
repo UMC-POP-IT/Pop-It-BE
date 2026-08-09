@@ -3,6 +3,8 @@ package com.popIt.pop_it.global.config;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -29,5 +31,18 @@ public class AsyncConfig {
     @Bean(destroyMethod = "shutdown")
     public ScheduledExecutorService userVectorDebounceScheduler() {
         return Executors.newScheduledThreadPool(2, new CustomizableThreadFactory("vector-debounce-"));
+    }
+
+    // 공간 상세 조회의 부가 기록(UV 집계, 개인 조회 이력) 전용
+    @Bean
+    public Executor viewLogTaskExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(2);
+        executor.setMaxPoolSize(4);
+        executor.setQueueCapacity(500);
+        executor.setThreadNamePrefix("view-log-");
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.initialize();
+        return executor;
     }
 }
