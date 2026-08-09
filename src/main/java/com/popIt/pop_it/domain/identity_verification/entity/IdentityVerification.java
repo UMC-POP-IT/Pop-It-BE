@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.identity_verification.entity;
 
 import com.popIt.pop_it.domain.identity_verification.entity.enums.Gender;
+import com.popIt.pop_it.domain.identity_verification.entity.enums.PortOneVerificationStatus;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.util.CryptoConverter;
 import jakarta.persistence.*;
@@ -60,8 +61,9 @@ public class IdentityVerification {
     private LocalDateTime verifiedAt;
 
     // 인증 상태
-    @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PortOneVerificationStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false, unique = true)

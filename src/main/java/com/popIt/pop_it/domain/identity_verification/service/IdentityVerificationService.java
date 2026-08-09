@@ -4,6 +4,7 @@ import com.popIt.pop_it.domain.identity_verification.converter.IdentityVerificat
 import com.popIt.pop_it.domain.identity_verification.dto.IdentityVerificationReqDTO;
 import com.popIt.pop_it.domain.identity_verification.dto.IdentityVerificationResDTO;
 import com.popIt.pop_it.domain.identity_verification.entity.IdentityVerification;
+import com.popIt.pop_it.domain.identity_verification.entity.enums.PortOneVerificationStatus;
 import com.popIt.pop_it.domain.identity_verification.exception.IdentityVerificationException;
 import com.popIt.pop_it.domain.identity_verification.exception.code.IdentityVerificationErrorCode;
 import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
@@ -61,7 +62,13 @@ public class IdentityVerificationService {
                 })
                 .body(IdentityVerificationResDTO.PortOneSuccessRes.class);
 
-        if (!"VERIFIED".equals(response.status())) {
+        // 정상(2xx) 상태코드인데 바디가 비어있는 경우 방어
+        if (response == null) {
+            throw new IdentityVerificationException(
+                    IdentityVerificationErrorCode.PORTONE_API_ERROR, "포트원 응답이 비어있습니다.");
+        }
+
+        if (PortOneVerificationStatus.from(response.status()) != PortOneVerificationStatus.VERIFIED) {
             throw new ProjectException(IdentityVerificationErrorCode.NOT_VERIFIED);
         }
 
@@ -83,7 +90,7 @@ public class IdentityVerificationService {
         // response 를 DB에 저장
         IdentityVerification identityVerification = IdentityVerification.builder()
                 .identityVerificationId(response.identityVerificationId())
-                .status(response.status())
+                .status(PortOneVerificationStatus.from(response.status()))
                 .name(customer.name())
                 .gender(customer.gender())
                 .phone(customer.phoneNumber())

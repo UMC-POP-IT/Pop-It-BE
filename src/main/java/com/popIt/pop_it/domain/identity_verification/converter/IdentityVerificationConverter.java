@@ -2,8 +2,7 @@ package com.popIt.pop_it.domain.identity_verification.converter;
 
 import com.popIt.pop_it.domain.identity_verification.dto.IdentityVerificationResDTO;
 import com.popIt.pop_it.domain.identity_verification.entity.IdentityVerification;
-
-import java.util.Objects;
+import com.popIt.pop_it.domain.identity_verification.entity.enums.PortOneVerificationStatus;
 
 public class IdentityVerificationConverter {
     public static IdentityVerificationResDTO.IdentityVerificationVerifyRes toVerify(IdentityVerification verification) {
@@ -16,7 +15,7 @@ public class IdentityVerificationConverter {
         }
 
         return IdentityVerificationResDTO.IdentityVerificationVerifyRes.builder()
-                .isVerified(Objects.equals(verification.getStatus(), "VERIFIED"))
+                .isVerified(verification.getStatus() == PortOneVerificationStatus.VERIFIED)
                 .verifiedAt(verification.getVerifiedAt())
                 .build();
     }
