@@ -448,9 +448,9 @@ public class ReservationController {
                     responseCode = "404", description = "존재하지 않는 공간",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @GetMapping("/{spaceId}/unavailable-dates")
+    @GetMapping("/unavailable-dates")
     public ApiResponse<ReservationResDTO.ReservationUnavailableDatesRes> getUnavailableDates(
-            @PathVariable Long spaceId
+            @RequestParam Long spaceId
     ) {
         return ApiResponse.onSuccess(
                 ReservationSuccessCode.RESERVATION_UNAVAILABLE_DATES,
