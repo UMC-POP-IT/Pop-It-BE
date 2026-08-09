@@ -225,7 +225,15 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.NOT_SPACE_OWNER);
         }
 
-        // 2. 계약 가능 기간은 요청값 + 기존값을 합친 최종 상태로 검증
+        // 2. 좌표는 위도, 경도를 한 세트로만 수정 가능
+        boolean hasLatitude = request.latitude() != null;
+        boolean hasLongitude = request.longitude() != null;
+
+        if (hasLatitude != hasLongitude) {
+            throw new ProjectException(SpaceErrorCode.INVALID_COORDINATE_PAIR);
+        }
+
+        // 3. 계약 가능 기간은 요청값 + 기존값을 합친 최종 상태로 검증
         LocalDate startDate = (request.availableStartDate() != null)
                 ? request.availableStartDate()
                 : space.getAvailableStartDate();
@@ -237,7 +245,7 @@ public class SpaceService {
             throw new ProjectException(SpaceErrorCode.INVALID_AVAILABLE_DATE_RANGE);
         }
 
-        // 3. 교체할 시설을 먼저 검증 (지우고 나서 실패하는 상황을 만들지 않도록 삭제보다 앞에 둠)
+        // 4. 교체할 시설을 먼저 검증 (지우고 나서 실패하는 상황을 만들지 않도록 삭제보다 앞에 둠)
         List<Facility> facilities = null;
         if (request.facilityIds() != null) {
             List<Long> distinctIds = request.facilityIds().stream().distinct().toList();
@@ -248,13 +256,12 @@ public class SpaceService {
             }
         }
 
-        // 4. 좌표가 바뀌면 동도 다시 계산
-        boolean hasLatitude = request.latitude() != null;
+        // 5. 좌표가 바뀌면 동도 다시 계산
         String dong = hasLatitude
                 ? kakaoLocalService.resolveDong(request.latitude(), request.longitude()).orElse(null)
                 : null;
 
-        // 5. 공간 본체 수정
+        // 6. 공간 본체 수정
         space.update(
                 request.buildingName(),
                 request.registrantType(),
@@ -276,7 +283,7 @@ public class SpaceService {
         space.updateLocation(request.latitude(), request.longitude(), dong);
         space.updateFloorInfo(request.floorType(), request.floorNumber());
 
-        // 6. 시설 전체 교체 (요청에 facilityIds가 있는 경우에만)
+        // 7. 시설 전체 교체 (요청에 facilityIds가 있는 경우에만)
         if (facilities != null) {
             spaceFacilityRepository.deleteAllBySpaceId(spaceId);
 
@@ -287,7 +294,7 @@ public class SpaceService {
             }
         }
 
-        // 7. 사진 전체 교체 (요청 배열 순서를 sortOrder로 다시 부여)
+        // 8. 사진 전체 교체 (요청 배열 순서를 sortOrder로 다시 부여)
         if (request.imageUrls() != null) {
             spaceImageRepository.deleteAllBySpaceId(spaceId);
 
