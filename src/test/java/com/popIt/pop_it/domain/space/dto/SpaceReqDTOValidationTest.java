@@ -140,6 +140,27 @@ class SpaceReqDTOValidationTest {
                 .toList();
     }
 
+    @Test
+    @DisplayName("등록: 유니코드 공백(EM SPACE)만 있는 설명은 400 (trim()으로는 못 잡는 케이스)")
+    void create_descriptionWithOnlyUnicodeWhitespace() {
+        // EM SPACE(U+2003) 10개. trim()은 U+0020 이하만 자르므로 길이 10으로 남아
+        // @Size(min = 10)을 통과했었다. strip()은 Character.isWhitespace() 기준이라 걸러진다.
+        String emSpaces = "\u2003".repeat(10);
+
+        assertThat(violatedFields(createReq("합정 메세나폴리스", emSpaces, "302동")))
+                .contains("description");
+    }
+
+    @Test
+    @DisplayName("등록: 유니코드 공백은 앞뒤에서 제거된다")
+    void create_stripsUnicodeWhitespace() {
+        SpaceReqDTO.SpaceCreateReq request =
+                createReq("\u2003합정 메세나폴리스\u2003", "\u2003충분히 긴 공간 설명입니다.\u2003", "302동");
+
+        assertThat(request.buildingName()).isEqualTo("합정 메세나폴리스");
+        assertThat(request.description()).isEqualTo("충분히 긴 공간 설명입니다.");
+    }
+
     private Set<String> violatedFields(Object request) {
         return validator.validate(request).stream()
                 .map(v -> v.getPropertyPath().toString())
