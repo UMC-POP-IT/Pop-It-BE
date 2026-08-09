@@ -40,6 +40,7 @@ public class PaymentService {
     private final ContractService contractService;
     private final PaymentIdempotentSaver paymentIdempotentSaver;
     private final PaymentSettlementRecorder paymentSettlementRecorder;
+    private final ContractCompletionService contractCompletionService;
     private final TossPaymentClient tossPaymentClient;
     private final HostPayoutClient hostPayoutClient;
 
@@ -126,8 +127,9 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_FORBIDDEN);
         }
 
-        // 이미 승인된 결제면 재승인을 시도하지 않고 그대로 반환한다.
+        // 이미 승인된 결제면 토스 재승인 없이, 직전 시도에서 못 끝냈을 계약/예약 완료만 이어서 마무리한다.
         if (payment.getStatus() == PaymentStatus.PAID) {
+            completeContractSafely(payment, reqDTO, true);
             return PaymentResDTO.PaymentConfirmRes.of(payment);
         }
 
@@ -144,39 +146,75 @@ public class PaymentService {
             throw new ProjectException(PaymentErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
+        PaymentResDTO.TossConfirmRes tossConfirm;
         try {
-            PaymentResDTO.TossConfirmRes tossConfirm =
-                    tossPaymentClient.confirm(reqDTO.paymentKey(), reqDTO.orderId(), reqDTO.amount());
+            tossConfirm = confirmWithToss(reqDTO, payment.getId());
+        } catch (ProjectException e) {
+            if (e.getErrorCode() != PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING) {
+                paymentSettlementRecorder.markConfirmFailedIfPending(payment.getId());
+            }
+            throw e;
+        }
 
-            payment.markAsPaid(
-                    tossConfirm.paymentKey(),
-                    PaymentMethod.fromDescription(tossConfirm.method()),
-                    tossConfirm.approvedAt().toLocalDateTime()
-            );
-            // 계약 결제 완료 및 예약 결제 완료 처리
-            Contract contract = payment.getContract();
-            contract.markAsCompleted();
-            contract.getReservation().markPaymentCompleted();
-            // Contract는 @Version이 걸려 있어, 웹훅 등 다른 경로가 동시에 완료 처리하면 버전
-            // 충돌이 날 수 있다. 이 트랜잭션 안에서 즉시 감지해 catch할 수 있도록 명시적으로 flush한다.
-            paymentRepository.saveAndFlush(payment);
+        // 토스 승인은 이미 확정됐으니, 계약/예약 완료 처리와 별개로 이 사실부터 별도
+        // 트랜잭션으로 durable하게 먼저 커밋한다 - 뒤 단계가 실패해도 이 커밋은 롤백되지 않는다.
+        paymentSettlementRecorder.update(payment.getId(), p -> p.markAsPaid(
+                tossConfirm.paymentKey(),
+                PaymentMethod.fromDescription(tossConfirm.method()),
+                tossConfirm.approvedAt().toLocalDateTime()));
+        // 응답/이후 처리에 최신 PAID 상태를 쓰려면 같은 객체를 직접 갱신해야 한다.
+        payment.markAsPaid(
+                tossConfirm.paymentKey(),
+                PaymentMethod.fromDescription(tossConfirm.method()),
+                tossConfirm.approvedAt().toLocalDateTime());
+        completeContractSafely(payment, reqDTO, false);
+
+        return PaymentResDTO.PaymentConfirmRes.of(payment);
+    }
+
+    // 계약/예약 완료 처리를 시도하고, 실패해도 결제(PAID)는 이미 확정돼 있으니 FAILED로 되돌리지 않는다.
+    private void completeContractSafely(Payment payment, PaymentReqDTO.PaymentConfirmReq reqDTO, boolean alreadyPaid) {
+        try {
+            contractCompletionService.completeIfNeeded(payment, alreadyPaid);
         } catch (ObjectOptimisticLockingFailureException e) {
             // 다른 경로(웹훅 등)가 같은 계약을 먼저 완료 처리해 버전이 충돌한 경우.
             // 이 결제 자체는 이미 성공했으므로 실패로 기록하지 않고, 재조회를 안내한다.
             log.warn("계약 버전 충돌로 완료 처리 커밋 실패(다른 경로가 먼저 처리한 것으로 추정): paymentId={}",
                     payment.getId(), e);
             throw new ProjectException(PaymentErrorCode.PAYMENT_CONCURRENT_MODIFICATION);
-        } catch (ProjectException e) {
-            // 이 메서드는 @Transactional이라 여기서 던지는 예외로 트랜잭션 전체가 롤백된다.
-            // 실패 상태를 이 트랜잭션 안에서만 반영하면 롤백과 함께 사라지므로, 별도
-            // 트랜잭션(REQUIRES_NEW)의 조건부 UPDATE로 즉시 커밋해 실패 상태가 남도록 한다.
-            // 동시에 다른 confirm() 요청이 먼저 성공해 PAID로 커밋했을 수 있으므로, 그 UPDATE는
-            // 여전히 PENDING인 경우에만 FAILED로 전환해 PAID를 덮어쓰지 않는다.
-            paymentSettlementRecorder.markConfirmFailedIfPending(payment.getId());
-            throw e;
+        } catch (Exception e) {
+            log.error("결제 PAID 반영 후 계약 완료 처리 실패: paymentId={}, orderId={}",
+                    payment.getId(), reqDTO.orderId(), e);
+            throw new ProjectException(PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING);
         }
+    }
 
-        return PaymentResDTO.PaymentConfirmRes.of(payment);
+    // 응답을 못 받은 경우(PAYMENT_GATEWAY_UNAVAILABLE)는 토스가 실제로는 승인했을 수 있어
+    // 재조회로 확인 후에만 실패 처리한다 (이중 청구 방지)
+    private PaymentResDTO.TossConfirmRes confirmWithToss(PaymentReqDTO.PaymentConfirmReq reqDTO, Long paymentId) {
+        try {
+            return tossPaymentClient.confirm(reqDTO.paymentKey(), reqDTO.orderId(), reqDTO.amount());
+        } catch (ProjectException e) {
+            if (e.getErrorCode() != PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE) {
+                throw e;
+            }
+            PaymentResDTO.TossConfirmRes actual;
+            try {
+                actual = tossPaymentClient.getPayment(reqDTO.paymentKey());
+            } catch (ProjectException verifyFailure) {
+                // 토스의 실제 승인 여부를 전혀 확인할 수 없다.
+                // FAILED로 단정해 새 결제 생성을 허용하면 이중 청구 위험이 있으므로 예외를 던진다.
+                log.error("토스 승인 확인 불가(원 요청/재조회 모두 실패): paymentId={}", paymentId, verifyFailure);
+                throw new ProjectException(PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING);
+            }
+            if (!"DONE".equals(actual.status())
+                    || !actual.orderId().equals(reqDTO.orderId())
+                    || !actual.totalAmount().equals(reqDTO.amount())) {
+                throw new ProjectException(PaymentErrorCode.PAYMENT_RETRYABLE);
+            }
+            log.warn("confirm 응답 유실 후 재조회로 실제 승인 확인됨(이중 결제 방지): paymentId={}", paymentId);
+            return actual;
+        }
     }
 
     // 퇴실 승인 시 예약 ID로 결제를 찾아 정산한다.

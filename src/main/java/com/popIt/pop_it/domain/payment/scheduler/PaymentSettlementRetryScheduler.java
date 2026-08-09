@@ -23,7 +23,7 @@ public class PaymentSettlementRetryScheduler {
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
 
-    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul") // 매일 오전 8시
+    @Scheduled(cron = "0 0 8,15 * * *", zone = "Asia/Seoul") // 매일 오전 8시, 오후 3시
     public void retryFailedSettlements() {
         Pageable pageable = PageRequest.of(0, BATCH_SIZE);
         long cursor = 0L;

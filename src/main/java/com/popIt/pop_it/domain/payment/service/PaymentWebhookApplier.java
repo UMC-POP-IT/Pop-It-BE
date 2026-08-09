@@ -1,6 +1,5 @@
 package com.popIt.pop_it.domain.payment.service;
 
-import com.popIt.pop_it.domain.contract.entity.Contract;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
@@ -21,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PaymentWebhookApplier {
 
     private final PaymentRepository paymentRepository;
+    private final ContractCompletionService contractCompletionService;
 
     @Transactional
     public void apply(Long paymentId, PaymentResDTO.TossConfirmRes actual) {
@@ -39,19 +39,18 @@ class PaymentWebhookApplier {
         }
     }
 
+    // EXPIRED/ABORTED와 달리 PENDING 조건으로 좁히지 않고 PAID가 아니면 반영한다.
     private void markPaidIfNotAlready(Payment payment, PaymentResDTO.TossConfirmRes actual) {
-        if (payment.getStatus() == PaymentStatus.PAID) {
-            return;
+        boolean alreadyPaid = payment.getStatus() == PaymentStatus.PAID;
+        if (!alreadyPaid) {
+            payment.markAsPaid(
+                    actual.paymentKey(),
+                    PaymentMethod.fromDescription(actual.method()),
+                    actual.approvedAt().toLocalDateTime()
+            );
         }
-        payment.markAsPaid(
-                actual.paymentKey(),
-                PaymentMethod.fromDescription(actual.method()),
-                actual.approvedAt().toLocalDateTime()
-        );
-        // 계약 결제 완료 및 예약 결제 완료 처리
-        Contract contract = payment.getContract();
-        contract.markAsCompleted();
-        contract.getReservation().markPaymentCompleted();
+
+        contractCompletionService.completeIfNeeded(payment, alreadyPaid);
         log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
     }
 

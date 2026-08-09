@@ -91,6 +91,12 @@ public class PaymentController {
                     content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "502", description = "결제 게이트웨이(토스페이먼츠)와 통신할 수 없음",
+                    content = @io.swagger.v3.oas.annotations.media.Content),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "500",
+                    description = "PAYMENT500_1: 토스 승인은 이미 성공했으나 후속 처리 중 서버 오류 발생. "
+                            + "결제는 안전하게 보존되어 있으므로 새 결제를 만들지 말고, 같은 paymentId/paymentKey/orderId/amount로 "
+                            + "이 API를 그대로 재호출하면 이어서 완료 처리된다.",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/payments/{paymentId}/confirm")

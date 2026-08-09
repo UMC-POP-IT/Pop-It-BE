@@ -21,7 +21,8 @@ public enum PaymentErrorCode implements BaseErrorCode {
     PAYMENT_SETTLEMENT_FAILED(HttpStatus.BAD_GATEWAY, "PAYMENT502_1", "정산 처리 중 일부가 실패했습니다. 잠시 후 재시도해주세요."),
     PAYMENT_GATEWAY_UNAVAILABLE(HttpStatus.BAD_GATEWAY, "PAYMENT502_2", "결제 게이트웨이와 통신할 수 없습니다. 잠시 후 다시 시도해주세요."),
     PAYMENT_METHOD_NOT_SUPPORTED(HttpStatus.BAD_REQUEST, "PAYMENT400_3", "지원하지 않는 결제 수단입니다."),
-    PAYMENT_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "PAYMENT409_6", "계약 처리가 동시에 진행되었습니다. 잠시 후 다시 조회해주세요.");
+    PAYMENT_CONCURRENT_MODIFICATION(HttpStatus.CONFLICT, "PAYMENT409_6", "계약 처리가 동시에 진행되었습니다. 잠시 후 다시 조회해주세요."),
+    PAYMENT_CONFIRM_RECONCILIATION_PENDING(HttpStatus.INTERNAL_SERVER_ERROR, "PAYMENT500_1", "결제 확인 처리 중 오류가 발생했습니다. 새로 결제하지 마시고, 같은 결제 승인 요청을 잠시 후 다시 보내주세요.");
 
     private final HttpStatus status;
     private final String code;

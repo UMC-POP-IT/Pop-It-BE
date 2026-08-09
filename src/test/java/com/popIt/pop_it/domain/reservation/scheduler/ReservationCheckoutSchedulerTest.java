@@ -203,7 +203,21 @@ public class ReservationCheckoutSchedulerTest {
 
     @Test
     void 이용_시작일_도래하면_사용중으로_전환된다() {
-        // given: 계약완료 상태, 이용 시작일이 오늘(이미 도래)
+        // given: 결제완료 상태, 이용 시작일이 오늘(이미 도래)
+        Reservation reservation = saveReservation(
+                ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+
+        // when
+        scheduler.startUsagePeriod();
+
+        // then
+        Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.IN_USE);
+    }
+
+    @Test
+    void 계약만_완료되고_결제_안된_상태는_이용_시작일이_지나도_사용중으로_전환되지_않는다() {
+        // given: 계약완료(결제 전) 상태, 이용 시작일이 오늘(이미 도래)
         Reservation reservation = saveReservation(
                 ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
 
@@ -212,7 +226,21 @@ public class ReservationCheckoutSchedulerTest {
 
         // then
         Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
-        assertThat(result.getStatus()).isEqualTo(ReservationStatus.IN_USE);
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.CONTRACT_COMPLETED);
+    }
+
+    @Test
+    void 예약일까지_결제_안하면_자동취소된다() {
+        // given: 계약완료(결제 전) 상태, 이용 시작일이 오늘(이미 도래)
+        Reservation reservation = saveReservation(
+                ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+
+        // when
+        scheduler.cancelUnpaidReservations();
+
+        // then
+        Reservation result = reservationRepository.findById(reservation.getId()).orElseThrow();
+        assertThat(result.getStatus()).isEqualTo(ReservationStatus.CANCELLED);
     }
 
     @Test
