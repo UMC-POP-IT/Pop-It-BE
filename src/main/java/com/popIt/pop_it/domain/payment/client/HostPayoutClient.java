@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 public class HostPayoutClient {
 
     public void payout(String idempotencyKey, Long hostUserId, Long amount) {
-        // @TODO: 실제 지급대행사 API 연동
+        // @TODO(데모데이 이후 사업자번호 등록 시): 실제 지급대행사 API 연동
         log.info("[호스트 지급 - 미연동] idempotencyKey={}, hostUserId={}, amount={}", idempotencyKey, hostUserId, amount);
     }
 }

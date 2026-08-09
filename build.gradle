@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '4.1.0'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id "io.sentry.jvm.gradle" version "6.17.0"
 }
 
 group = 'com.popIt'
@@ -68,8 +69,25 @@ dependencies {
 	testImplementation platform('org.testcontainers:testcontainers-bom:1.20.4')
 	testImplementation 'org.testcontainers:junit-jupiter'
 	testImplementation 'org.testcontainers:mysql'
+
+	// monitoring
+	implementation 'io.micrometer:micrometer-registry-prometheus' // Prometheus
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+sentry {
+	includeSourceContext = true
+
+	org = "popit"
+	projectName = "java-spring-boot"
+	authToken = System.getenv("SENTRY_AUTH_TOKEN")
+}
+
+// 로컬은 SENTRY_AUTH_TOKEN이 없으니 업로드 태스크를 건너뜀 (CI/prod에서는 실제 env로 주입되어 그대로 실행)
+// 빈 문자열/공백인 경우도 유효하지 않은 토큰이므로 건너뛴다 (예: GitHub secret 미설정 시 "" 전달됨)
+tasks.named("sentryUploadSourceBundleJava") {
+	onlyIf { System.getenv("SENTRY_AUTH_TOKEN")?.trim() }
 }

@@ -122,7 +122,6 @@ public class ContractService {
         Contract contract = contractRepository.findByReservation_Id(reservationId).orElseThrow(() -> new ContractException(ContractErrorCode.CONTRACT_NOT_FOUND));
 
         // 결제/입금 정보 조회 (예약 정보 조회)
-        // @TODO: 예약 승인 시 계약 데이터가 채워지므로, 예약 기반이 아닌 계약 엔티티 기반 정보 조회로 바꿔야합니다.
         UserMode currentMode = user.getCurrentMode();
         if (currentMode == UserMode.GUEST) {
             return ContractConverter.toGetGuestContractPaymentInfoRes(contract);

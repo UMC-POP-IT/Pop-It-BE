@@ -10,13 +10,11 @@ import io.swagger.v3.oas.models.tags.Tag;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 
 import java.util.Comparator;
 import java.util.List;
 
 @Configuration
-@Profile("!prod")
 public class SwaggerConfig {
 
     // Swagger UI 태그 노출 순서 지정

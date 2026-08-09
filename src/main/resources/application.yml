@@ -92,13 +92,17 @@ gemini:
   output-dimensionality: 768
 
 management:
+  server:
+    port: 9090
   endpoints:
     web:
       exposure:
-        include: health
+        include: health, prometheus
   endpoint:
     health:
       show-details: never
+    prometheus:
+      enabled: true
 
 kakao:
   local:

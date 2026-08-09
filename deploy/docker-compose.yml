@@ -53,6 +53,7 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY}
       CRYPTO_SECRET_KEY: ${CRYPTO_SECRET_KEY}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      ALLOWED_FRONTEND_ORIGINS: ${ALLOWED_FRONTEND_ORIGINS}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
       KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
@@ -67,6 +68,18 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       REDIS_HOST: redis
       REDIS_PORT: 6379
+    networks:
+      - popit-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: popit-prometheus
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9091:9090"
     networks:
       - popit-net
 
@@ -89,6 +102,7 @@ services:
 volumes:
   mysql-data:
   redis-data:
+  prometheus-data:
 
 networks:
   popit-net:
