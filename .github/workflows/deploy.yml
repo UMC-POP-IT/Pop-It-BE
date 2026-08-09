@@ -53,6 +53,7 @@ jobs:
             echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ secrets.GHCR_USERNAME }} --password-stdin
             docker compose pull
             docker compose up -d
+            docker exec popit-nginx nginx -s reload
             docker image prune -f
             
             # 헬스체크: 최대 60초간 응답 대기
