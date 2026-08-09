@@ -14,16 +14,16 @@ import java.util.List;
 
 public class SpaceReqDTO {
 
-    private static String trim(String value) {
-            return value == null ? null : value.trim();
+    private static String strip(String value) {
+            return value == null ? null : value.strip();
     }
 
-    private static String trimToNull(String value) {
+    private static String stripToNull(String value) {
             if (value == null) {
                     return null;
             }
-            String trimmed = value.trim();
-            return trimmed.isBlank() ? null : trimmed;
+            String stripped = value.strip();
+            return stripped.isBlank() ? null : stripped;
     }
 
     @Schema(description = "공간 등록 요청")
@@ -139,12 +139,12 @@ public class SpaceReqDTO {
             List<@NotBlank String> imageUrls
     ) {
         public SpaceCreateReq {
-                buildingName = trim(buildingName);
-                city = trim(city);
-                district = trim(district);
-                roadAddress = trim(roadAddress);
-                addressDetail = trim(addressDetail);
-                description = trim(description);
+                buildingName = strip(buildingName);
+                city = strip(city);
+                district = strip(district);
+                roadAddress = strip(roadAddress);
+                addressDetail = strip(addressDetail);
+                description = strip(description);
         }
 
         @AssertTrue(message = "대여 가능 기간의 시작일은 종료일보다 늦을 수 없습니다.")
@@ -187,8 +187,8 @@ public class SpaceReqDTO {
     ) {
             public SpaceSearchReq {
 
-                    keyword = trimToNull(keyword);
-                    district = trimToNull(district);
+                    keyword = stripToNull(keyword);
+                    district = stripToNull(district);
 
                     if (page == null) {
                             page = 0;
@@ -299,12 +299,12 @@ public class SpaceReqDTO {
     ) {
 
         public SpaceUpdateReq {
-                buildingName = trim(buildingName);
-                city = trim(city);
-                district = trim(district);
-                roadAddress = trim(roadAddress);
-                addressDetail = trim(addressDetail);
-                description = trim(description);
+                buildingName = strip(buildingName);
+                city = strip(city);
+                district = strip(district);
+                roadAddress = strip(roadAddress);
+                addressDetail = strip(addressDetail);
+                description = strip(description);
         }
 
         @AssertTrue(message = "위도, 경도는 한 세트로만 수정할 수 있습니다.")
