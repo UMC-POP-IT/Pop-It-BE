@@ -442,9 +442,6 @@ public class ReservationController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "공간별 예약 불가 날짜 조회 성공"),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "401", description = "인증되지 않음",
-                    content = @io.swagger.v3.oas.annotations.media.Content),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404", description = "존재하지 않는 공간",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
