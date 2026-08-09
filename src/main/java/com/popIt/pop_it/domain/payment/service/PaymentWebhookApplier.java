@@ -1,7 +1,5 @@
 package com.popIt.pop_it.domain.payment.service;
 
-import com.popIt.pop_it.domain.contract.entity.Contract;
-import com.popIt.pop_it.domain.contract.enums.ContractStatus;
 import com.popIt.pop_it.domain.payment.dto.PaymentResDTO;
 import com.popIt.pop_it.domain.payment.entity.Payment;
 import com.popIt.pop_it.domain.payment.enums.PaymentMethod;
@@ -22,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 class PaymentWebhookApplier {
 
     private final PaymentRepository paymentRepository;
+    private final ContractCompletionService contractCompletionService;
 
     @Transactional
     public void apply(Long paymentId, PaymentResDTO.TossConfirmRes actual) {
@@ -51,27 +50,8 @@ class PaymentWebhookApplier {
             );
         }
 
-        Contract contract = payment.getContract();
-        if (!alreadyPaid && contract.getStatus() == ContractStatus.COMPLETED) {
-            // 같은 계약에 토스 승인이 두 번 들어온 이중 청구 상황.
-            // 결제 자체는 PAID로 남기고 환불 등 운영 처리가 필요함을 ERROR로 알린다.
-            log.error("계약당 결제 중복 승인 감지(이중 청구 의심, 환불 필요): paymentId={}, contractId={}, amount={}",
-                payment.getId(), contract.getId(), actual.totalAmount());
-            return;
-        }
-
-        completeContractIfNeeded(payment);
+        contractCompletionService.completeIfNeeded(payment, alreadyPaid);
         log.info("웹훅으로 결제 완료 반영: paymentId={}", payment.getId());
-    }
-
-    // 이미 완료된 계약이면 아무것도 하지 않는 멱등 연산
-    private void completeContractIfNeeded(Payment payment) {
-        Contract contract = payment.getContract();
-        if (contract.getStatus() == ContractStatus.COMPLETED) {
-            return;
-        }
-        contract.markAsCompleted();
-        contract.getReservation().markPaymentCompleted();
     }
 
     // TOCTOU(check-then-act) 취약점을 방어하기 위해 조건과 반영을 조건부 UPDATE로 한 번에 처리해,

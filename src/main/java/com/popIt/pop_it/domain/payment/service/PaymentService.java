@@ -40,6 +40,7 @@ public class PaymentService {
     private final ContractService contractService;
     private final PaymentIdempotentSaver paymentIdempotentSaver;
     private final PaymentSettlementRecorder paymentSettlementRecorder;
+    private final ContractCompletionService contractCompletionService;
     private final TossPaymentClient tossPaymentClient;
     private final HostPayoutClient hostPayoutClient;
 
@@ -174,7 +175,7 @@ public class PaymentService {
     // 계약/예약 완료 처리를 시도하고, 실패해도 결제(PAID)는 이미 확정돼 있으니 FAILED로 되돌리지 않는다.
     private void completeContractSafely(Payment payment, PaymentReqDTO.PaymentConfirmReq reqDTO, boolean alreadyPaid) {
         try {
-            completeContractIfNeeded(payment, alreadyPaid);
+            contractCompletionService.completeIfNeeded(payment, alreadyPaid);
         } catch (ObjectOptimisticLockingFailureException e) {
             // 다른 경로(웹훅 등)가 같은 계약을 먼저 완료 처리해 버전이 충돌한 경우.
             // 이 결제 자체는 이미 성공했으므로 실패로 기록하지 않고, 재조회를 안내한다.
@@ -186,25 +187,6 @@ public class PaymentService {
                     payment.getId(), reqDTO.orderId(), e);
             throw new ProjectException(PaymentErrorCode.PAYMENT_CONFIRM_RECONCILIATION_PENDING);
         }
-    }
-
-    private void completeContractIfNeeded(Payment payment, boolean alreadyPaid) {
-        Contract contract = payment.getContract();
-        if (contract.getStatus() == ContractStatus.COMPLETED) {
-            if (!alreadyPaid) {
-                // 같은 계약에 토스 승인이 두 번 들어온 이중 청구 상황.
-                // 결제 자체는 PAID로 남기고 환불 등 운영 처리가 필요함을 ERROR로 알린다.
-                log.error("계약당 결제 중복 승인 감지(이중 청구 의심, 환불 필요): paymentId={}, contractId={}",
-                        payment.getId(), contract.getId());
-            }
-            return;
-        }
-        // 계약 결제 완료 및 예약 결제 완료 처리
-        contract.markAsCompleted();
-        contract.getReservation().markPaymentCompleted();
-        // Contract는 @Version이 걸려 있어, 웹훅 등 다른 경로가 동시에 완료 처리하면 버전
-        // 충돌이 날 수 있다. 이 트랜잭션 안에서 즉시 감지해 catch할 수 있도록 명시적으로 flush한다.
-        contractRepository.saveAndFlush(contract);
     }
 
     // 응답을 못 받은 경우(PAYMENT_GATEWAY_UNAVAILABLE)는 토스가 실제로는 승인했을 수 있어

@@ -26,6 +26,7 @@ import com.popIt.pop_it.domain.payment.exception.code.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.exception.code.TossErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.domain.reservation.entity.Reservation;
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
@@ -33,9 +34,9 @@ import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import java.time.OffsetDateTime;
 import java.util.Optional;
 import java.util.function.Consumer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -65,8 +66,19 @@ class PaymentServiceTest {
     @Mock
     private PaymentSettlementRecorder paymentSettlementRecorder;
 
-    @InjectMocks
+    // 실제 계약/예약 완료 로직(멱등/이중승인 판정)이 그대로 돌아야 기존 검증(계약 상태 변화 등)이
+    // 의미가 있으므로 목이 아닌 실제 인스턴스를 쓴다 - contractRepository만 목으로 받는다.
+    private ContractCompletionService contractCompletionService;
+
     private PaymentService paymentService;
+
+    @BeforeEach
+    void setUp() {
+        contractCompletionService = new ContractCompletionService(contractRepository);
+        paymentService = new PaymentService(
+                paymentRepository, contractRepository, contractService, paymentIdempotentSaver,
+                paymentSettlementRecorder, contractCompletionService, tossPaymentClient, hostPayoutClient);
+    }
 
     private static final Long CONTRACT_ID = 1L;
     private static final Long USER_ID = 10L;
@@ -78,6 +90,7 @@ class PaymentServiceTest {
         User user = User.builder().userId(ownerUserId).build();
         Space space = Space.builder().buildingName("팝잇 빌딩").hostId(HOST_ID).build();
         Reservation reservation = Reservation.builder()
+                .status(ReservationStatus.CONTRACT_COMPLETED)
                 .rentalFee(100_000L)
                 .deposit(50_000L)
                 .platformFee(10_000L)
