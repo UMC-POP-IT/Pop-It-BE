@@ -116,8 +116,8 @@ public class IdentityVerificationService {
 
     public IdentityVerificationResDTO.IdentityVerificationVerifyRes isVerified(User user) {
 
-        // userId로 IdentityVerification 조회
-        IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user);
+        // userId로 IdentityVerification 조회 - 본인인증 이력이 없으면 null(정상, isVerified=false로 응답)
+        IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user).orElse(null);
 
         return IdentityVerificationConverter.toVerify(verifiedUser);
     }
