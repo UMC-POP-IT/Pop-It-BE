@@ -202,7 +202,7 @@ public class SpaceReqDTO {
 
     @Schema(description = "공간 수정 요청 (전달한 필드만 반영, 생략하면 기존 값 유지)")
     public record SpaceUpdateReq(
-            @Schema(description = "건물명 (공백을 제외하고 4자 이상, 저장 최대 길이 20자", example = "합정 메세나폴리스")
+            @Schema(description = "건물명 (공백을 제외하고 4자 이상, 저장 최대 길이 20자)", example = "합정 메세나폴리스")
             @Size(min = 4, max = 20, message = "건물명은 4자 이상 20자 이하여야 합니다.")
             @MinTextLength(value = 4, message = "건물명은 공백을 제외하고 4자 이상이어야 합니다.")
             String buildingName,
