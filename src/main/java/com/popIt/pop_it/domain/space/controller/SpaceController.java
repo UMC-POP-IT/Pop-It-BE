@@ -4,8 +4,7 @@ import com.popIt.pop_it.domain.space.dto.SpaceReqDTO;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.exception.SpaceSuccessCode;
 import com.popIt.pop_it.domain.space.service.SpaceService;
-import com.popIt.pop_it.domain.space.service.SpaceVisitLogService;
-import com.popIt.pop_it.domain.user_activity.service.UserActivityService;
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.apiPayload.ApiResponse;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
@@ -25,8 +24,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-
 @Slf4j
 @Tag(name = "공간", description = "공간 등록/조회/수정/삭제 및 탐색/추천 API")
 @RestController
@@ -35,8 +32,6 @@ import java.util.List;
 public class SpaceController {
 
     private final SpaceService spaceService;
-    private final SpaceVisitLogService spaceVisitLogService;
-    private final UserActivityService userActivityService;
 
     @Operation(
             summary = "공간 등록",
@@ -89,10 +84,11 @@ public class SpaceController {
                     - 비로그인 상태에서도 호출할 수 있습니다.
                     - 로그인 상태로 호출하면 isMine, isWishlisted가 실제 값으로 채워지고,
                       비로그인 상태에서는 두 값 모두 항상 false로 내려갑니다.
+                    - 로그인 상태로 조회하면 방문 기록이 남아 UV 집계에 반영됩니다.
+                      (기록은 응답과 분리되어 비동기로 처리되므로 조회 응답에는 영향이 없습니다.)
                     - isMine: 요청자가 이 공간을 등록한 호스트인지 여부. 프론트는 이 값으로 게스트/호스트 화면을 분기합니다.
                     - wishCount: 로그인 여부와 무관하게 항상 해당 공간의 총 찜 수입니다.
                     - imageUrls: 등록 시 저장한 노출 순서대로 내려가며, 첫 번째가 대표 이미지입니다.
-                    - 로그인 상태로 조회하면 방문 기록이 남아 UV(순방문자) 집계에 반영됩니다.
                     """
     )
     @ApiResponses({
@@ -108,24 +104,11 @@ public class SpaceController {
             @Parameter(description = "공간 ID", example = "10")
             @PathVariable Long spaceId
     ) {
-        Long userId = (authUser != null && authUser.getUser() != null) ? authUser.getUser().getUserId() : null;
+        boolean loggedIn = (authUser != null && authUser.getUser() != null);
+        Long userId = loggedIn ? authUser.getUser().getUserId() : null;
+        UserMode viewerMode = loggedIn ? authUser.getUser().getCurrentMode() : null;
 
-        SpaceResDTO.SpaceDetailRes result = spaceService.getSpaceDetail(userId, spaceId);
-
-        // 조회 기록은 부가 기능이라 실패해도 상세 조회 응답 자체에 영향을 주면 안 됨
-        if (userId != null) {
-            try {
-                spaceVisitLogService.recordVisit(spaceId, userId, authUser.getUser().getCurrentMode());
-            } catch (Exception e) {
-                log.warn("공간(id={}) 방문 기록(UV) 실패 - userId={}", spaceId, userId, e);
-            }
-            try {
-                userActivityService.recordView(userId, spaceId, authUser.getUser().getCurrentMode());
-            } catch (Exception e) {
-                log.warn("공간(id={}) 조회 이력(개인화) 기록 실패 - userId={}", spaceId, userId, e);
-            }
-        }
-
+        SpaceResDTO.SpaceDetailRes result = spaceService.getSpaceDetail(userId, spaceId, viewerMode);
         return ApiResponse.onSuccess(SpaceSuccessCode.SPACE_DETAIL_FETCHED, result);
     }
 
