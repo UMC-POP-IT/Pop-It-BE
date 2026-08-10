@@ -13,6 +13,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -161,6 +163,85 @@ class SpaceReqDTOValidationTest {
         assertThat(request.description()).isEqualTo("충분히 긴 공간 설명입니다.");
     }
 
+    // ===== 숫자 필드 범위 검증 =====
+
+    @Test
+    @DisplayName("등록: 보증금이 100만원을 넘으면 400")
+    void create_depositExceedsMax() {
+        assertThat(messagesOf(createReqWithNumbers(1_000_001L, 90_000, 66.0), "deposit"))
+                .containsExactly("보증금은 1,000,000원 이하여야 합니다.");
+    }
+
+    @Test
+    @DisplayName("등록: 보증금 경계값(0원, 100만원)은 통과한다")
+    void create_depositBoundaryIsAllowed() {
+        assertThat(validator.validate(createReqWithNumbers(0L, 90_000, 66.0))).isEmpty();
+        assertThat(validator.validate(createReqWithNumbers(1_000_000L, 90_000, 66.0))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("등록: 보증금이 음수면 400")
+    void create_depositNegative() {
+        assertThat(violatedFields(createReqWithNumbers(-1L, 90_000, 66.0)))
+                .contains("deposit");
+    }
+
+    @ParameterizedTest(name = "전용 면적 {0}㎡ → 400")
+    @ValueSource(doubles = {-50.0, 0.0, 0.5, 10_000.1})
+    @DisplayName("등록: 전용 면적이 1~10,000㎡ 범위를 벗어나면 400")
+    void create_exclusiveAreaOutOfRange(double exclusiveArea) {
+        assertThat(violatedFields(createReqWithNumbers(450_000L, 90_000, exclusiveArea)))
+                .contains("exclusiveArea");
+    }
+
+    @ParameterizedTest(name = "전용 면적 {0}㎡ → 통과")
+    @ValueSource(doubles = {1.0, 66.0, 10_000.0})
+    @DisplayName("등록: 전용 면적 경계값(1㎡, 10,000㎡)은 통과한다")
+    void create_exclusiveAreaBoundaryIsAllowed(double exclusiveArea) {
+        assertThat(validator.validate(createReqWithNumbers(450_000L, 90_000, exclusiveArea))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("등록: 일 단가가 0 이하면 400")
+    void create_pricePerDayNotPositive() {
+        assertThat(violatedFields(createReqWithNumbers(450_000L, 0, 66.0)))
+                .contains("pricePerDay");
+        assertThat(violatedFields(createReqWithNumbers(450_000L, -1, 66.0)))
+                .contains("pricePerDay");
+    }
+
+    @Test
+    @DisplayName("등록: 일 단가 1원은 통과한다")
+    void create_pricePerDayMinIsAllowed() {
+        assertThat(validator.validate(createReqWithNumbers(450_000L, 1, 66.0))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("수정: 보증금 상한·면적 범위가 등록과 동일하게 적용된다")
+    void update_numericRangeIsAppliedSameAsCreate() {
+        assertThat(violatedFields(updateReqWithNumbers(1_000_001L, null, null)))
+                .contains("deposit");
+        assertThat(violatedFields(updateReqWithNumbers(null, null, -50.0)))
+                .contains("exclusiveArea");
+        assertThat(violatedFields(updateReqWithNumbers(null, null, 10_000.1)))
+                .contains("exclusiveArea");
+        assertThat(violatedFields(updateReqWithNumbers(null, 0, null)))
+                .contains("pricePerDay");
+    }
+
+    @Test
+    @DisplayName("수정: 숫자 필드를 모두 생략(null)하면 위반이 없다 (PATCH 시맨틱)")
+    void update_numericFieldsNullAreAllowed() {
+        assertThat(validator.validate(updateReqWithNumbers(null, null, null))).isEmpty();
+    }
+
+    @Test
+    @DisplayName("수정: 숫자 경계값은 통과한다")
+    void update_numericBoundaryIsAllowed() {
+        assertThat(validator.validate(updateReqWithNumbers(1_000_000L, 1, 1.0))).isEmpty();
+        assertThat(validator.validate(updateReqWithNumbers(0L, 90_000, 10_000.0))).isEmpty();
+    }
+
     private Set<String> violatedFields(Object request) {
         return validator.validate(request).stream()
                 .map(v -> v.getPropertyPath().toString())
@@ -178,7 +259,7 @@ class SpaceReqDTOValidationTest {
                 addressDetail,
                 37.5012,
                 127.0397,
-                4_500_000L,
+                450_000L,
                 90_000,
                 LocalDate.of(2026, 6, 1),
                 LocalDate.of(2026, 12, 31),
@@ -191,6 +272,66 @@ class SpaceReqDTOValidationTest {
                 description,
                 List.of(),
                 List.of("https://example.com/1.jpg", "https://example.com/2.jpg", "https://example.com/3.jpg")
+        );
+    }
+
+    // 숫자 필드 범위 검증용 - deposit/pricePerDay/exclusiveArea만 바꿔서 생성한다
+    private SpaceReqDTO.SpaceCreateReq createReqWithNumbers(
+            Long deposit, Integer pricePerDay, Double exclusiveArea
+    ) {
+        return new SpaceReqDTO.SpaceCreateReq(
+                "합정 메세나폴리스",
+                RegistrantType.OWNER,
+                BuildingType.LARGE_OFFICE,
+                "서울특별시",
+                "마포구",
+                "서울특별시 마포구 합정동 130-3",
+                "302동 302호",
+                37.5012,
+                127.0397,
+                deposit,
+                pricePerDay,
+                LocalDate.of(2026, 6, 1),
+                LocalDate.of(2026, 12, 31),
+                SpaceCategory.POPUP_STORE,
+                SpaceType.OPEN_HALL,
+                exclusiveArea,
+                FloorType.GENERAL_FLOOR,
+                2,
+                true,
+                "충분히 긴 공간 설명입니다.",
+                List.of(),
+                List.of("https://example.com/1.jpg", "https://example.com/2.jpg", "https://example.com/3.jpg")
+        );
+    }
+
+    // 수정 요청도 숫자 3개만 채우고 나머지는 전부 null (= 기존 값 유지)
+    private SpaceReqDTO.SpaceUpdateReq updateReqWithNumbers(
+            Long deposit, Integer pricePerDay, Double exclusiveArea
+    ) {
+        return new SpaceReqDTO.SpaceUpdateReq(
+                null,                 // buildingName
+                null,                 // registrantType
+                null,                 // buildingType
+                null,                 // city
+                null,                 // district
+                null,                 // roadAddress
+                null,                 // addressDetail
+                null,                 // latitude
+                null,                 // longitude
+                deposit,
+                pricePerDay,
+                null,                 // availableStartDate
+                null,                 // availableEndDate
+                null,                 // spaceCategory
+                null,                 // spaceType
+                exclusiveArea,
+                null,                 // floorType
+                null,                 // floorNumber
+                null,                 // parkingAvailable
+                null,                 // description
+                null,                 // facilityIds
+                null                  // imageUrls
         );
     }
 
