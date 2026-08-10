@@ -188,4 +188,30 @@ public class ContractSignatureTest {
         assertThat(contract.getGuestSignerCiHash()).isEqualTo(GUEST_CI_HASH);
         assertThat(contract.getGuestSignatureImgHash()).isEqualTo(IMAGE_HASH);
     }
+
+    @Test
+    void 계약_순서_위반() {
+
+        // 올바른 순서: 호스트 서명 -> 게스트 서명
+
+        // 1. 게스트 서명 시도
+//        String guestSignatureUrl = "https://signature.example.com/guest.png";
+//
+//        contractService.signature(host, reservationId, new ContractReqDTO.ContractSignatureReq(guestSignatureUrl));
+//        assertThat(contract.getStatus()).isEqualTo(ContractStatus.PENDING_PAYMENT);
+
+
+        // 호스트 서명
+
+    }
+
+    @Test
+    void 본인인증_미완료() {
+
+    }
+
+    @Test
+    void 계약_내용_변조() {
+
+    }
 }
