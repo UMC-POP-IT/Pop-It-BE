@@ -36,8 +36,11 @@ public class IdentityVerificationService {
     // 본인인증 확인 로직
     public IdentityVerificationResDTO.IdentityVerificationVerifyRes verify(User user, IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto) {
 
-        // 1. 이미 인증 완료된 유저 → 즉시 차단 (포트원 호출 전)
-        if (identityVerificationRepository.findByUser(user).isPresent()) {
+        // 1. 이미 인증 완료(VERIFIED)된 유저 → 즉시 차단 (포트원 호출 전)
+        boolean alreadyVerified = identityVerificationRepository.findByUser(user)
+                .map(iv -> iv.getStatus() == PortOneVerificationStatus.VERIFIED)
+                .orElse(false);
+        if (alreadyVerified) {
             throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_VERIFIED_USER);
         }
 
