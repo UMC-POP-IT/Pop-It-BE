@@ -42,6 +42,8 @@ public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
     private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
+    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜/시각 계산이 한국 기준으로 되도록 명시
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ReservationRepository reservationRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -112,7 +114,7 @@ public class ReservationCommandService {
 
     //예약 가능한 날짜인지 확인
     private void validateDateRange(Space space, LocalDate startDate, LocalDate endDate) {
-        if (!startDate.isAfter(LocalDate.now())) {
+        if (!startDate.isAfter(LocalDate.now(KST))) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
@@ -294,7 +296,7 @@ public class ReservationCommandService {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_REJECTED);
             }
 
-            LocalDateTime rejectedAt = LocalDateTime.now();
+            LocalDateTime rejectedAt = LocalDateTime.now(KST);
             checkoutImageRepository.deactivateAllByReservationId(reservationId, rejectedAt);
             reservation.rejectCheckout(rejectedAt);
             reservationRepository.saveAndFlush(reservation);
