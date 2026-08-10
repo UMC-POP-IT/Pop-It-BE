@@ -75,6 +75,7 @@ public class SpaceReqDTO {
 
             @Schema(description = "보증금 (최대 1,000,000원)", example = "450000")
             @NotNull
+            @Min(value = 0, message = "보증금은 0원 이상이어야 합니다.")
             @Max(value = 1_000_000, message = "보증금은 1,000,000원 이하이어야 합니다.")
             Long deposit,
 
