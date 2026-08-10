@@ -23,9 +23,6 @@ import org.hibernate.annotations.CreationTimestamp;
 @Table(name = "contract")
 public class Contract {
 
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 서명 시각이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     @Version
     @Column(nullable = false)
     private Long version;
@@ -124,7 +121,7 @@ public class Contract {
     public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash, String hostSignatureImgHash) {
         this.status = status;
         this.hostSignatureUrl = hostSignatureUrl;
-        this.hostSignedAt = LocalDateTime.now(KST);
+        this.hostSignedAt = LocalDateTime.now();
         this.hostSignerCiHash = hostSignerCiHash;
         this.hostSignatureImgHash = hostSignatureImgHash;
     }
@@ -132,7 +129,7 @@ public class Contract {
     public void signByGuest(ContractStatus status, String guestSignatureUrl, String guestSignerCiHash, String guestSignatureImgHash) {
         this.status = status;
         this.guestSignatureUrl = guestSignatureUrl;
-        this.guestSignedAt = LocalDateTime.now(KST);
+        this.guestSignedAt = LocalDateTime.now();
         this.guestSignerCiHash = guestSignerCiHash;
         this.guestSignatureImgHash = guestSignatureImgHash;
     }

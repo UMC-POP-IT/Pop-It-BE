@@ -20,7 +20,7 @@ import org.springframework.web.client.RestClient;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 @Service
@@ -113,7 +113,7 @@ public class IdentityVerificationService {
                 .ci(customer.ci()) // 저장 시 @Convert가 자동으로 암호화 (매번 다른 암호문)
                 .ciHash(ciHash)  // 검색/중복체크용 해시
                 .user(user)
-                .verifiedAt(LocalDateTime.ofInstant(response.verifiedAt(), ZoneId.of("Asia/Seoul")))
+                .verifiedAt(LocalDateTime.ofInstant(response.verifiedAt(), ZoneOffset.UTC))
                 .build();
 
 

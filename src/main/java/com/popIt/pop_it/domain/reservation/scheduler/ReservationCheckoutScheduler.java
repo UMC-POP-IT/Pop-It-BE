@@ -111,7 +111,7 @@ public class ReservationCheckoutScheduler {
     // 4. 퇴실 승인 24h 자동 처리 (사진 제출했든 스킵했든 둘 다 커버)
     @Scheduled(fixedRate = 30 * 60 * 1000) // 30분마다
     public void autoApproveCheckouts() {
-        LocalDateTime cutoff = LocalDateTime.now(KST).minusHours(24);
+        LocalDateTime cutoff = LocalDateTime.now().minusHours(24);
 
         // 사진 제출한 경우(거절된 적 없는 정상 대기) - 제출 시각 기준 24h
         List<Reservation> submitted = reservationRepository

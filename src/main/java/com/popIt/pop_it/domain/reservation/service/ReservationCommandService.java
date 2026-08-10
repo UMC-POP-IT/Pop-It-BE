@@ -296,7 +296,7 @@ public class ReservationCommandService {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_REJECTED);
             }
 
-            LocalDateTime rejectedAt = LocalDateTime.now(KST);
+            LocalDateTime rejectedAt = LocalDateTime.now();
             checkoutImageRepository.deactivateAllByReservationId(reservationId, rejectedAt);
             reservation.rejectCheckout(rejectedAt);
             reservationRepository.saveAndFlush(reservation);
