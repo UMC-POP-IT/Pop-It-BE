@@ -134,7 +134,7 @@ public class SpaceController {
                     responseCode = "403", description = "호스트 프로필 미등록",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
-    @GetMapping("/my")
+    @GetMapping("/me")
     public ApiResponse<SpaceResDTO.MySpaceListRes> getMySpaces(
             @AuthenticationPrincipal AuthUser authUser,
             @Parameter(description = "페이지 번호 (0부터 시작)", example = "0")
