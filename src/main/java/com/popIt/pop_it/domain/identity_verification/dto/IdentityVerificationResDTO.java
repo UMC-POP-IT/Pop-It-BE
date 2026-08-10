@@ -21,7 +21,7 @@ public class IdentityVerificationResDTO {
     @Builder
     public record PortOneSuccessRes(
             @JsonProperty("id") String identityVerificationId,
-            String status,
+            String status, // 포트원 원본 응답값 그대로 - VERIFIED 여부 판단은 PortOneVerificationStatus.from()에서
             Instant verifiedAt,
             // 실제 인증 정보
             VerifiedCustomer verifiedCustomer

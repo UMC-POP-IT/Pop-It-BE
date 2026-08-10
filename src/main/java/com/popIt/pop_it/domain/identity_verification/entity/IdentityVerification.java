@@ -1,6 +1,7 @@
 package com.popIt.pop_it.domain.identity_verification.entity;
 
 import com.popIt.pop_it.domain.identity_verification.entity.enums.Gender;
+import com.popIt.pop_it.domain.identity_verification.entity.enums.PortOneVerificationStatus;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.util.CryptoConverter;
 import jakarta.persistence.*;
@@ -52,7 +53,7 @@ public class IdentityVerification {
     @Column(nullable = false)
     private String ci;
 
-    // ci값 SHA-256 해시(원본 값 → 해시값으로 단방향 변환), 조회/중복체크용이므로 unique 필수
+    // ci값 HMAC-SHA256 해시(원본 값 → 해시값으로 단방향 변환, 비밀키 기반), 조회/중복체크용이므로 unique 필수
     @Column(nullable = false, unique = true)
     private String ciHash;
 
@@ -60,8 +61,9 @@ public class IdentityVerification {
     private LocalDateTime verifiedAt;
 
     // 인증 상태
-    @Column(nullable = false)
-    private String status;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private PortOneVerificationStatus status;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false, updatable = false, unique = true)

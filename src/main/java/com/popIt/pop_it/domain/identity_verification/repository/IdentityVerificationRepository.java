@@ -13,7 +13,7 @@ import java.util.Optional;
 @Repository
 public interface IdentityVerificationRepository extends JpaRepository<IdentityVerification, Long> {
 
-    IdentityVerification findByUser(User user);
+    Optional<IdentityVerification> findByUser(User user);
 
     boolean existsByIdentityVerificationId(@NotBlank String s);
 
