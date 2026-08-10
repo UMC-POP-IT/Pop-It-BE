@@ -4,16 +4,21 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicLong;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
+@Slf4j
 @EnableAsync
 @Configuration
 public class AsyncConfig {
+
+    private final AtomicLong discardedViewLogCount = new AtomicLong();
 
     // 공간 등록 응답을 임베딩(Gemini API 호출) 완료까지 기다리지 않도록 별도 스레드 풀에서 처리
     @Bean
@@ -41,7 +46,11 @@ public class AsyncConfig {
         executor.setMaxPoolSize(4);
         executor.setQueueCapacity(500);
         executor.setThreadNamePrefix("view-log-");
-        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+        executor.setRejectedExecutionHandler((task, poolExecutor) ->
+                log.warn("조회 로그 큐 포화로 기록 1건을 폐기했습니다. 누적 폐기 {}건 (activeThreads={}, queueSize={})",
+                        discardedViewLogCount.incrementAndGet(),
+                        poolExecutor.getActiveCount(),
+                        poolExecutor.getQueue().size()));
         executor.initialize();
         return executor;
     }
