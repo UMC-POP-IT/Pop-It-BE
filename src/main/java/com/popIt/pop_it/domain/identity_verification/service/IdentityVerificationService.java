@@ -10,7 +10,7 @@ import com.popIt.pop_it.domain.identity_verification.exception.code.IdentityVeri
 import com.popIt.pop_it.domain.identity_verification.repository.IdentityVerificationRepository;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
-import com.popIt.pop_it.global.util.HashUtil;
+import com.popIt.pop_it.global.util.CryptoService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +31,7 @@ public class IdentityVerificationService {
     private final RestClient portoneRestClient;
     private final IdentityVerificationRepository identityVerificationRepository;
     private final ObjectMapper objectMapper;
+    private final CryptoService cryptoService;
 
     // 본인인증 확인 로직
     public IdentityVerificationResDTO.IdentityVerificationVerifyRes verify(User user, IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto) {
@@ -74,8 +75,8 @@ public class IdentityVerificationService {
 
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneSuccessRes.VerifiedCustomer customer = response.verifiedCustomer();
-        // ciHash 생성
-        String ciHash = HashUtil.sha256(customer.ci());
+        // ciHash 생성 - 비밀키 기반 HMAC을 사용해 원문 역추적을 어렵게 함
+        String ciHash = cryptoService.hash(customer.ci());
 
         // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우
         if (identityVerificationRepository.existsByIdentityVerificationId(dto.identityVerificationId())) {

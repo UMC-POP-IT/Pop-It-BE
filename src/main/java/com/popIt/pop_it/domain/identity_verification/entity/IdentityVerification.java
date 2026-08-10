@@ -53,7 +53,7 @@ public class IdentityVerification {
     @Column(nullable = false)
     private String ci;
 
-    // ci값 SHA-256 해시(원본 값 → 해시값으로 단방향 변환), 조회/중복체크용이므로 unique 필수
+    // ci값 HMAC-SHA256 해시(원본 값 → 해시값으로 단방향 변환, 비밀키 기반), 조회/중복체크용이므로 unique 필수
     @Column(nullable = false, unique = true)
     private String ciHash;
 
