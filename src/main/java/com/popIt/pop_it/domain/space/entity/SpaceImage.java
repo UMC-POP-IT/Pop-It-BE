@@ -11,7 +11,12 @@ import lombok.NoArgsConstructor;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "space_image")
+@Table(
+        name = "space_image",
+        uniqueConstraints = @UniqueConstraint(
+            name = "uk_space_image_space_sort",
+            columnNames = {"space_id", "sort_order"})
+)
 public class SpaceImage {
 
     @Id
@@ -21,10 +26,10 @@ public class SpaceImage {
     @Column(nullable = false)
     private String imageUrl;
 
-    @Column(nullable = false)
+    @Column(name = "sort_order", nullable = false)
     private Integer sortOrder;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "space_id", nullable = false)
     private Space space;
 }

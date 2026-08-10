@@ -25,10 +25,10 @@ public class SpaceFacility {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "space_id", nullable = false)
     private Space space; // 공간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "facility_id", nullable = false)
     private Facility facility; // 편의시설
 }
