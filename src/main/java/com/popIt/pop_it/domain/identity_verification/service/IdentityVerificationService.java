@@ -88,6 +88,9 @@ public class IdentityVerificationService {
             throw new ProjectException(IdentityVerificationErrorCode.NOT_VERIFIED);
         }
 
+        // VERIFIED인데 필수 필드가 비어있는 경우 방어
+        validateVerifiedResponse(response);
+
         // 인증회원 정보 꺼내기
         IdentityVerificationResDTO.PortOneSuccessRes.VerifiedCustomer customer = response.verifiedCustomer();
         // ciHash 생성 - 비밀키 기반 HMAC을 사용해 원문 역추적을 어렵게 함
@@ -139,6 +142,36 @@ public class IdentityVerificationService {
         IdentityVerification verifiedUser = identityVerificationRepository.findByUser(user).orElse(null);
 
         return IdentityVerificationConverter.toVerify(verifiedUser);
+    }
+
+    /**
+     * 기타 함수
+     */
+
+    // status가 VERIFIED인데도 실제로 필요한 필드가 비어있는, 계약 위반에 가까운 응답을 방어
+    // (identityVerificationId는 이미 앞단에서 경로 변수로 받은 값이라 여기선 응답에 실린 값만 재검증)
+    private void validateVerifiedResponse(IdentityVerificationResDTO.PortOneSuccessRes response) {
+        IdentityVerificationResDTO.PortOneSuccessRes.VerifiedCustomer customer = response.verifiedCustomer();
+
+        boolean missingRequiredField =
+                isBlank(response.identityVerificationId())
+                        || response.verifiedAt() == null
+                        || customer == null
+                        || isBlank(customer.ci())
+                        || isBlank(customer.name())
+                        || isBlank(customer.phoneNumber())
+                        || isBlank(customer.birthDate())
+                        || customer.gender() == null;
+
+        if (missingRequiredField) {
+            throw new IdentityVerificationException(
+                    IdentityVerificationErrorCode.PORTONE_API_ERROR,
+                    "포트원 응답에 필수 필드가 누락되어 있습니다.");
+        }
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     // Contract에서 본인인증 여부 조회 시 필요
