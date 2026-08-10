@@ -5,6 +5,11 @@
 --
 -- ddl-auto: update는 기존 컬럼을 리네임하지 않고 새 컬럼을 추가하기만 하므로
 -- (기존 데이터가 NULL로 채워진 별개 컬럼이 생겨 데이터 유실/무결성 위반 위험) 명시적 마이그레이션으로 처리한다.
+--
+-- 이미 dev 환경에서 ddl-auto: update가 잘못된 user_id 컬럼(NOT NULL, 기본값 0으로 채워진 빈 값,
+-- FK 없음)을 먼저 만들어놓은 상태라, 리네임 전에 이 가짜 컬럼부터 제거한다.
+ALTER TABLE reservation
+DROP COLUMN user_id;
 
 ALTER TABLE reservation
     RENAME COLUMN user_user_id TO user_id;
