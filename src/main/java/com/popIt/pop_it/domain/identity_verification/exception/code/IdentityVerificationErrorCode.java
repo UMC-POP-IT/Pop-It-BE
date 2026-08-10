@@ -11,10 +11,14 @@ public enum IdentityVerificationErrorCode implements BaseErrorCode {
     NOT_VERIFIED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_1", "본인인증에 실패했습니다."),
     PORTONE_API_ERROR(HttpStatus.BAD_GATEWAY, "IDENTITY_VERIFICATION502_1", "포트원 인증 조회 API가 실패했습니다."),
 
+    // 이미 인증 완료된 유저
+    ALREADY_VERIFIED_USER(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_2", "이미 본인인증된 유저입니다."),
     // 같은 인증 시도(identityVerificationId) 재사용
-    ALREADY_PROCESSED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_2", "이미 처리된 본인인증 건입니다."),
+    ALREADY_PROCESSED(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_3", "이미 처리된 본인인증 건입니다. 같은 identityVerificationId가 재사용되었습니다."),
     // 다른 인증 시도지만 같은 사람
-    DUPLICATE_IDENTITY(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_3", "이미 가입된 본인인증 정보입니다.");
+    DUPLICATE_IDENTITY(HttpStatus.CONFLICT, "IDENTITY_VERIFICATION409_4", "이미 가입된 본인인증 정보입니다. 다른 계정의 인증 시도지만 실제로 같은 사람입니다.")
+    ;
+
 
     private final HttpStatus status;
     private final String code;

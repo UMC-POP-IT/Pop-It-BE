@@ -35,6 +35,18 @@ public class IdentityVerificationService {
 
     // 본인인증 확인 로직
     public IdentityVerificationResDTO.IdentityVerificationVerifyRes verify(User user, IdentityVerificationReqDTO.IdentityVerificationVerifyReq dto) {
+
+        // 1. 이미 인증 완료된 유저 → 즉시 차단 (포트원 호출 전)
+        if (identityVerificationRepository.findByUser(user).isPresent()) {
+            throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_VERIFIED_USER);
+        }
+
+        // 2. 아직 인증 안 했지만, 같은 시도 ID(ex. 다른 사람이 같은 시도 ID로)를 재요청 → 포트원 호출 전 차단
+        // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우 (더블클릭, 네트워크 재시도)
+        if (identityVerificationRepository.existsByIdentityVerificationId(dto.identityVerificationId())) {
+            throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_PROCESSED);
+        }
+
         IdentityVerificationResDTO.PortOneSuccessRes response = portoneRestClient.get()
                 .uri("/identity-verifications/{id}", dto.identityVerificationId())
                 .retrieve()
@@ -78,10 +90,6 @@ public class IdentityVerificationService {
         // ciHash 생성 - 비밀키 기반 HMAC을 사용해 원문 역추적을 어렵게 함
         String ciHash = cryptoService.hash(customer.ci());
 
-        // 예외 처리 - 이미 존재하는 IdentityVerificationId 로 다시 요청하는 경우
-        if (identityVerificationRepository.existsByIdentityVerificationId(dto.identityVerificationId())) {
-            throw new IdentityVerificationException(IdentityVerificationErrorCode.ALREADY_PROCESSED);
-        }
 
         // 예외 처리 - 본인인증 건이 이미 존재. 서로 다른 identityVerificationId지만, CI(연계정보)가 동일함
         if (identityVerificationRepository.existsByCiHash(ciHash)) {
