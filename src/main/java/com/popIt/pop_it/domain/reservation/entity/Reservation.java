@@ -85,7 +85,7 @@ public class Reservation {
     private Space space; // 예약 대상 공간
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user; // 게스트
 
     //도메인 메서드
