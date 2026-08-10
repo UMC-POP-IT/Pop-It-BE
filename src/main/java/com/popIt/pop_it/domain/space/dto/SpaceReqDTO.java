@@ -73,14 +73,15 @@ public class SpaceReqDTO {
             @DecimalMax(value = "180.0")
             Double longitude,
 
-            @Schema(description = "보증금", example = "4500000")
+            @Schema(description = "보증금 (최대 1,000,000원)", example = "450000")
             @NotNull
-            @PositiveOrZero
+            @Min(value = 0, message = "보증금은 0원 이상이어야 합니다.")
+            @Max(value = 1_000_000, message = "보증금은 1,000,000원 이하여야 합니다.")
             Long deposit,
 
             @Schema(description = "일 단위 가격", example = "90000")
             @NotNull
-            @Positive
+            @Min(value = 1, message = "일 단위 가격은 1원 이상이어야 합니다.")
             Integer pricePerDay,
 
             @Schema(description = "계약 가능 시작일 (yyyy-MM-dd)", example = "2026-06-01")
@@ -99,9 +100,10 @@ public class SpaceReqDTO {
             @NotNull
             SpaceType spaceType,
 
-            @Schema(description = "전용 면적", example = "66.0")
+            @Schema(description = "전용 면적 (1 이상 10,000 이하)", example = "66.0")
             @NotNull
-            @Positive
+            @DecimalMin(value = "1.0", message = "전용 면적은 1 이상이어야 합니다.")
+            @DecimalMax(value = "10000.0", message = "전용 면적은 10,000 이하이어야 합니다.")
             Double exclusiveArea,
 
             @Schema(description = "층 종류", example = "GENERAL_FLOOR")
@@ -239,12 +241,13 @@ public class SpaceReqDTO {
             @DecimalMax(value = "180.0")
             Double longitude,
 
-            @Schema(description = "보증금", example = "4500000")
-            @PositiveOrZero
+            @Schema(description = "보증금 (최대 1,000,000원)", example = "450000")
+            @Min(value = 0, message = "보증금은 0원 이상이어야 합니다.")
+            @Max(value = 1_000_000, message = "보증금은 1,000,000원 이하여야 합니다.")
             Long deposit,
 
             @Schema(description = "일 단위 가격", example = "90000")
-            @Positive
+            @Min(value = 1, message = "일 단위 가격은 1원 이상이어야 합니다.")
             Integer pricePerDay,
 
             @Schema(description = "계약 가능 시작일 (yyyy-MM-dd)", example = "2026-06-01")
@@ -259,8 +262,9 @@ public class SpaceReqDTO {
             @Schema(description = "공간 구조 유형", example = "OPEN_HALL")
             SpaceType spaceType,
 
-            @Schema(description = "전용 면적", example = "66.0")
-            @Positive
+            @Schema(description = "전용 면적 (1 이상 10000 이하)", example = "66.0")
+            @DecimalMin(value = "1.0", message = "전용 면적은 1 이상이어야 합니다.")
+            @DecimalMax(value = "10000.0", message = "전용 면적은 10,000 이하이어야 합니다.")
             Double exclusiveArea,
 
             @Schema(description = "층 종류", example = "GENERAL_FLOOR")
