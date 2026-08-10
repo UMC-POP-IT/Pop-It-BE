@@ -25,9 +25,6 @@ import org.hibernate.annotations.CreationTimestamp;
 @Table(name = "reservation")
 public class Reservation {
 
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜/시각 계산이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id; // 예약 식별자
@@ -133,7 +130,7 @@ public class Reservation {
 
     //퇴실 증빙 제출 시간 기록
     public void markCheckoutSubmitted() {
-        this.checkoutSubmittedAt = LocalDateTime.now(KST);
+        this.checkoutSubmittedAt = LocalDateTime.now();
         this.checkoutRejected = false;
         this.checkoutRejectedAt = null; // 재제출 시 과거 거절 시각이 남아있지 않도록 초기화
     }
