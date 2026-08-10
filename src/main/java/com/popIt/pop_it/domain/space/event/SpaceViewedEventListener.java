@@ -28,7 +28,7 @@ public class SpaceViewedEventListener {
         }
 
         try {
-            userActivityService.recordView(event.spaceId(), event.userId(), event.viewerMode());
+            userActivityService.recordView(event.userId(), event.spaceId(), event.viewerMode());
         } catch (Exception e) {
             log.warn("공간(id={}) 조회 이력(개인화) 기록 실패 - userId={}", event.spaceId(), event.userId(), e);
         }
