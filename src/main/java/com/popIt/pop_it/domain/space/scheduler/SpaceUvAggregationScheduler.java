@@ -30,7 +30,10 @@ public class SpaceUvAggregationScheduler {
     @Scheduled(cron = "0 10 0 * * *") // 매일 00:10 - 전날 UV 확정
     @Transactional
     public void aggregateYesterdayUv() {
-        LocalDate yesterday = LocalDate.now(clock).minusDays(1);
+        // 배치 하나는 하나의 기준 시점을 가져야 하므로 today를 한 번만 계산해 yesterday/retentionCutoff를 파생시킨다.
+        // (그 사이 조회~삭제 처리 중 자정을 넘겨도 두 값이 서로 어긋나지 않도록 함)
+        LocalDate today = LocalDate.now(clock);
+        LocalDate yesterday = today.minusDays(1);
 
         List<SpaceVisitLogRepository.SpaceUvCount> counts =
                 spaceVisitLogRepository.countDistinctUsersByVisitDate(yesterday);
@@ -52,7 +55,7 @@ public class SpaceUvAggregationScheduler {
         spaceVisitLogRepository.deleteByVisitDate(yesterday);
 
         // 보관 기간(8일)이 지난 집계 데이터 정리
-        LocalDate retentionCutoff = LocalDate.now(clock).minusDays(RETENTION_DAYS);
+        LocalDate retentionCutoff = today.minusDays(RETENTION_DAYS);
         spaceDailyUvRepository.deleteByVisitDateBefore(retentionCutoff);
 
         log.info("공간 UV 배치 완료 - 대상일: {}, 집계된 공간 수: {}", yesterday, counts.size());
