@@ -21,6 +21,7 @@ import com.popIt.pop_it.domain.user.repository.UserRepository;
 import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -210,7 +211,7 @@ class ContractSignatureConcurrencyTest {
 
         // 다른 트랜잭션이 먼저 호스트 서명을 커밋해 버전이 0 -> 1로 올라간 상황을 재현
         managed.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING,
-                "https://signature.example.com/first.png", "ci-hash", "image-hash");
+                "https://signature.example.com/first.png", "ci-hash", "image-hash", LocalDateTime.now());
         contractRepository.saveAndFlush(managed);
 
         // 그 커밋을 보지 못한 채 여전히 version=0인 "오래된" 사본으로 뒤늦게 저장을 시도
@@ -236,7 +237,7 @@ class ContractSignatureConcurrencyTest {
                 .version(0L)
                 .build();
         stale.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING,
-                "https://signature.example.com/stale.png", "ci-hash", "image-hash");
+                "https://signature.example.com/stale.png", "ci-hash", "image-hash", LocalDateTime.now());
 
         assertThatThrownBy(() -> contractRepository.saveAndFlush(stale))
                 .isInstanceOf(ObjectOptimisticLockingFailureException.class);

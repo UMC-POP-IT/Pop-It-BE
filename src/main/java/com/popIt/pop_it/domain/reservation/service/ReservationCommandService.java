@@ -27,9 +27,9 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -42,8 +42,6 @@ public class ReservationCommandService {
 
     private static final BigDecimal INSURANCE_RATE = BigDecimal.valueOf(0.05);
     private static final BigDecimal PLATFORM_FEE_RATE = BigDecimal.valueOf(0.10);
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜/시각 계산이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ReservationRepository reservationRepository;
     private final CheckoutImageRepository checkoutImageRepository;
@@ -51,6 +49,7 @@ public class ReservationCommandService {
     private final UserRepository userRepository;
     private final PaymentService paymentService;
     private final ContractService contractService;
+    private final Clock clock;
 
     //예약 요청
     public ReservationResDTO.ReservationCreateRes createReservation(Long userId, ReservationReqDTO.ReservationCreateReq request) {
@@ -114,7 +113,7 @@ public class ReservationCommandService {
 
     //예약 가능한 날짜인지 확인
     private void validateDateRange(Space space, LocalDate startDate, LocalDate endDate) {
-        if (!startDate.isAfter(LocalDate.now(KST))) {
+        if (!startDate.isAfter(LocalDate.now(clock))) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_INVALID_DATE);
         }
         if (startDate.isBefore(space.getAvailableStartDate()) || endDate.isAfter(space.getAvailableEndDate())) {
@@ -235,7 +234,7 @@ public class ReservationCommandService {
                     .toList();
             checkoutImageRepository.saveAll(images);
 
-            reservation.markCheckoutSubmitted();
+            reservation.markCheckoutSubmitted(LocalDateTime.now(clock));
             reservationRepository.saveAndFlush(reservation);
 
             return ReservationConverter.toStatusChange(reservation);
@@ -298,7 +297,7 @@ public class ReservationCommandService {
                 throw new ProjectException(ReservationErrorCode.RESERVATION_CHECKOUT_ALREADY_REJECTED);
             }
 
-            LocalDateTime rejectedAt = LocalDateTime.now(KST);
+            LocalDateTime rejectedAt = LocalDateTime.now(clock);
             checkoutImageRepository.deactivateAllByReservationId(reservationId, rejectedAt);
             reservation.rejectCheckout(rejectedAt);
             reservationRepository.saveAndFlush(reservation);

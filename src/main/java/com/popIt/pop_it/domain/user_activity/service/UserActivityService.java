@@ -12,6 +12,7 @@ import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.embedding.event.UserEngagementEvent;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,6 +35,7 @@ public class UserActivityService {
     private final UserEventRepository userEventRepository;
     private final SpaceRepository spaceRepository;
     private final ApplicationEventPublisher eventPublisher;
+    private final Clock clock;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordView(Long userId, Long spaceId, UserMode mode) {
@@ -46,7 +48,7 @@ public class UserActivityService {
         }
 
         // DB에서 원자적으로 +1 - 동시 조회 시 lost update 방지
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         int updatedRows = userActivityRepository.incrementViewCount(userId, spaceId, now);
         if (updatedRows == 0) {
             // 이 공간을 처음 조회하는 경우라 UPDATE 대상 행이 없었으므로 새로 만든다.

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Map;
@@ -31,6 +32,11 @@ public class OAuthCodeStore {
     private static final long TTL_MILLIS = 30_000; // 30초 — 리다이렉트 직후 바로 교환되는 걸 전제로 한 짧은 유효기간
 
     private final Map<String, Entry> store = new ConcurrentHashMap<>();
+    private final Clock clock;
+
+    public OAuthCodeStore(Clock clock) {
+        this.clock = clock;
+    }
 
     /**
      * @param challenge 로그인 시작 시 프론트가 넘긴 값 (SHA256(verifier)를 base64url로 인코딩한 것).
@@ -40,7 +46,7 @@ public class OAuthCodeStore {
     public String issue(String accessToken, String refreshToken, String challenge) {
         cleanupExpired();
         String code = UUID.randomUUID().toString();
-        store.put(code, new Entry(accessToken, refreshToken, challenge, Instant.now().plusMillis(TTL_MILLIS)));
+        store.put(code, new Entry(accessToken, refreshToken, challenge, Instant.now(clock).plusMillis(TTL_MILLIS)));
         return code;
     }
 
@@ -51,7 +57,7 @@ public class OAuthCodeStore {
      */
     public TokenPair consume(String code, String verifier) {
         Entry entry = store.remove(code);
-        if (entry == null || Instant.now().isAfter(entry.expiresAt())) {
+        if (entry == null || Instant.now(clock).isAfter(entry.expiresAt())) {
             return null;
         }
         if (!matches(entry.challenge(), verifier)) {
@@ -81,7 +87,7 @@ public class OAuthCodeStore {
     }
 
     private void cleanupExpired() {
-        Instant now = Instant.now();
+        Instant now = Instant.now(clock);
         store.entrySet().removeIf(e -> now.isAfter(e.getValue().expiresAt()));
     }
 

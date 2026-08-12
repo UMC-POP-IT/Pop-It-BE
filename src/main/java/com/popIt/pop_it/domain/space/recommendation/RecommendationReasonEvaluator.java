@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.space.entity.SpaceDailyUv;
 import com.popIt.pop_it.domain.space.recommendation.RegionCenterResolver.RegionCenter;
 import com.popIt.pop_it.domain.space.repository.SpaceDailyUvRepository;
 import com.popIt.pop_it.global.util.DistanceCalculator;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +28,7 @@ public class RecommendationReasonEvaluator {
     private final SpaceDailyUvRepository spaceDailyUvRepository;
     private final RegionCenterResolver regionCenterResolver;
     private final RecommendationMentComposer mentComposer;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public Optional<RecommendationReasonResult> evaluate(Space candidate, UserRecommendationContext context) {
@@ -127,7 +129,7 @@ public class RecommendationReasonEvaluator {
         Map<LocalDate, Integer> uvByDate = recentDailyUv.stream()
                 .collect(Collectors.toMap(SpaceDailyUv::getVisitDate, SpaceDailyUv::getUvCount));
 
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(clock).minusDays(1);
         Integer uv24h = uvByDate.get(yesterday);
         if (uv24h == null) {
             return Optional.empty(); // 어제치 집계 자체가 없으면(방문이 없었거나 아직 배치 전) "최근 24시간" 급증을 판단할 수 없음

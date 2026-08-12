@@ -183,7 +183,8 @@ public class Space {
     }
 
     // 소프트 삭제 (공간 삭제 시 행을 지우지 않고 deletedAt에만 기록)
-    public void softDelete() {
-        this.deletedAt = LocalDateTime.now();
+    // 엔티티는 스프링 빈이 아니라 Clock을 주입받을 수 없으므로, 호출부(SpaceService)가 Clock으로 계산한 시각을 넘겨준다.
+    public void softDelete(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

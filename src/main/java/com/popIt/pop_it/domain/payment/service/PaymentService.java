@@ -18,6 +18,8 @@ import com.popIt.pop_it.domain.payment.exception.code.PaymentErrorCode;
 import com.popIt.pop_it.domain.payment.repository.PaymentRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Consumer;
@@ -43,6 +45,7 @@ public class PaymentService {
     private final ContractCompletionService contractCompletionService;
     private final TossPaymentClient tossPaymentClient;
     private final HostPayoutClient hostPayoutClient;
+    private final Clock clock;
 
     @Transactional
     public PaymentResDTO.PaymentPrepareRes prepare(Long contractId, String idempotencyKey, Long userId) {
@@ -298,7 +301,8 @@ public class PaymentService {
             Long hostId = contract.getReservation().getSpace().getHostId();
             Long hostPayoutAmount = contract.getHostTotalPrice();
             hostPayoutClient.payout(payment.getOrderId() + "-HOST", hostId, hostPayoutAmount);
-            paymentSettlementRecorder.update(payment.getId(), Payment::markHostPayoutDone);
+            LocalDateTime hostPayoutAt = LocalDateTime.now(clock);
+            paymentSettlementRecorder.update(payment.getId(), p -> p.markHostPayoutDone(hostPayoutAt));
             return true;
         } catch (Exception e) {
             log.warn("호스트 정산 지급 실패: paymentId={}", payment.getId(), e);
@@ -321,7 +325,8 @@ public class PaymentService {
             tossPaymentClient.cancelPartial(
                     payment.getPaymentKey(), contract.getDeposit(), "퇴실 승인에 따른 보증금 환불",
                     payment.getOrderId() + "-REFUND");
-            paymentSettlementRecorder.update(payment.getId(), Payment::markDepositRefundDone);
+            LocalDateTime depositRefundedAt = LocalDateTime.now(clock);
+            paymentSettlementRecorder.update(payment.getId(), p -> p.markDepositRefundDone(depositRefundedAt));
             return true;
         } catch (Exception e) {
             log.warn("보증금 환불 실패: paymentId={}", payment.getId(), e);

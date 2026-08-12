@@ -8,7 +8,9 @@ import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.entity.SpaceDailyUv;
 import com.popIt.pop_it.domain.space.recommendation.RegionCenterResolver.RegionCenter;
 import com.popIt.pop_it.domain.space.repository.SpaceDailyUvRepository;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -31,12 +33,13 @@ class RecommendationReasonEvaluatorTest {
 
     private static final RegionCenter GANGNAM_CENTER = new RegionCenter(37.4979, 127.0276);
     private static final RegionCenter HAPJEONG_CENTER = new RegionCenter(37.55, 126.92);
+    private static final Clock CLOCK = Clock.system(ZoneId.of("Asia/Seoul"));
 
     @BeforeEach
     void setUp() {
         evaluator = new RecommendationReasonEvaluator(
                 spaceDailyUvRepository, regionCenterResolver,
-                new RecommendationMentComposer());
+                new RecommendationMentComposer(), CLOCK);
     }
 
     private Space space(Long id, String dong, double lat, double lng, int price) {
@@ -49,7 +52,7 @@ class RecommendationReasonEvaluatorTest {
     // uv24h는 "어제"(스케줄러가 매일 00:10에 확정 저장하는 날짜) 행으로, baselineDailyUv는
     // 그 전 날짜부터 순서대로 "직전 7일 베이스라인" 행으로 SpaceDailyUv 목록을 만든다
     private List<SpaceDailyUv> dailyUvHistory(Long spaceId, int uv24h, int... baselineDailyUv) {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(CLOCK).minusDays(1);
         List<SpaceDailyUv> history = new ArrayList<>();
         history.add(SpaceDailyUv.builder().spaceId(spaceId).visitDate(yesterday).uvCount(uv24h).build());
         for (int i = 0; i < baselineDailyUv.length; i++) {
@@ -184,7 +187,7 @@ class RecommendationReasonEvaluatorTest {
         // 방문이 없던 날은 SpaceDailyUv 행 자체가 생기지 않으므로, "가장 최근 행"이 실제로는
         // 어제가 아니라 며칠 전 데이터일 수 있다 - 이 경우 그 오래된 행을 uv24h로 착각하면 안 된다.
         Space candidate = space(1L, "홍대", 37.55, 126.92, 50000);
-        LocalDate threeDaysAgo = LocalDate.now().minusDays(3);
+        LocalDate threeDaysAgo = LocalDate.now(CLOCK).minusDays(3);
         given(spaceDailyUvRepository.findTop8BySpaceIdOrderByVisitDateDesc(1L))
                 .willReturn(List.of(SpaceDailyUv.builder().spaceId(1L).visitDate(threeDaysAgo).uvCount(999).build()));
         UserRecommendationContext context = new UserRecommendationContext(

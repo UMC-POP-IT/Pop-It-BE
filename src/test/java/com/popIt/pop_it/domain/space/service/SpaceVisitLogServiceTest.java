@@ -11,12 +11,15 @@ import com.popIt.pop_it.domain.space.entity.SpaceVisitLog;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceVisitLogRepository;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -27,6 +30,8 @@ class SpaceVisitLogServiceTest {
     private SpaceVisitLogRepository spaceVisitLogRepository;
     @Mock
     private SpaceRepository spaceRepository;
+    @Spy
+    private Clock clock = Clock.system(ZoneId.of("Asia/Seoul"));
 
     @InjectMocks
     private SpaceVisitLogService spaceVisitLogService;
@@ -36,7 +41,7 @@ class SpaceVisitLogServiceTest {
         Long spaceId = 1L;
         Long userId = 10L;
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, 999L)));
-        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now()))
+        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now(clock)))
                 .willReturn(false);
 
         spaceVisitLogService.recordVisit(spaceId, userId, UserMode.GUEST);
@@ -49,7 +54,7 @@ class SpaceVisitLogServiceTest {
         Long spaceId = 1L;
         Long userId = 10L;
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, 999L)));
-        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now()))
+        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now(clock)))
                 .willReturn(true);
 
         spaceVisitLogService.recordVisit(spaceId, userId, UserMode.GUEST);
@@ -62,7 +67,7 @@ class SpaceVisitLogServiceTest {
         Long spaceId = 1L;
         Long userId = 10L;
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, 999L)));
-        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now()))
+        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, LocalDate.now(clock)))
                 .willReturn(false);
         given(spaceVisitLogRepository.saveAndFlush(any(SpaceVisitLog.class)))
                 .willThrow(new DataIntegrityViolationException("duplicate"));
@@ -87,7 +92,7 @@ class SpaceVisitLogServiceTest {
         Long hostId = 1L;
         Long spaceId = 10L;
         given(spaceRepository.findById(spaceId)).willReturn(Optional.of(space(spaceId, hostId)));
-        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, hostId, LocalDate.now()))
+        given(spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, hostId, LocalDate.now(clock)))
                 .willReturn(false);
 
         spaceVisitLogService.recordVisit(spaceId, hostId, UserMode.GUEST);

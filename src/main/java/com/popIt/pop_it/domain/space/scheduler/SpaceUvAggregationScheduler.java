@@ -3,6 +3,7 @@ package com.popIt.pop_it.domain.space.scheduler;
 import com.popIt.pop_it.domain.space.entity.SpaceDailyUv;
 import com.popIt.pop_it.domain.space.repository.SpaceDailyUvRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceVisitLogRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -24,11 +25,12 @@ public class SpaceUvAggregationScheduler {
 
     private final SpaceVisitLogRepository spaceVisitLogRepository;
     private final SpaceDailyUvRepository spaceDailyUvRepository;
+    private final Clock clock;
 
     @Scheduled(cron = "0 10 0 * * *") // 매일 00:10 - 전날 UV 확정
     @Transactional
     public void aggregateYesterdayUv() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(clock).minusDays(1);
 
         List<SpaceVisitLogRepository.SpaceUvCount> counts =
                 spaceVisitLogRepository.countDistinctUsersByVisitDate(yesterday);
@@ -50,7 +52,7 @@ public class SpaceUvAggregationScheduler {
         spaceVisitLogRepository.deleteByVisitDate(yesterday);
 
         // 보관 기간(8일)이 지난 집계 데이터 정리
-        LocalDate retentionCutoff = LocalDate.now().minusDays(RETENTION_DAYS);
+        LocalDate retentionCutoff = LocalDate.now(clock).minusDays(RETENTION_DAYS);
         spaceDailyUvRepository.deleteByVisitDateBefore(retentionCutoff);
 
         log.info("공간 UV 배치 완료 - 대상일: {}, 집계된 공간 수: {}", yesterday, counts.size());

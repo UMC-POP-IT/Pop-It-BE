@@ -10,11 +10,12 @@ import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.user_event.entity.UserEvent;
 import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -28,6 +29,8 @@ class UserRecommendationContextResolverTest {
 
     private UserRecommendationContextResolver resolver;
 
+    private static final Clock CLOCK = Clock.system(ZoneId.of("Asia/Seoul"));
+
     private UserEvent event(Long spaceId, UserEventType type, String region) {
         return UserEvent.builder()
                 .userId(1L).spaceId(spaceId).eventType(type).region(region)
@@ -37,7 +40,7 @@ class UserRecommendationContextResolverTest {
 
     @Test
     void 최근_이벤트가_없으면_대표_지역과_평균가_모두_null이다() {
-        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository);
+        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository, CLOCK);
         given(userEventRepository.findByUserIdAndCreatedAtAfter(eq(1L), any())).willReturn(List.of());
 
         UserRecommendationContext context = resolver.resolve(1L);
@@ -53,7 +56,7 @@ class UserRecommendationContextResolverTest {
 
     @Test
     void 가장_많이_조회_찜한_지역이_대표_지역이_되고_평균가도_함께_계산된다() {
-        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository);
+        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository, CLOCK);
 
         given(userEventRepository.findByUserIdAndCreatedAtAfter(eq(1L), any())).willReturn(List.of(
                 event(10L, UserEventType.VIEW, "강남구"),
@@ -84,7 +87,7 @@ class UserRecommendationContextResolverTest {
 
     @Test
     void 조회_없이_찜만_있어도_그_지역이_대표_지역이_될_수_있다() {
-        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository);
+        resolver = new UserRecommendationContextResolver(userEventRepository, spaceRepository, CLOCK);
 
         given(userEventRepository.findByUserIdAndCreatedAtAfter(eq(1L), any())).willReturn(List.of(
                 event(20L, UserEventType.WISHLIST, "성수동"),

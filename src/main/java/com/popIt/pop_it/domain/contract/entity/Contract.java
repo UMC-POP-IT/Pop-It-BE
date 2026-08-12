@@ -6,7 +6,6 @@ import jakarta.persistence.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
 import lombok.AllArgsConstructor;
@@ -22,9 +21,6 @@ import org.hibernate.annotations.CreationTimestamp;
 @NoArgsConstructor
 @Table(name = "contract")
 public class Contract {
-
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 서명 시각이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     @Version
     @Column(nullable = false)
@@ -121,18 +117,18 @@ public class Contract {
      * 도메인 메서드
      */
     // 호스트 서명: 호스트 서명 정보 업데이트
-    public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash, String hostSignatureImgHash) {
+    public void signByHost(ContractStatus status, String hostSignatureUrl, String hostSignerCiHash, String hostSignatureImgHash, LocalDateTime hostSignedAt) {
         this.status = status;
         this.hostSignatureUrl = hostSignatureUrl;
-        this.hostSignedAt = LocalDateTime.now(KST);
+        this.hostSignedAt = hostSignedAt;
         this.hostSignerCiHash = hostSignerCiHash;
         this.hostSignatureImgHash = hostSignatureImgHash;
     }
     // 게스트 서명: 게스트 서명 정보 업데이트
-    public void signByGuest(ContractStatus status, String guestSignatureUrl, String guestSignerCiHash, String guestSignatureImgHash) {
+    public void signByGuest(ContractStatus status, String guestSignatureUrl, String guestSignerCiHash, String guestSignatureImgHash, LocalDateTime guestSignedAt) {
         this.status = status;
         this.guestSignatureUrl = guestSignatureUrl;
-        this.guestSignedAt = LocalDateTime.now(KST);
+        this.guestSignedAt = guestSignedAt;
         this.guestSignerCiHash = guestSignerCiHash;
         this.guestSignatureImgHash = guestSignatureImgHash;
     }

@@ -18,6 +18,8 @@ import org.springframework.dao.PessimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -30,6 +32,7 @@ public class SceneCommandService {
     private final SceneImageRepository sceneImageRepository;
     private final SpaceRepository spaceRepository;
     private final HotspotRepository hotspotRepository;
+    private final Clock clock;
 
     //씬 생성 (사전 제작된 모델 연결)
     public SceneResDTO.SceneIdRes createScene(Long spaceId, Long hostId, SceneReqDTO.SceneCreateReq request) {
@@ -126,7 +129,7 @@ public class SceneCommandService {
         }
 
         hotspotRepository.deleteAllBySceneId(sceneId);
-        scene.markDeleted();
+        scene.markDeleted(LocalDateTime.now(clock));
     }
 
     //공간의 기존 기본 씬이 있으면 해제
