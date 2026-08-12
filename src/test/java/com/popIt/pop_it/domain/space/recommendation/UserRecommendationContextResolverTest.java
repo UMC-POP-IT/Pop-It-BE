@@ -12,9 +12,9 @@ import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -47,7 +47,7 @@ class UserRecommendationContextResolverTest {
         assertThat(context.representativeRegion()).isNull();
         assertThat(context.representativeRegionViewCount()).isZero();
         assertThat(context.representativeRegionWishlistCount()).isZero();
-        assertThat(context.recentInteractionAvgPrice()).isNull();
+        assertThat(context.representativeRegionInteractionAvgPrice()).isNull();
         assertThat(context.representativeRegionAvgPrice()).isNull();
     }
 
@@ -61,10 +61,11 @@ class UserRecommendationContextResolverTest {
                 event(12L, UserEventType.VIEW, "홍대"),
                 event(13L, UserEventType.WISHLIST, "강남구")
         ));
-        given(spaceRepository.findAllById(any())).willReturn(List.of(
+        // representativeRegionInteractionAvgPrice는 대표 지역(강남구)에 속한 공간(10,11,13)만으로 계산되어야 하므로,
+        // 대표 지역이 아닌 홍대 공간(12)은 findAllById 호출 대상에서 제외된다
+        given(spaceRepository.findAllById(eq(Set.of(10L, 11L, 13L)))).willReturn(List.of(
                 Space.builder().id(10L).pricePerDay(40000).build(),
                 Space.builder().id(11L).pricePerDay(60000).build(),
-                Space.builder().id(12L).pricePerDay(50000).build(),
                 Space.builder().id(13L).pricePerDay(70000).build()
         ));
         given(spaceRepository.findAvgPricePerDayByDong("강남구")).willReturn(55000.0);
@@ -78,7 +79,7 @@ class UserRecommendationContextResolverTest {
         // 조회 수/찜 수는 REGION_PIVOT의 OR 판단을 위해 따로 유지된다
         assertThat(context.representativeRegionViewCount()).isEqualTo(2);
         assertThat(context.representativeRegionWishlistCount()).isEqualTo(1);
-        assertThat(context.recentInteractionAvgPrice()).isEqualTo(55000.0); // (40000+60000+50000+70000)/4
+        assertThat(context.representativeRegionInteractionAvgPrice()).isEqualTo(170000.0 / 3); // (40000+60000+70000)/3, 홍대(12) 제외
         assertThat(context.representativeRegionAvgPrice()).isEqualTo(55000.0);
     }
 

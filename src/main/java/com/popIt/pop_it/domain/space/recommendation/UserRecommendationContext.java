@@ -13,7 +13,8 @@ import java.util.Set;
  * @param representativeRegion            최근 N일 내 조회+찜 합산 빈도 1위 지역 - REGION_PIVOT/PRICE_TARGET/REGION_CHEAPER_NEARBY의 "A". 이력이 없으면 null
  * @param representativeRegionViewCount   representativeRegion의 최근 N일 VIEW 횟수 (찜 제외)
  * @param representativeRegionWishlistCount representativeRegion의 최근 N일 WISHLIST 횟수 - REGION_PIVOT은 "찜했거나 3회 이상 조회"를 OR로 판단하므로 조회/찜을 따로 갖고 있어야 한다
- * @param recentInteractionAvgPrice       최근 N일 내 조회/찜한 공간들의 평균 대관료 - PRICE_TARGET용. 이력이 없으면 null
+ * @param representativeRegionInteractionAvgPrice 최근 N일 내 조회/찜한 공간 중 representativeRegion에 속한 공간들의 평균 대관료 -
+ *                                        PRICE_TARGET용. representativeRegion과 같은 지역 기준으로 계산해야 사유 문구의 지역명과 퍼센트가 일치한다. 이력이 없으면 null
  * @param representativeRegionAvgPrice    representativeRegion 전체 공간의 평균 대관료 - REGION_CHEAPER_NEARBY 기준가. 계산 불가하면 null
  */
 public record UserRecommendationContext(
@@ -23,7 +24,7 @@ public record UserRecommendationContext(
         String representativeRegion,
         long representativeRegionViewCount,
         long representativeRegionWishlistCount,
-        Double recentInteractionAvgPrice,
+        Double representativeRegionInteractionAvgPrice,
         Double representativeRegionAvgPrice
 ) {
 }
