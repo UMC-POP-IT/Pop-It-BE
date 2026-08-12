@@ -6,6 +6,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: create-drop
+  flyway:
+    enabled: false # local/test는 H2 + hibernate ddl-auto가 스키마를 관리 (prod에서만 활성화)
   security:
     oauth2:
       client:

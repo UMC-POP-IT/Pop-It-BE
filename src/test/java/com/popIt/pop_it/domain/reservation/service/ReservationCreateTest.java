@@ -2,6 +2,8 @@ package com.popIt.pop_it.domain.reservation.service;
 
 import com.popIt.pop_it.domain.reservation.dto.ReservationReqDTO;
 import com.popIt.pop_it.domain.reservation.dto.ReservationResDTO;
+import com.popIt.pop_it.domain.reservation.entity.Reservation;
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.reservation.exception.code.ReservationErrorCode;
 import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.space.entity.Space;
@@ -123,5 +125,42 @@ public class ReservationCreateTest {
                 .isInstanceOf(ProjectException.class)
                 .satisfies(e -> assertThat(((ProjectException) e).getErrorCode())
                         .isEqualTo(ReservationErrorCode.RESERVATION_INVALID_DATE));
+    }
+
+    private Reservation saveReservationWithStatus(ReservationStatus status) {
+        return reservationRepository.save(Reservation.builder()
+                .status(status)
+                .startDate(LocalDate.now().plusDays(10))
+                .endDate(LocalDate.now().plusDays(12))
+                .usagePurpose("취소 가능 상태 테스트")
+                .rentalFee(200_000L)
+                .deposit(1_000_000L)
+                .insuranceFee(10_000L)
+                .platformFee(20_000L)
+                .totalPrice(1_210_000L)
+                .checkoutRejected(false)
+                .space(spaceRepository.findById(spaceId).orElseThrow())
+                .user(userRepository.findById(guestId).orElseThrow())
+                .build());
+    }
+
+    @Test
+    void 계약완료_상태에서도_게스트가_예약을_취소할_수_있다() {
+        Reservation reservation = saveReservationWithStatus(ReservationStatus.CONTRACT_COMPLETED);
+
+        ReservationResDTO.ReservationStatusChangeRes result =
+                reservationCommandService.cancelByGuest(reservation.getId(), guestId);
+
+        assertThat(result.status()).isEqualTo(ReservationStatus.CANCELLED);
+    }
+
+    @Test
+    void 결제완료_상태부터는_게스트가_예약을_취소할_수_없다() {
+        Reservation reservation = saveReservationWithStatus(ReservationStatus.PAYMENT_COMPLETED);
+
+        assertThatThrownBy(() -> reservationCommandService.cancelByGuest(reservation.getId(), guestId))
+                .isInstanceOf(ProjectException.class)
+                .satisfies(e -> assertThat(((ProjectException) e).getErrorCode())
+                        .isEqualTo(ReservationErrorCode.RESERVATION_CANCEL_NOT_ALLOWED));
     }
 }

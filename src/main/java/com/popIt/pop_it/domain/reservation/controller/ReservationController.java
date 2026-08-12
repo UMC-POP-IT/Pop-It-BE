@@ -229,7 +229,8 @@ public class ReservationController {
     }
 
     @Operation(summary = "예약 취소(게스트)", description = "게스트가 본인 예약을 취소합니다.<br>"
-            + "승인대기/승인완료(PENDING_APPROVAL, APPROVED) 상태에서만 가능하며, 결제(계약완료) 이후 상태는 이 API로 취소할 수 없습니다.")
+            + "승인대기/승인완료/계약완료(PENDING_APPROVAL, APPROVED, CONTRACT_COMPLETED) 상태에서만 가능하며, "
+            + "결제완료 이후 상태는 이 API로 취소할 수 없습니다.")
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200", description = "예약 취소 성공"),
@@ -244,7 +245,7 @@ public class ReservationController {
                     content = @io.swagger.v3.oas.annotations.media.Content),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "409",
-                    description = "현재 예약 상태에서는 취소가 불가능함(승인대기/승인완료 상태가 아님), 다른 요청에 의해 이미 처리된 예약(동시성 충돌) 포함",
+                    description = "현재 예약 상태에서는 취소가 불가능함(승인대기/승인완료/계약완료 상태가 아님), 다른 요청에 의해 이미 처리된 예약(동시성 충돌) 포함",
                     content = @io.swagger.v3.oas.annotations.media.Content)
     })
     @PostMapping("/{reservationId}/cancel")
