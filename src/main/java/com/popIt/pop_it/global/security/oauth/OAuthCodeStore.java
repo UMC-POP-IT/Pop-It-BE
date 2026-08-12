@@ -57,7 +57,7 @@ public class OAuthCodeStore {
      */
     public TokenPair consume(String code, String verifier) {
         Entry entry = store.remove(code);
-        if (entry == null || Instant.now(clock).isAfter(entry.expiresAt())) {
+        if (entry == null || !Instant.now(clock).isBefore(entry.expiresAt())) {
             return null;
         }
         if (!matches(entry.challenge(), verifier)) {
@@ -88,7 +88,7 @@ public class OAuthCodeStore {
 
     private void cleanupExpired() {
         Instant now = Instant.now(clock);
-        store.entrySet().removeIf(e -> now.isAfter(e.getValue().expiresAt()));
+        store.entrySet().removeIf(e -> !now.isBefore(e.getValue().expiresAt()));
     }
 
     private record Entry(String accessToken, String refreshToken, String challenge, Instant expiresAt) {}
