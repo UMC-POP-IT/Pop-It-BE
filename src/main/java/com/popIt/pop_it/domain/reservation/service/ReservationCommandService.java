@@ -184,7 +184,7 @@ public class ReservationCommandService {
 
             reservation.cancel();
             reservationRepository.saveAndFlush(reservation);
-            // 결제 전 상태(PENDING/APPROVED)에서만 오는 경로라 환불 로직은 없음
+            // 결제 전 상태(PENDING/APPROVED/CONTRACT_COMPLETED)에서만 오는 경로라 환불 로직은 없음
 
             return ReservationConverter.toStatusChange(reservation);
         } catch (ObjectOptimisticLockingFailureException e) {
@@ -199,10 +199,12 @@ public class ReservationCommandService {
         }
     }
 
-    //게스트가 예약 취소 가능한 상태인지
+    //게스트가 예약 취소 가능한 상태인지 (결제 전 상태까지만 허용)
     private void validateGuestCancelable(Reservation reservation) {
         ReservationStatus status = reservation.getStatus();
-        if (status != ReservationStatus.PENDING_APPROVAL && status != ReservationStatus.APPROVED) {
+        if (status != ReservationStatus.PENDING_APPROVAL
+                && status != ReservationStatus.APPROVED
+                && status != ReservationStatus.CONTRACT_COMPLETED) {
             throw new ProjectException(ReservationErrorCode.RESERVATION_CANCEL_NOT_ALLOWED);
         }
     }
