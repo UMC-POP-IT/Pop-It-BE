@@ -31,7 +31,9 @@ import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.global.apiPayload.code.GeneralErrorCode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import java.time.Clock;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
@@ -77,7 +79,8 @@ class PaymentServiceTest {
         contractCompletionService = new ContractCompletionService(contractRepository);
         paymentService = new PaymentService(
                 paymentRepository, contractRepository, contractService, paymentIdempotentSaver,
-                paymentSettlementRecorder, contractCompletionService, tossPaymentClient, hostPayoutClient);
+                paymentSettlementRecorder, contractCompletionService, tossPaymentClient, hostPayoutClient,
+                Clock.system(ZoneId.of("Asia/Seoul")));
     }
 
     private static final Long CONTRACT_ID = 1L;

@@ -33,6 +33,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -53,6 +54,7 @@ public class SpaceService {
     private final ApplicationEventPublisher eventPublisher;
     private final ReservationRepository reservationRepository;
     private final SpaceUtilizationCalculator spaceUtilizationCalculator;
+    private final Clock clock;
 
     // 공간 삭제를 막아야하는 예약 상태
     private static final List<ReservationStatus> BLOCKING_RESERVATION_STATUSES = List.of(
@@ -361,14 +363,14 @@ public class SpaceService {
         }
 
         // 3. 행을 지우지 않고 deleteAt만 기록 (soft delete)
-        space.softDelete();
+        space.softDelete(LocalDateTime.now(clock));
 
         return SpaceConverter.toDeleteResult(space);
     }
 
     // 실시간 추천 공간 목록 조회
     public SpaceResDTO.SpaceRealtimeRecommendedListRes getRealtimeRecommendedSpaces() {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
 
         // 1. 추천 풀 조회
         List<Space> candidates = spaceRepository.findAllActiveForRecommendation();

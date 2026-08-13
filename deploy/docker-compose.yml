@@ -6,10 +6,12 @@ services:
     ports:
       - "127.0.0.1:3306:3306"
     environment:
+      TZ: Asia/Seoul
       MYSQL_DATABASE: popit
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: ["--default-time-zone=+09:00"]
     volumes:
       - mysql-data:/var/lib/mysql
     networks:
@@ -44,6 +46,7 @@ services:
       redis:
         condition: service_healthy
     environment:
+      TZ: Asia/Seoul
       JAVA_TOOL_OPTIONS: "-Xmx512m"       # t3.micro용 힙 제한 (재빌드 없이 튜닝 가능)
       SPRING_PROFILES_ACTIVE: prod        # EC2 배포 전용이라 prod로 고정
       DDL_AUTO: ${DDL_AUTO}

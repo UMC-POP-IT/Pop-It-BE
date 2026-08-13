@@ -11,9 +11,9 @@ import com.popIt.pop_it.domain.user.entity.User;
 import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.domain.user.repository.UserRepository;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,8 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 public class ReservationCheckoutSchedulerTest {
 
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     @Autowired
     private ReservationCheckoutScheduler scheduler;
     @Autowired
@@ -36,6 +34,8 @@ public class ReservationCheckoutSchedulerTest {
     private SpaceRepository spaceRepository;
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private Clock clock;
 
     // 실제 PG 정산 없이 스케줄러의 상태 전이 로직만 검증하기 위해 목으로 대체
     @MockitoBean
@@ -82,8 +82,8 @@ public class ReservationCheckoutSchedulerTest {
                 .addressDetail("101동 101호")
                 .deposit(1_000_000L)
                 .pricePerDay(100_000)
-                .availableStartDate(LocalDate.now(KST).minusMonths(1))
-                .availableEndDate(LocalDate.now(KST).plusYears(1))
+                .availableStartDate(LocalDate.now(clock).minusMonths(1))
+                .availableEndDate(LocalDate.now(clock).plusYears(1))
                 .spaceCategory(SpaceCategory.POPUP_STORE)
                 .spaceType(SpaceType.OPEN_HALL)
                 .exclusiveArea(30.0)
@@ -98,8 +98,8 @@ public class ReservationCheckoutSchedulerTest {
                                          LocalDateTime checkoutSubmittedAt) {
         Reservation reservation = Reservation.builder()
                 .status(ReservationStatus.USAGE_COMPLETED)
-                .startDate(LocalDate.now(KST).minusDays(10))
-                .endDate(LocalDate.now(KST).minusDays(3))
+                .startDate(LocalDate.now(clock).minusDays(10))
+                .endDate(LocalDate.now(clock).minusDays(3))
                 .usagePurpose("스케줄러 테스트")
                 .rentalFee(200_000L)
                 .deposit(1_000_000L)
@@ -137,7 +137,7 @@ public class ReservationCheckoutSchedulerTest {
     @Test
     void 거절_후_24시간_지나면_자동으로_퇴실승인된다() {
         // given: 호스트가 거절한 지 25시간 지났고, 게스트는 재제출하지 않음
-        Reservation reservation = saveReservation(true, LocalDateTime.now(KST).minusHours(25), null);
+        Reservation reservation = saveReservation(true, LocalDateTime.now(clock).minusHours(25), null);
 
         // when
         scheduler.autoApproveCheckouts();
@@ -150,7 +150,7 @@ public class ReservationCheckoutSchedulerTest {
     @Test
     void 거절_후_24시간_안지났으면_아직_자동승인되지_않는다() {
         // given: 거절한 지 23시간(아직 24h 미경과)
-        Reservation reservation = saveReservation(true, LocalDateTime.now(KST).minusHours(23), null);
+        Reservation reservation = saveReservation(true, LocalDateTime.now(clock).minusHours(23), null);
 
         // when
         scheduler.autoApproveCheckouts();
@@ -164,7 +164,7 @@ public class ReservationCheckoutSchedulerTest {
     void 거절됐다가_재제출하면_거절타임아웃_큐에서_빠지고_제출시각_기준으로_다시_대기한다() {
         // given: 거절된 지는 25시간 지났지만(오래된 checkoutRejectedAt),
         // 게스트가 방금 재제출해서 checkoutRejected=false, checkoutSubmittedAt=방금
-        Reservation reservation = saveReservation(false, LocalDateTime.now(KST).minusHours(25), LocalDateTime.now(KST));
+        Reservation reservation = saveReservation(false, LocalDateTime.now(clock).minusHours(25), LocalDateTime.now(clock));
 
         // when
         scheduler.autoApproveCheckouts();
@@ -178,7 +178,7 @@ public class ReservationCheckoutSchedulerTest {
     @Test
     void 정상_제출_후_24시간_지나면_기존_로직대로_자동승인된다() {
         // given: 거절 이력 없이 정상 제출, 제출 시각으로부터 25시간 경과
-        Reservation reservation = saveReservation(false, null, LocalDateTime.now(KST).minusHours(25));
+        Reservation reservation = saveReservation(false, null, LocalDateTime.now(clock).minusHours(25));
 
         // when
         scheduler.autoApproveCheckouts();
@@ -205,7 +205,7 @@ public class ReservationCheckoutSchedulerTest {
     void 이용_시작일_도래하면_사용중으로_전환된다() {
         // given: 결제완료 상태, 이용 시작일이 오늘(이미 도래)
         Reservation reservation = saveReservation(
-                ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(clock), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.startUsagePeriod();
@@ -219,7 +219,7 @@ public class ReservationCheckoutSchedulerTest {
     void 계약만_완료되고_결제_안된_상태는_이용_시작일이_지나도_사용중으로_전환되지_않는다() {
         // given: 계약완료(결제 전) 상태, 이용 시작일이 오늘(이미 도래)
         Reservation reservation = saveReservation(
-                ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(clock), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.startUsagePeriod();
@@ -233,7 +233,7 @@ public class ReservationCheckoutSchedulerTest {
     void 예약일까지_결제_안하면_자동취소된다() {
         // given: 계약완료(결제 전) 상태, 이용 시작일이 오늘(이미 도래)
         Reservation reservation = saveReservation(
-                ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(clock), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.cancelUnpaidReservations();
@@ -247,7 +247,7 @@ public class ReservationCheckoutSchedulerTest {
     void 이용_기간_종료되면_이용완료로_전환된다() {
         // given: 사용중 상태, 이용 종료일이 어제(이미 지남)
         Reservation reservation = saveReservation(
-                ReservationStatus.IN_USE, LocalDate.now(KST).minusDays(5), LocalDate.now(KST).minusDays(1));
+                ReservationStatus.IN_USE, LocalDate.now(clock).minusDays(5), LocalDate.now(clock).minusDays(1));
 
         // when
         scheduler.completeUsagePeriod();
@@ -261,7 +261,7 @@ public class ReservationCheckoutSchedulerTest {
     void 예약일까지_승인_안하면_자동취소된다() {
         // given: 승인대기 상태, 예약 시작일이 오늘(이미 도래)
         Reservation reservation = saveReservation(
-                ReservationStatus.PENDING_APPROVAL, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.PENDING_APPROVAL, LocalDate.now(clock), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.cancelUnapprovedReservations();
@@ -275,7 +275,7 @@ public class ReservationCheckoutSchedulerTest {
     void 예약일_전이면_승인_안해도_취소되지_않는다() {
         // given: 승인대기 상태, 예약 시작일이 아직 안 옴
         Reservation reservation = saveReservation(
-                ReservationStatus.PENDING_APPROVAL, LocalDate.now(KST).plusDays(1), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.PENDING_APPROVAL, LocalDate.now(clock).plusDays(1), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.cancelUnapprovedReservations();
@@ -289,7 +289,7 @@ public class ReservationCheckoutSchedulerTest {
     void 예약일까지_계약_안하면_자동취소된다() {
         // given: 승인완료 상태, 예약 시작일이 오늘(이미 도래), 계약 미체결
         Reservation reservation = saveReservation(
-                ReservationStatus.APPROVED, LocalDate.now(KST), LocalDate.now(KST).plusDays(5));
+                ReservationStatus.APPROVED, LocalDate.now(clock), LocalDate.now(clock).plusDays(5));
 
         // when
         scheduler.cancelUncontractedReservations();

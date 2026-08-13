@@ -11,7 +11,9 @@ import com.popIt.pop_it.domain.space.entity.SpaceDailyUv;
 import com.popIt.pop_it.domain.space.repository.SpaceDailyUvRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceVisitLogRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceVisitLogRepository.SpaceUvCount;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -19,6 +21,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,13 +31,15 @@ class SpaceUvAggregationSchedulerTest {
     private SpaceVisitLogRepository spaceVisitLogRepository;
     @Mock
     private SpaceDailyUvRepository spaceDailyUvRepository;
+    @Spy
+    private Clock clock = Clock.system(ZoneId.of("Asia/Seoul"));
 
     @InjectMocks
     private SpaceUvAggregationScheduler scheduler;
 
     @Test
     void 전날_방문_로그를_집계해_신규_UV_레코드를_생성한다() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(clock).minusDays(1);
         SpaceUvCount count = mock(SpaceUvCount.class);
         given(count.getSpaceId()).willReturn(1L);
         given(count.getUvCount()).willReturn(3L);
@@ -53,7 +58,7 @@ class SpaceUvAggregationSchedulerTest {
 
     @Test
     void 이미_집계된_UV_레코드가_있으면_값만_갱신한다() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now(clock).minusDays(1);
         SpaceUvCount count = mock(SpaceUvCount.class);
         given(count.getSpaceId()).willReturn(1L);
         given(count.getUvCount()).willReturn(5L);
@@ -74,7 +79,7 @@ class SpaceUvAggregationSchedulerTest {
 
         scheduler.aggregateYesterdayUv();
 
-        verify(spaceVisitLogRepository).deleteByVisitDate(eq(LocalDate.now().minusDays(1)));
-        verify(spaceDailyUvRepository).deleteByVisitDateBefore(eq(LocalDate.now().minusDays(8)));
+        verify(spaceVisitLogRepository).deleteByVisitDate(eq(LocalDate.now(clock).minusDays(1)));
+        verify(spaceDailyUvRepository).deleteByVisitDateBefore(eq(LocalDate.now(clock).minusDays(8)));
     }
 }

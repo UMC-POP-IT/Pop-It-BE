@@ -16,7 +16,9 @@ import com.popIt.pop_it.domain.user_activity.repository.UserActivityRepository;
 import com.popIt.pop_it.domain.wishlist.entity.Wishlist;
 import com.popIt.pop_it.domain.wishlist.repository.WishlistRepository;
 import com.popIt.pop_it.global.embedding.redis.UserVectorRedisStore;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,6 +40,8 @@ class UserVectorServiceTest {
     private SpaceRepository spaceRepository;
     @Mock
     private UserVectorRedisStore userVectorRedisStore;
+    @Spy
+    private Clock clock = Clock.system(ZoneId.of("Asia/Seoul"));
 
     @InjectMocks
     private UserVectorService userVectorService;
@@ -48,7 +53,7 @@ class UserVectorServiceTest {
         Wishlist oldWishlist = Wishlist.builder()
                 .userId(userId)
                 .spaceId(spaceId)
-                .createdAt(LocalDateTime.now().minusDays(30)) // 14일보다 훨씬 오래된 이력
+                .createdAt(LocalDateTime.now(clock).minusDays(30)) // 14일보다 훨씬 오래된 이력
                 .build();
         Space space = Space.builder()
                 .id(spaceId)
@@ -82,7 +87,7 @@ class UserVectorServiceTest {
     void 남아있는_이력의_공간에_임베딩이_없으면_벡터를_저장하지_않고_기존_캐시도_지운다() {
         Long userId = 3L;
         Wishlist wishlist = Wishlist.builder().userId(userId).spaceId(10L)
-                .createdAt(LocalDateTime.now()).build();
+                .createdAt(LocalDateTime.now(clock)).build();
         Space spaceWithoutEmbedding = Space.builder().id(10L).build(); // embedding == null
 
         given(wishlistRepository.findByUserId(userId)).willReturn(List.of(wishlist));
@@ -98,7 +103,7 @@ class UserVectorServiceTest {
     @Test
     void 조회_횟수가_많을수록_해당_공간_방향으로_취향_벡터가_더_강하게_반영된다() {
         Long userId = 4L;
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         Space rarelyViewedSpace = Space.builder().id(10L).embedding(new float[]{1f, 0f}).build();
         Space frequentlyViewedSpace = Space.builder().id(20L).embedding(new float[]{0f, 1f}).build();
 
@@ -144,7 +149,7 @@ class UserVectorServiceTest {
         Long userId = 6L;
         Long spaceId = 10L;
         Wishlist wishlist = Wishlist.builder().userId(userId).spaceId(spaceId)
-                .createdAt(LocalDateTime.now()).build();
+                .createdAt(LocalDateTime.now(clock)).build();
         Space space = Space.builder().id(spaceId).embedding(new float[]{1f, 0f}).build();
 
         // TTL(30일) 만료 등으로 캐시는 비어 있지만(첫 조회 empty), 재계산 이후에는 새로 저장된 값이

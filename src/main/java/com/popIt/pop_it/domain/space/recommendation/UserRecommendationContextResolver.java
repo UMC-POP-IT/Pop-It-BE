@@ -5,6 +5,7 @@ import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.user_event.entity.UserEvent;
 import com.popIt.pop_it.domain.user_event.entity.enums.UserEventType;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -28,10 +29,11 @@ public class UserRecommendationContextResolver {
 
     private final UserEventRepository userEventRepository;
     private final SpaceRepository spaceRepository;
+    private final Clock clock;
 
     @Transactional(readOnly = true)
     public UserRecommendationContext resolve(Long userId) {
-        LocalDateTime cutoff = LocalDateTime.now().minusDays(RecommendationReasonConstants.REGION_PIVOT_WINDOW_DAYS);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusDays(RecommendationReasonConstants.REGION_PIVOT_WINDOW_DAYS);
         List<UserEvent> recentEvents = userEventRepository.findByUserIdAndCreatedAtAfter(userId, cutoff);
 
         // 대표 지역은 조회(VIEW)뿐 아니라 찜(WISHLIST)까지 합산한 빈도로 정한다

@@ -78,18 +78,18 @@ public class Payment {
 
     // 호스트 지급, 보증금 환불은 각각 별도의 외부 API 호출이라 독립적으로 성공/실패할 수 있어
     // 두 단계를 따로 추적하고, 실패한 쪽만 재시도할 수 있게 한다.
-    public void markHostPayoutDone() {
+    public void markHostPayoutDone(LocalDateTime hostPayoutAt) {
         this.hostPayoutStatus = SettlementStepStatus.DONE;
-        this.hostPayoutAt = LocalDateTime.now();
+        this.hostPayoutAt = hostPayoutAt;
     }
 
     public void markHostPayoutFailed() {
         this.hostPayoutStatus = SettlementStepStatus.FAILED;
     }
 
-    public void markDepositRefundDone() {
+    public void markDepositRefundDone(LocalDateTime depositRefundedAt) {
         this.depositRefundStatus = SettlementStepStatus.DONE;
-        this.depositRefundedAt = LocalDateTime.now();
+        this.depositRefundedAt = depositRefundedAt;
     }
 
     public void markDepositRefundFailed() {

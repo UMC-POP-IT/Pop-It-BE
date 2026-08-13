@@ -17,13 +17,16 @@ import com.popIt.pop_it.domain.user_event.entity.UserEvent;
 import com.popIt.pop_it.domain.user_event.repository.UserEventRepository;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
 import com.popIt.pop_it.global.embedding.event.UserEngagementEvent;
+import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -39,6 +42,8 @@ class UserActivityServiceTest {
     private SpaceRepository spaceRepository;
     @Mock
     private ApplicationEventPublisher eventPublisher;
+    @Spy
+    private Clock clock = Clock.system(ZoneId.of("Asia/Seoul"));
 
     @InjectMocks
     private UserActivityService userActivityService;

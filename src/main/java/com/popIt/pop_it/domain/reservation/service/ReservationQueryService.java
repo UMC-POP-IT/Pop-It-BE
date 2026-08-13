@@ -21,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Clock;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -34,13 +34,11 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class ReservationQueryService {
 
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜 계산이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
-
     private final ReservationRepository reservationRepository;
     private final SpaceImageRepository spaceImageRepository;
     private final CheckoutImageRepository checkoutImageRepository;
     private final SpaceRepository spaceRepository;
+    private final Clock clock;
 
     //게스트 예약 목록 조회 (커서 기반 + 상태 필터)
     public ReservationResDTO.ReservationPagedSummaryRes getMyReservations(
@@ -87,7 +85,7 @@ public class ReservationQueryService {
 
         return ReservationConverter.toUnavailableDates(
                 reservationRepository.findUnavailableDateRangesBySpaceId(
-                        spaceId, List.of(ReservationStatus.CANCELLED), LocalDate.now(KST)
+                        spaceId, List.of(ReservationStatus.CANCELLED), LocalDate.now(clock)
                 )
         );
     }

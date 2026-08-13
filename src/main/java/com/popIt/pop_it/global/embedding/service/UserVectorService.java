@@ -11,6 +11,7 @@ import com.popIt.pop_it.global.util.EngagementType;
 import com.popIt.pop_it.global.util.TimeDecayCalculator;
 import com.popIt.pop_it.global.util.VectorMath;
 import com.popIt.pop_it.global.util.VectorMath.WeightedVector;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -44,6 +45,7 @@ public class UserVectorService {
     private final UserActivityRepository userActivityRepository;
     private final SpaceRepository spaceRepository;
     private final UserVectorRedisStore userVectorRedisStore;
+    private final Clock clock;
 
     // 같은 유저의 재계산이 겹치면(연속 찜 토글 등) 늦게 시작했지만 먼저 끝난 계산이 Redis를 덮어써
     // 최신 벡터가 오래된 값으로 되돌아갈 수 있다 - 유저 단위로 읽기~쓰기 전체를 직렬화해 막는다.
@@ -57,7 +59,7 @@ public class UserVectorService {
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void recomputeUserVector(Long userId) {
         synchronized (lockFor(userId)) {
-            LocalDateTime now = LocalDateTime.now();
+            LocalDateTime now = LocalDateTime.now(clock);
 
             List<Wishlist> wishlists = wishlistRepository.findByUserId(userId);
             List<UserActivity> activities = userActivityRepository.findByUserId(userId);

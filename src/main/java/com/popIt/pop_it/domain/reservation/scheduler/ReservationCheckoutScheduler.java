@@ -10,9 +10,9 @@ import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.List;
 
 @Slf4j
@@ -22,17 +22,16 @@ import java.util.List;
 // 시간 변화에 따른 상태변환을 구현하기 위한 스케줄러입니다.
 // 예약 1건당 별도 트랜잭션(REQUIRES_NEW)으로 처리해, 한 건이 낙관적 락 충돌로 실패해도 나머지 예약 처리에 영향 없도록 함
 public class ReservationCheckoutScheduler {
-    // 서버(JVM) 기본 시간대가 UTC인 환경(Docker 등)에서도 날짜 경계 계산이 한국 기준으로 되도록 명시
-    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
 
     private final ReservationRepository reservationRepository;
     private final ReservationCommandService reservationCommandService;
+    private final Clock clock;
 
     // 1. 이용 시작일 도래 → 사용중(IN_USE) 자동 전환
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void startUsagePeriod() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PAYMENT_COMPLETED, LocalDate.now(clock));
 
         for (Reservation reservation : targets) {
             try {
@@ -48,7 +47,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void completeUsagePeriod() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndEndDateBefore(ReservationStatus.IN_USE, LocalDate.now(KST));
+                .findAllByStatusAndEndDateBefore(ReservationStatus.IN_USE, LocalDate.now(clock));
 
         for (Reservation reservation : targets) {
             try {
@@ -64,7 +63,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void cancelUnapprovedReservations() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PENDING_APPROVAL, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.PENDING_APPROVAL, LocalDate.now(clock));
 
         for (Reservation reservation : targets) {
             try {
@@ -80,7 +79,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void cancelUncontractedReservations() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.APPROVED, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.APPROVED, LocalDate.now(clock));
 
         for (Reservation reservation : targets) {
             try {
@@ -96,7 +95,7 @@ public class ReservationCheckoutScheduler {
     @Scheduled(cron = "0 0 * * * *", zone = "Asia/Seoul") // 매시 정각
     public void cancelUnpaidReservations() {
         List<Reservation> targets = reservationRepository
-                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(KST));
+                .findAllByStatusAndStartDateLessThanEqual(ReservationStatus.CONTRACT_COMPLETED, LocalDate.now(clock));
 
         for (Reservation reservation : targets) {
             try {
@@ -111,7 +110,7 @@ public class ReservationCheckoutScheduler {
     // 4. 퇴실 승인 24h 자동 처리 (사진 제출했든 스킵했든 둘 다 커버)
     @Scheduled(fixedRate = 30 * 60 * 1000) // 30분마다
     public void autoApproveCheckouts() {
-        LocalDateTime cutoff = LocalDateTime.now(KST).minusHours(24);
+        LocalDateTime cutoff = LocalDateTime.now(clock).minusHours(24);
 
         // 사진 제출한 경우(거절된 적 없는 정상 대기) - 제출 시각 기준 24h
         List<Reservation> submitted = reservationRepository
@@ -119,7 +118,7 @@ public class ReservationCheckoutScheduler {
 
         // 사진 스킵한 경우(거절된 적 없음) - USAGE_COMPLETED 전환 시점(endDate 다음날 00:00) 기준 24h
         // = endDate가 (오늘 - 2일) 이하인 예약
-        LocalDate cutoffDate = LocalDate.now(KST).minusDays(2);
+        LocalDate cutoffDate = LocalDate.now(clock).minusDays(2);
         List<Reservation> skipped = reservationRepository
                 .findAllByStatusAndCheckoutRejectedFalseAndCheckoutSubmittedAtIsNullAndEndDateLessThanEqual(ReservationStatus.USAGE_COMPLETED, cutoffDate);
 

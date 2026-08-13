@@ -110,7 +110,8 @@ public class Scene {
         this.isDefault = false;
     }
 
-    public void markDeleted() {
-        this.deletedAt = LocalDateTime.now();
+    // 엔티티는 스프링 빈이 아니라 Clock을 주입받을 수 없으므로, 호출부(SceneCommandService)가 Clock으로 계산한 시각을 넘겨준다.
+    public void markDeleted(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
     }
 }

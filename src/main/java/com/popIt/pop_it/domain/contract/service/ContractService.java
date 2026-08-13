@@ -19,7 +19,9 @@ import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.config.AwsProperties;
 import com.popIt.pop_it.global.util.CryptoService;
 import com.popIt.pop_it.global.util.S3ObjectHasher;
+import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
@@ -38,6 +40,7 @@ public class ContractService {
     private final S3ObjectHasher s3ObjectHasher;
     private final AwsProperties awsProperties;
     private final CryptoService cryptoService;
+    private final Clock clock;
 
     // 계약 생성
     @Transactional
@@ -181,7 +184,7 @@ public class ContractService {
                     // 이미 호스트 서명 처리되었는데 다시 요청할 경우
                     case GUEST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_ALREADY_HOST_SIGNED);
                     // 호스트 서명 처리
-                    case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl(), ciHash, signatureImgHash);
+                    case HOST_SIGNATURE_PENDING -> contract.signByHost(ContractStatus.GUEST_SIGNATURE_PENDING, dto.signatureUrl(), ciHash, signatureImgHash, LocalDateTime.now(clock));
                 }
             }
             else if (currentMode == UserMode.GUEST) {
@@ -192,7 +195,7 @@ public class ContractService {
                     case HOST_SIGNATURE_PENDING -> throw new ContractException(ContractErrorCode.CONTRACT_NOT_GUEST_SIGNATURE_ORDER);
                     // 게스트 서명 처리
                     case GUEST_SIGNATURE_PENDING -> {
-                        contract.signByGuest(ContractStatus.PENDING_PAYMENT, dto.signatureUrl(), ciHash, signatureImgHash);
+                        contract.signByGuest(ContractStatus.PENDING_PAYMENT, dto.signatureUrl(), ciHash, signatureImgHash, LocalDateTime.now(clock));
                         reservation.markContractCompleted();
                     }
                 }

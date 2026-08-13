@@ -7,9 +7,9 @@ import com.popIt.pop_it.domain.space.repository.SpaceRepository;
 import com.popIt.pop_it.domain.space.repository.SpaceVisitLogRepository;
 import com.popIt.pop_it.domain.user.entity.enums.UserMode;
 import com.popIt.pop_it.global.apiPayload.exception.ProjectException;
+import java.time.Clock;
 import java.time.LocalDate;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -26,6 +26,7 @@ public class SpaceVisitLogService {
 
     private final SpaceVisitLogRepository spaceVisitLogRepository;
     private final SpaceRepository spaceRepository;
+    private final Clock clock;
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordVisit(Long spaceId, Long userId, UserMode mode) {
@@ -37,7 +38,7 @@ public class SpaceVisitLogService {
             return;
         }
 
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         if (spaceVisitLogRepository.existsBySpaceIdAndUserIdAndVisitDate(spaceId, userId, today)) {
             return;
         }
