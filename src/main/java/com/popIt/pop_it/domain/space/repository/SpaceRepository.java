@@ -1,5 +1,6 @@
 package com.popIt.pop_it.domain.space.repository;
 
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
 import com.popIt.pop_it.domain.space.entity.Space;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +60,16 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
                            or (:hasKeywordType = true and s.spaceType = :keywordType))
                       and (:district is null or s.district = :district)
                       and (:spaceCategory is null or s.spaceCategory = :spaceCategory)
+                      and (:hasPeriod = false
+                           or (s.availableStartDate <= :startDate
+                               and s.availableEndDate >= :endDate
+                               and not exists (
+                                   select r.id
+                                   from Reservation r
+                                   where r.space = s
+                                     and r.status not in :excludedReservationStatuses
+                                     and r.startDate <= :endDate
+                                     and r.endDate >= :startDate)))
                     order by s.createdAt desc, s.id desc
                     """,
             countQuery = """
@@ -73,6 +85,16 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
                            or (:hasKeywordType = true and s.spaceType = :keywordType))
                       and (:district is null or s.district = :district)
                       and (:spaceCategory is null or s.spaceCategory = :spaceCategory)
+                      and (:hasPeriod = false
+                           or (s.availableStartDate <= :startDate
+                               and s.availableEndDate >= :endDate
+                               and not exists (
+                                   select r.id
+                                   from Reservation r
+                                   where r.space = s
+                                     and r.status not in :excludedReservationStatuses
+                                     and r.startDate <= :endDate
+                                     and r.endDate >= :startDate)))
                     """
     )
     Page<Space> search(
@@ -83,6 +105,10 @@ public interface SpaceRepository extends JpaRepository<Space, Long> {
             @Param("keywordCategory") SpaceCategory keywordCategory,
             @Param("hasKeywordType") boolean hasKeywordType,
             @Param("keywordType") SpaceType keywordType,
+            @Param("hasPeriod") boolean hasPeriod,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("excludedReservationStatuses") List<ReservationStatus> excludedReservationStatuses,
             Pageable pageable
     );
 

@@ -64,6 +64,11 @@ public class SpaceService {
             ReservationStatus.USAGE_COMPLETED
     );
 
+    // 기간 필터에서 기간을 선점한 것으로 보지 않을 예약 상태
+    private static final List<ReservationStatus> SEARCH_UNOCCUPIED_RESERVATION_STATUSES = List.of(
+            ReservationStatus.CANCELLED
+    );
+
     // 실시간 추천 캐러셀에 한 번에 내려줄 최대 공간 수
     private static final int REALTIME_RECOMMENDED_POOL_SIZE = 20;
     // 캐러셀 앞단에 추천 유형 공간을 배치할 슬롯 수 (Slot 1~3)
@@ -177,7 +182,12 @@ public class SpaceService {
         SpaceCategory keywordCategory = matchCategory(keyword);
         SpaceType keywordType = matchType(keyword);
 
-        // 3. 조건에 맞는 공간 페이징 조회
+        // 3. 이용 희망 기간은 시작일, 종료일이 모두 있을 때만 조건으로 적용
+        LocalDate periodStartDate = request.startDate();
+        LocalDate periodEndDate = request.endDate();
+        boolean hasPeriod = (periodStartDate != null && periodEndDate != null);
+
+        // 4. 조건에 맞는 공간 페이징 조회
         Page<Space> spacePage = spaceRepository.search(
                 keyword,
                 district,
@@ -186,6 +196,10 @@ public class SpaceService {
                 keywordCategory,
                 keywordType != null,
                 keywordType,
+                hasPeriod,
+                periodStartDate,
+                periodEndDate,
+                SEARCH_UNOCCUPIED_RESERVATION_STATUSES,
                 PageRequest.of(request.page(), request.size())
         );
 
@@ -197,20 +211,20 @@ public class SpaceService {
             return SpaceConverter.toSearchResult(spacePage, Map.of(), Map.of(), Set.of());
         }
 
-        // 4. 대표 이미지 조회
+        // 5. 대표 이미지 조회
         Map<Long, String> thumbnailUrlBySpaceId = spaceImageRepository.findThumbnailsBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(
                         image -> image.getSpace().getId(),
                         image -> image.getImageUrl(),
                         (existing, duplicate) -> existing));
 
-        // 5. 찜 수 조회
+        // 6. 찜 수 조회
         Map<Long, Integer> wishCountBySpaceId = wishlistRepository.countBySpaceIds(spaceIds).stream()
                 .collect(Collectors.toMap(
                         WishCountBySpace::getSpaceId,
                         view -> view.getCount().intValue()));
 
-        // 6. 내 찜 여부 조회
+        // 7. 내 찜 여부 조회
         Set<Long> wishlistedSpaceIds = (userId == null)
                 ? Set.of()
                 : Set.copyOf(wishlistRepository.findWishlistedSpaceIds(userId, spaceIds));

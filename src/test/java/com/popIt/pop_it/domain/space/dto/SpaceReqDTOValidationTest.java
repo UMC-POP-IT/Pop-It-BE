@@ -95,7 +95,7 @@ class SpaceReqDTOValidationTest {
     @DisplayName("탐색: 공백만 있는 검색어/지역은 필터 미적용(null)으로 처리된다")
     void search_blankParamsBecomeNull() {
         SpaceReqDTO.SpaceSearchReq request =
-                new SpaceReqDTO.SpaceSearchReq("   ", null, "  ", null, null);
+                new SpaceReqDTO.SpaceSearchReq("   ", null, "  ", null, null, null, null);
 
         assertThat(request.keyword()).isNull();
         assertThat(request.district()).isNull();
@@ -343,5 +343,38 @@ class SpaceReqDTOValidationTest {
                 description,
                 null, null
         );
+    }
+
+    @Test
+    @DisplayName("탐색: 시작일만 전달하면 짝 검증에 걸린다")
+    void search_startDateWithoutEndDate_fails() {
+        SpaceReqDTO.SpaceSearchReq request =
+                new SpaceReqDTO.SpaceSearchReq(null, null, null, LocalDate.now().plusDays(1), null, null, null);
+
+        assertThat(validator.validate(request))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("이용 희망 기간은 시작일과 종료일을 함께 전달해야 합니다.");
+    }
+
+    @Test
+    @DisplayName("탐색: 시작일이 종료일보다 늦으면 검증에 걸린다")
+    void search_reversedPeriod_fails() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        SpaceReqDTO.SpaceSearchReq request =
+                new SpaceReqDTO.SpaceSearchReq(null, null, null, start, start.minusDays(1), null, null);
+
+        assertThat(validator.validate(request))
+                .extracting(ConstraintViolation::getMessage)
+                .contains("이용 희망 기간의 시작일은 종료일보다 늦을 수 없습니다.");
+    }
+
+    @Test
+    @DisplayName("탐색: 시작일과 종료일이 같으면 통과한다")
+    void search_singleDayPeriod_passes() {
+        LocalDate day = LocalDate.now().plusDays(10);
+        SpaceReqDTO.SpaceSearchReq request =
+                new SpaceReqDTO.SpaceSearchReq(null, null, null, day, day, null, null);
+
+        assertThat(validator.validate(request)).isEmpty();
     }
 }
