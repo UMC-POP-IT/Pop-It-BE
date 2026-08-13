@@ -1,5 +1,8 @@
 package com.popIt.pop_it.domain.space.service;
 
+import com.popIt.pop_it.domain.reservation.entity.Reservation;
+import com.popIt.pop_it.domain.reservation.enums.ReservationStatus;
+import com.popIt.pop_it.domain.reservation.repository.ReservationRepository;
 import com.popIt.pop_it.domain.space.dto.SpaceReqDTO;
 import com.popIt.pop_it.domain.space.dto.SpaceResDTO;
 import com.popIt.pop_it.domain.space.entity.Space;
@@ -9,6 +12,10 @@ import com.popIt.pop_it.domain.space.enums.RegistrantType;
 import com.popIt.pop_it.domain.space.enums.SpaceCategory;
 import com.popIt.pop_it.domain.space.enums.SpaceType;
 import com.popIt.pop_it.domain.space.repository.SpaceRepository;
+import com.popIt.pop_it.domain.user.entity.User;
+import com.popIt.pop_it.domain.user.entity.enums.SocialProvider;
+import com.popIt.pop_it.domain.user.entity.enums.UserMode;
+import com.popIt.pop_it.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +37,10 @@ class SpaceSearchTest {
     private SpaceService spaceService;
     @Autowired
     private SpaceRepository spaceRepository;
+    @Autowired
+    private ReservationRepository reservationRepository;
+    @Autowired
+    private UserRepository userRepository;
 
     private Long popupSpaceId;      // 성수동 / 성동구 / 팝업스토어 / 오픈형 홀
     private Long gallerySpaceId;    // 연남동 / 마포구 / 전시, 갤러리 / 가벽 분리형
@@ -142,7 +154,7 @@ class SpaceSearchTest {
     @DisplayName("지역(구) 필터가 적용된다")
     void search_withDistrictFilter() {
         SpaceResDTO.SpaceSearchListRes result = spaceService.searchSpaces(
-                null, new SpaceReqDTO.SpaceSearchReq(null, null, "마포구", 0, 28));
+                null, new SpaceReqDTO.SpaceSearchReq(null, null, "마포구", null, null, 0, 28));
 
         assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::district)
                 .containsOnly("마포구");
@@ -155,7 +167,7 @@ class SpaceSearchTest {
     void search_keywordAndFilterAreAnded() {
         // 성수동 공간은 성동구에 있으므로 마포구 필터와 교집합이 없다
         SpaceResDTO.SpaceSearchListRes result = spaceService.searchSpaces(
-                null, new SpaceReqDTO.SpaceSearchReq("성수동", null, "마포구", 0, 28));
+                null, new SpaceReqDTO.SpaceSearchReq("성수동", null, "마포구", null, null, 0, 28));
 
         assertThat(result.spaces()).isEmpty();
     }
@@ -183,8 +195,202 @@ class SpaceSearchTest {
                 .containsOnly(false);
     }
 
+    // 기간 필터
+    @Test
+    @DisplayName("기간을 지정하지 않으면 계약 가능 기간과 무관하게 전체 공간이 조회된다")
+    void search_withoutPeriod_ignoresAvailablePeriod() {
+        Long pastSpaceId = saveSpaceWithPeriod("계약 종료된 공간",
+                LocalDate.now().minusMonths(2), LocalDate.now().minusMonths(1)).getId();
+
+        SpaceResDTO.SpaceSearchListRes result = search(null);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .contains(pastSpaceId);
+    }
+
+    @Test
+    @DisplayName("검색 기간이 계약 가능 기간 안에 모두 포함되면 조회된다")
+    void search_withPeriodInsideAvailablePeriod_returnsSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Long spaceId = saveSpaceWithPeriod("기간 포함 공간",
+                start.minusDays(5), end.plusDays(5)).getId();
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .contains(spaceId);
+    }
+
+    @Test
+    @DisplayName("검색 기간의 일부만 계약 가능 기간에 걸치면 조회되지 않는다")
+    void search_withPeriodPartiallyOutsideAvailablePeriod_excludesSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        // 계약 가능 기간이 검색 종료일 하루 전에 끝나므로 기간 전체를 빌릴 수 없다
+        Long spaceId = saveSpaceWithPeriod("기간 일부만 가능한 공간",
+                start.minusDays(5), end.minusDays(1)).getId();
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .doesNotContain(spaceId);
+    }
+
+    @Test
+    @DisplayName("검색 기간 중 하루라도 예약이 겹치면 조회되지 않는다")
+    void search_withPeriodPartiallyOccupied_excludesSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Space space = saveSpaceWithPeriod("중간이 예약된 공간", start.minusDays(5), end.plusDays(5));
+        // 검색 기간 한가운데 하루짜리 예약
+        saveReservation(space, start.plusDays(3), start.plusDays(3), ReservationStatus.PAYMENT_COMPLETED);
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .doesNotContain(space.getId());
+    }
+
+    @Test
+    @DisplayName("예약이 검색 기간 시작일에만 걸쳐도 조회되지 않는다 (경계값)")
+    void search_withReservationOverlappingStartDate_excludesSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Space space = saveSpaceWithPeriod("시작일 겹침 공간", start.minusDays(5), end.plusDays(5));
+        saveReservation(space, start.minusDays(3), start, ReservationStatus.APPROVED);
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .doesNotContain(space.getId());
+    }
+
+    @Test
+    @DisplayName("예약이 검색 기간 종료일 바로 다음 날부터면 조회된다 (경계값)")
+    void search_withReservationRightAfterEndDate_returnsSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Space space = saveSpaceWithPeriod("종료일 직후 예약 공간", start.minusDays(5), end.plusDays(10));
+        saveReservation(space, end.plusDays(1), end.plusDays(5), ReservationStatus.PAYMENT_COMPLETED);
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .contains(space.getId());
+    }
+
+    @Test
+    @DisplayName("승인 대기 예약도 기간을 선점한다")
+    void search_withPendingReservation_excludesSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Space space = saveSpaceWithPeriod("승인 대기 공간", start.minusDays(5), end.plusDays(5));
+        saveReservation(space, start, end, ReservationStatus.PENDING_APPROVAL);
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .doesNotContain(space.getId());
+    }
+
+    @Test
+    @DisplayName("취소된 예약은 기간을 선점하지 않는다")
+    void search_withCancelledReservation_returnsSpace() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(6);
+        Space space = saveSpaceWithPeriod("취소 예약만 있는 공간", start.minusDays(5), end.plusDays(5));
+        saveReservation(space, start, end, ReservationStatus.CANCELLED);
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(start, end);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .contains(space.getId());
+    }
+
+    @Test
+    @DisplayName("시작일과 종료일이 같은 하루짜리 기간도 조회된다")
+    void search_withSingleDayPeriod_returnsSpace() {
+        LocalDate day = LocalDate.now().plusDays(10);
+        Space space = saveSpaceWithPeriod("하루 검색 공간", day.minusDays(5), day.plusDays(5));
+
+        SpaceResDTO.SpaceSearchListRes result = searchByPeriod(day, day);
+
+        assertThat(result.spaces()).extracting(SpaceResDTO.SpaceSearchRes::spaceId)
+                .contains(space.getId());
+    }
+
+    @Test
+    @DisplayName("기간 필터는 키워드·지역 필터와 AND로 동작한다")
+    void search_periodIsAndedWithOtherFilters() {
+        LocalDate start = LocalDate.now().plusDays(10);
+        LocalDate end = start.plusDays(3);
+        saveSpaceWithPeriod("성수 기간테스트", start.minusDays(1), end.plusDays(1));
+
+        // 성수 기간테스트 공간은 성동구에 있으므로 마포구 필터와 교집합이 없다
+        SpaceResDTO.SpaceSearchListRes result = spaceService.searchSpaces(
+                null, new SpaceReqDTO.SpaceSearchReq("성수 기간테스트", null, "마포구", start, end, 0, 28));
+
+        assertThat(result.spaces()).isEmpty();
+    }
+
+    private SpaceResDTO.SpaceSearchListRes searchByPeriod(LocalDate startDate, LocalDate endDate) {
+        return spaceService.searchSpaces(
+                null, new SpaceReqDTO.SpaceSearchReq(null, null, null, startDate, endDate, 0, 28));
+    }
+
+    private Space saveSpaceWithPeriod(String buildingName, LocalDate availableStartDate, LocalDate availableEndDate) {
+        return spaceRepository.save(Space.builder()
+                .buildingName(buildingName)
+                .registrantType(RegistrantType.OWNER)
+                .buildingType(BuildingType.GENERAL_COMMERCIAL)
+                .city("서울특별시")
+                .district("성동구")
+                .dong("성수동")
+                .latitude(37.5445)
+                .longitude(127.0557)
+                .roadAddress("서울 성동구 테스트로 1")
+                .addressDetail("101호")
+                .deposit(1_000_000L)
+                .pricePerDay(80_000)
+                .availableStartDate(availableStartDate)
+                .availableEndDate(availableEndDate)
+                .spaceCategory(SpaceCategory.POPUP_STORE)
+                .spaceType(SpaceType.OPEN_HALL)
+                .exclusiveArea(50.0)
+                .floorType(FloorType.GENERAL_FLOOR)
+                .floorNumber(1)
+                .parkingAvailable(true)
+                .description("테스트 공간입니다.")
+                .hostId(1L)
+                .build());
+    }
+
+    private void saveReservation(Space space, LocalDate startDate, LocalDate endDate, ReservationStatus status) {
+        User guest = userRepository.save(User.builder()
+                .socialProvider(SocialProvider.GOOGLE)
+                .socialUid("guest-" + UUID.randomUUID())
+                .nickname("게스트")
+                .currentMode(UserMode.GUEST)
+                .build());
+
+        reservationRepository.save(Reservation.builder()
+                .status(status)
+                .startDate(startDate)
+                .endDate(endDate)
+                .usagePurpose("테스트 예약")
+                .rentalFee(400_000L)
+                .deposit(500_000L)
+                .insuranceFee(20_000L)
+                .platformFee(40_000L)
+                .totalPrice(960_000L)
+                .space(space)
+                .user(guest)
+                .build());
+    }
+
     private SpaceResDTO.SpaceSearchListRes search(String keyword) {
-        return spaceService.searchSpaces(null, new SpaceReqDTO.SpaceSearchReq(keyword, null, null, 0, 28));
+        return spaceService.searchSpaces(null, new SpaceReqDTO.SpaceSearchReq(keyword, null, null, null, null, 0, 28));
     }
 
     private Space saveSpace(String buildingName, String district, String dong,
