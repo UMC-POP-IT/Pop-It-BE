@@ -27,7 +27,7 @@ public class SpaceUvAggregationScheduler {
     private final SpaceDailyUvRepository spaceDailyUvRepository;
     private final Clock clock;
 
-    @Scheduled(cron = "0 10 0 * * *") // 매일 00:10 - 전날 UV 확정
+    @Scheduled(cron = "0 10 0 * * *", zone = "Asia/Seoul") // 매일 00:10 - 전날 UV 확정
     @Transactional
     public void aggregateYesterdayUv() {
         // 배치 하나는 하나의 기준 시점을 가져야 하므로 today를 한 번만 계산해 yesterday/retentionCutoff를 파생시킨다.
