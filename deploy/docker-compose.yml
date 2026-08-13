@@ -1,0 +1,111 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: popit-mysql
+    restart: always
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      TZ: Asia/Seoul
+      MYSQL_DATABASE: popit
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    command: ["--default-time-zone=+09:00"]
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - popit-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${DB_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: popit-redis
+    restart: always
+    volumes:
+      - redis-data:/data
+    networks:
+      - popit-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    image: ghcr.io/umc-pop-it/pop-it-be:latest
+    container_name: popit-app
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy       # MySQL이 준비된 뒤에 앱 기동
+      redis:
+        condition: service_healthy
+    environment:
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: "-Xmx512m"       # t3.micro용 힙 제한 (재빌드 없이 튜닝 가능)
+      SPRING_PROFILES_ACTIVE: prod        # EC2 배포 전용이라 prod로 고정
+      DDL_AUTO: ${DDL_AUTO}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      CRYPTO_SECRET_KEY: ${CRYPTO_SECRET_KEY}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      ALLOWED_FRONTEND_ORIGINS: ${ALLOWED_FRONTEND_ORIGINS}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      KAKAO_CLIENT_ID: ${KAKAO_CLIENT_ID}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      PORTONE_API_SECRET_KEY: ${PORTONE_API_SECRET_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_HOST_DOCUMENT_BUCKET: ${AWS_HOST_DOCUMENT_BUCKET}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    networks:
+      - popit-net
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: popit-prometheus
+    restart: always
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "127.0.0.1:9091:9090"
+    networks:
+      - popit-net
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: popit-nginx
+    restart: always
+    depends_on:
+      - app
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./certbot/www:/var/www/certbot:ro
+      - /etc/letsencrypt:/etc/letsencrypt:ro
+    networks:
+      - popit-net
+
+volumes:
+  mysql-data:
+  redis-data:
+  prometheus-data:
+
+networks:
+  popit-net:

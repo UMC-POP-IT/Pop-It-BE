@@ -1,0 +1,6 @@
+scrape_configs:
+  - job_name: 'pop-it-be'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['app:9090']  # docker-compose 네트워크 내부 서비스명:actuator 포트

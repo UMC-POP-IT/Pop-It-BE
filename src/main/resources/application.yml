@@ -1,0 +1,116 @@
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:h2:~/popit;MODE=MySQL;AUTO_SERVER=TRUE}
+    username: ${DB_USERNAME:sa}
+    password: ${DB_PASSWORD:}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+          kakao:
+            client-id: ${KAKAO_CLIENT_ID}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+            scope:
+              - profile_nickname
+            provider: kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+    crypto:
+      secret-key: ${CRYPTO_SECRET_KEY}
+  jpa:
+    hibernate:
+      ddl-auto: ${DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: true
+  flyway:
+    enabled: false # local/test는 H2 + hibernate ddl-auto가 스키마를 관리 (prod에서만 활성화)
+  h2:
+    console:
+      enabled: true
+      path: "/h2-console"
+      settings:
+        web-allow-others: false
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+jwt:
+  token:
+    secretKey: ${JWT_SECRET_KEY} # 환경변수 기본값 없이 필수로 요구하게 하기
+    expiration:
+      access: 1800000 # 30분
+      refresh: 1209600000 # 14일
+
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  # 소셜 로그인 성공 후 돌려보낼 프론트 origin 화이트리스트 (frontend-url은 코드에서 항상 허용에 포함된다).
+  # 로컬 프론트(localhost)에서 배포 백엔드로 로그인을 시작해도, 시작 origin으로 그대로 복귀시키기 위함.
+  # TODO(데모 종료 후 제거): 프로덕션 화이트리스트에 localhost를 남겨둔 상태다.
+  #   PKCE verifier 검증(OAuthCodeStore)으로 code 탈취만으로는 토큰 교환이 불가해 실질 위험은 낮으나,
+  #   운영 URL이 고정된 뒤에는 ALLOWED_FRONTEND_ORIGINS에서 로컬 origin을 반드시 제거할 것.
+  allowed-frontend-origins: ${ALLOWED_FRONTEND_ORIGINS:http://localhost:5173,http://localhost:3000}
+
+cloud:
+  aws:
+    credentials:
+      access-key: ${AWS_ACCESS_KEY_ID}
+      secret-key: ${AWS_SECRET_ACCESS_KEY}
+    region: ${AWS_REGION}
+    s3:
+      bucket: ${AWS_S3_BUCKET}
+      host-document-bucket: ${AWS_HOST_DOCUMENT_BUCKET}
+
+portone:
+  api-secret: ${PORTONE_API_SECRET_KEY}
+
+toss:
+  secret-key: ${TOSS_SECRET_KEY}
+
+gemini:
+  api-key: ${GEMINI_API_KEY}
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  model: gemini-embedding-2
+  output-dimensionality: 768
+
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health, prometheus
+  endpoint:
+    health:
+      show-details: never
+    prometheus:
+      enabled: true
+
+kakao:
+  local:
+    rest-api-key: ${KAKAO_CLIENT_ID}
+
+springdoc:
+  swagger-ui:
+    operations-sorter : method
+
+server:
+  forward-headers-strategy: framework # nginx 리버스 프록시 뒤에서 X-Forwarded-* 헤더를 신뢰 (OAuth redirect-uri의 {baseScheme}가 https로 정확히 채워지도록)

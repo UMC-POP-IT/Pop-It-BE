@@ -1,0 +1,77 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false # local/test는 H2 + hibernate ddl-auto가 스키마를 관리 (prod에서만 활성화)
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: test-client-id
+            client-secret: test-client-secret
+            scope:
+              - profile
+              - email
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+
+          kakao:
+            client-id: test-kakao-client-id
+            client-secret: test-kakao-client-secret
+            client-authentication-method: client_secret_post
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseScheme}://{baseHost}{basePort}{basePath}/api/v1/auth/oauth/callback/{registrationId}"
+            scope:
+              - profile_nickname
+            provider: kakao
+
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+    crypto:
+      secret-key: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
+
+jwt:
+  token:
+    secretKey: "abcdefghijklmnopqrstuvwxyz123456"
+    expiration:
+      access: 1800000
+      refresh: 1209600000
+
+portone:
+  api-secret: "test-portone-secret"
+
+toss:
+  secret-key: "test-toss-secret-key"
+
+cloud:
+  aws:
+    region: ap-northeast-2
+    credentials:
+      access-key: test-access-key
+      secret-key: test-secret-key
+    s3:
+      bucket: test-bucket
+      host-document-bucket: test-host-document-bucket
+
+kakao:
+  local:
+    rest-api-key: test-kakao-rest-api-key
+
+app:
+  frontend-url: http://localhost:5173
+  allowed-frontend-origins: http://localhost:5173,http://localhost:3000
+
+gemini:
+  api-key: test-gemini-api-key
+  base-url: https://generativelanguage.googleapis.com/v1beta
+  model: gemini-embedding-2
+  output-dimensionality: 768

@@ -1,0 +1,27 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    show-sql: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true # 안정화되면 false로 되돌리기
+    baseline-version: 0 # V1(인덱스 추가)은 아직 실행된 적 없으므로, baseline이 V1을 건너뛰지 않도록 그보다 낮게 설정
+  h2:
+    console:
+      enabled: false       # prod는 H2 콘솔 자체 불필요
+
+springdoc:
+  swagger-ui:
+    enabled: true
+
+sentry:
+  dsn: https://99c494710c245790a4da465beefc7464@o4511863814356992.ingest.us.sentry.io/4511863820713984
+  logs:
+    enabled: true
+  traces-sample-rate: 1.0
+  logging:
+    minimum-event-level: warn
+    minimum-breadcrumb-level: info
