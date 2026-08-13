@@ -2,7 +2,7 @@ name: Deploy to EC2
 
 on:
   push:
-    branches: [ develop ]      # develop에 push(PR 머지) 시 자동 실행
+    branches: [ main ]      # main에 push(PR 머지) 시 자동 실행
   workflow_dispatch:            # 필요하면 Actions 탭에서 수동 실행도 가능
 
 env:
