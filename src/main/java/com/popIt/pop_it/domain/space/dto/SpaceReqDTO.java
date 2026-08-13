@@ -179,6 +179,20 @@ public class SpaceReqDTO {
             @Size(max = 50)
             String district,
 
+            @Schema(
+                    description = "이용 희망 시작일 (yyyy-MM-dd). endDate와 반드시 함께 전달합니다. "
+                            + "두 값을 모두 생략하면 날짜 조건 없이 조회합니다.",
+                    example = "2026-09-01"
+            )
+            LocalDate startDate,
+
+            @Schema(
+                    description = "이용 희망 종료일 (yyyy-MM-dd, 종료일 포함). startDate와 반드시 함께 전달하며, "
+                            + "시작일보다 빠를 수 없습니다.",
+                    example = "2026-09-07"
+            )
+            LocalDate endDate,
+
             @Schema(description = "페이지 번호 (0부터 시작)", example = "0", defaultValue = "0")
             @Min(0)
             Integer page,
@@ -199,6 +213,17 @@ public class SpaceReqDTO {
                     if (size == null) {
                             size = 28;
                     }
+            }
+
+            @AssertTrue(message = "이용 희망 기간은 시작일과 종료일을 함께 전달해야 합니다.")
+            private boolean isDatePairComplete() {
+                    return (startDate == null) == (endDate == null);
+            }
+
+            @AssertTrue(message = "이용 희망 기간의 시작일은 종료일보다 늦을 수 없습니다.")
+            private boolean isValidDateRange() {
+                    if (startDate == null || endDate == null) return true; // 짝 검증은 위에서 따로 처리
+                    return !startDate.isAfter(endDate);
             }
     }
 
