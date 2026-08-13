@@ -56,6 +56,14 @@ class RecommendationMentComposerTest {
     }
 
     @Test
+    void 가격_타겟_할인율은_반올림하지_않고_내림한다() {
+        String ment = composer.composePriceTarget("성수동", 99.7, 5.0);
+
+        assertThat(ment).isEqualTo("최근 본 성수동 공간보다 99% 저렴해요");
+        assertThat(ment).doesNotContain("100%");
+    }
+
+    @Test
     void 가격_타겟_할인율이_기준_미만이면_예산_문구를_보여준다() {
         String ment = composer.composePriceTarget("성수동", 3.0, 5.0);
 

@@ -154,9 +154,10 @@ public class RecommendationReasonEvaluator {
         return Optional.of(new RecommendationReasonResult(RecommendationReasonType.FOMO, mentText, null));
     }
 
-    // 4순위: 유저가 최근 조회/찜한 공간들의 평균가 대비 낮거나 비슷한 가격의 공간을 추천
+    // 4순위: 유저가 최근 조회/찜한 대표 지역(A) 소속 공간들의 평균가 대비 낮거나 비슷한 가격의 공간을 추천
+    // 문구에 A지역명이 들어가므로, 퍼센트도 반드시 A지역 소속 공간들의 평균가로 계산해야 지역명과 값이 어긋나지 않는다.
     private Optional<RecommendationReasonResult> evaluatePriceTarget(Space candidate, UserRecommendationContext context) {
-        Double avgPrice = context.recentInteractionAvgPrice();
+        Double avgPrice = context.representativeRegionInteractionAvgPrice();
         if (avgPrice == null || avgPrice <= 0) {
             return Optional.empty();
         }

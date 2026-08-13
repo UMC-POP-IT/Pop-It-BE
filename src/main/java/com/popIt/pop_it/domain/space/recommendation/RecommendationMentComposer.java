@@ -47,10 +47,10 @@ public class RecommendationMentComposer {
             return RecommendationMentTemplates.PRICE_TARGET_BUDGET_FIT;
         }
 
-        long roundedDiscountPercent = Math.round(discountPercent);
+        long flooredDiscountPercent = (long) Math.floor(discountPercent);
         return isBlank(region)
                 ? RecommendationMentTemplates.DEFAULT
-                : RecommendationMentTemplates.PRICE_TARGET_DISCOUNT.formatted(region, roundedDiscountPercent);
+                : RecommendationMentTemplates.PRICE_TARGET_DISCOUNT.formatted(region, flooredDiscountPercent);
     }
 
     public String composeRegionCheaperNearby(String region) {

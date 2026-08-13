@@ -53,7 +53,7 @@ public class UserRecommendationContextResolver {
                 .map(UserEvent::getRegion)
                 .collect(Collectors.toSet());
 
-        Double recentInteractionAvgPrice = resolveAvgPriceOfInteractedSpaces(recentEvents);
+        Double representativeRegionInteractionAvgPrice = resolveAvgPriceOfInteractedSpacesInRegion(recentEvents, representativeRegion);
         Double representativeRegionAvgPrice = representativeRegion == null
                 ? null
                 : spaceRepository.findAvgPricePerDayByDong(representativeRegion);
@@ -65,7 +65,7 @@ public class UserRecommendationContextResolver {
                 representativeRegion,
                 representativeRegionViewCount,
                 representativeRegionWishlistCount,
-                recentInteractionAvgPrice,
+                representativeRegionInteractionAvgPrice,
                 representativeRegionAvgPrice
         );
     }
@@ -79,8 +79,12 @@ public class UserRecommendationContextResolver {
                 .count();
     }
 
-    private Double resolveAvgPriceOfInteractedSpaces(List<UserEvent> recentEvents) {
+    private Double resolveAvgPriceOfInteractedSpacesInRegion(List<UserEvent> recentEvents, String region) {
+        if (region == null) {
+            return null;
+        }
         Set<Long> interactedSpaceIds = recentEvents.stream()
+                .filter(event -> region.equals(event.getRegion()))
                 .map(UserEvent::getSpaceId)
                 .collect(Collectors.toSet());
         if (interactedSpaceIds.isEmpty()) {
