@@ -83,7 +83,7 @@ tasks.named('test') {
 sentry {
 	includeSourceContext = true
 
-	org = "popit"
+	org = "popit-50"
 	projectName = "java-spring-boot"
 	authToken = System.getenv("SENTRY_AUTH_TOKEN")
 }

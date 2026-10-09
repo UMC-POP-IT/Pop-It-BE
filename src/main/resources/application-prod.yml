@@ -18,7 +18,7 @@ springdoc:
     enabled: true
 
 sentry:
-  dsn: https://99c494710c245790a4da465beefc7464@o4511863814356992.ingest.us.sentry.io/4511863820713984
+  dsn: https://f7a0b471498e7a0128ad803d7e013a52@o4512180875231232.ingest.us.sentry.io/4512180883357696
   logs:
     enabled: true
   traces-sample-rate: 1.0
